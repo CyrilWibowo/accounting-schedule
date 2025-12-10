@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import HomeWorkIcon from '@mui/icons-material/HomeWork';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PercentIcon from '@mui/icons-material/Percent';
 import PaidIcon from '@mui/icons-material/Paid';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
+import NewEntityForm from './NewEntityForm';
 import './HomeScreen.css';
 
 interface HomeScreenProps {
@@ -13,11 +15,24 @@ interface HomeScreenProps {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
+  const [isNewEntityFormOpen, setIsNewEntityFormOpen] = useState(false);
+
   return (
     <div className="home-screen">
       <header className="home-header">
         <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="home-header-logo" />
+        <button
+          className="new-entity-button"
+          onClick={() => setIsNewEntityFormOpen(true)}
+        >
+          <AddBusinessIcon className="new-entity-button-icon" />
+          New Entity
+        </button>
       </header>
+      <NewEntityForm
+        isOpen={isNewEntityFormOpen}
+        onClose={() => setIsNewEntityFormOpen(false)}
+      />
       <div className="home-content">
         <h1>Accounting Schedule</h1>
         <div className="tool-buttons-grid">

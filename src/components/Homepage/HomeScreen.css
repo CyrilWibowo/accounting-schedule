@@ -10,6 +10,32 @@
   padding: 20px 40px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.new-entity-button {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.new-entity-button:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.new-entity-button-icon {
+  font-size: 20px !important;
 }
 
 .home-header-logo {
