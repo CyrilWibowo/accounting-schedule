@@ -1,5 +1,5 @@
 {
-  "name": "lease-report-generator",
+  "name": "accounting-schedule",
   "version": "0.1.0",
   "private": true,
   "main": "electron/main.js",
@@ -60,8 +60,8 @@
     "wait-on": "^9.0.3"
   },
   "build": {
-    "appId": "com.rimex.lease-report-generator",
-    "productName": "Lease Report Generator",
+    "appId": "com.rimex.accounting-schedule",
+    "productName": "Accounting Schedule",
     "directories": {
       "output": "dist"
     },
