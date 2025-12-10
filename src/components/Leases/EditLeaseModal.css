@@ -143,15 +143,15 @@
   background-color: #dc3545;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .delete-button:hover {
@@ -162,15 +162,15 @@
   background-color: #17a2b8;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .copy-button:hover {
@@ -185,7 +185,7 @@
 
 .button-group {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   margin-left: auto;
 }
 
@@ -193,9 +193,9 @@
   background-color: #6c757d;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -209,9 +209,9 @@
   background-color: #28a745;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -311,9 +311,9 @@
   background-color: #6f42c1;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;

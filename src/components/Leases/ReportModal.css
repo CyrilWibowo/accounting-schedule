@@ -14,9 +14,9 @@
 
 .report-modal-content {
   background-color: white;
-  border-radius: 12px;
-  padding: 40px 50px;
-  max-width: 500px;
+  border-radius: 8px;
+  padding: 20px 24px;
+  max-width: 450px;
   width: 95%;
   max-height: 90vh;
   overflow-y: auto;
@@ -27,13 +27,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .report-modal-title {
   margin: 0;
   color: #333;
-  font-size: 28px;
+  font-size: 18px;
 }
 
 .report-close-button {
@@ -57,8 +57,8 @@
 .report-form-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 24px;
-  margin-bottom: 30px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .report-form-group {
@@ -68,16 +68,16 @@
 
 .report-form-label {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: #333;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .report-form-input {
-  padding: 14px;
-  border: 2px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
   transition: border-color 0.2s;
 }
 
@@ -87,10 +87,10 @@
 }
 
 .report-form-input-error {
-  padding: 14px;
-  border: 2px solid #dc3545;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  font-size: 14px;
   background-color: #fff5f5;
 }
 
@@ -104,17 +104,17 @@
 .report-opening-balance-buttons {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .report-ob-button {
   background-color: #17a2b8;
   color: white;
   border: none;
-  padding: 12px 20px;
-  border-radius: 6px;
-  font-size: 15px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
@@ -127,20 +127,20 @@
 
 .report-modal-actions {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   justify-content: flex-end;
-  margin-top: 40px;
-  padding-top: 28px;
-  border-top: 2px solid #dee2e6;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
 }
 
 .report-cancel-button {
   background-color: #6c757d;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -154,9 +154,9 @@
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -178,29 +178,30 @@
 .report-missing-balances-warning {
   background-color: #fff3cd;
   border: 1px solid #ffc107;
-  border-radius: 6px;
-  padding: 16px;
-  margin-top: 20px;
+  border-radius: 4px;
+  padding: 12px;
+  margin-top: 12px;
   color: #856404;
+  font-size: 13px;
 }
 
 .report-missing-balances-warning strong {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .report-missing-balances-warning ul {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 18px;
 }
 
 .report-missing-balances-warning li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 @media (max-width: 768px) {
   .report-modal-content {
-    padding: 30px 20px;
+    padding: 16px;
   }
 
   .report-modal-actions {

@@ -14,9 +14,9 @@
 
 .modal-content {
   background-color: white;
-  border-radius: 12px;
-  padding: 40px 50px;
-  max-width: 1200px;
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 1000px;
   width: 95%;
   max-height: 90vh;
   overflow-y: auto;
@@ -25,6 +25,6 @@
 
 @media (max-width: 768px) {
   .modal-content {
-    padding: 30px 20px;
+    padding: 16px;
   }
 }
