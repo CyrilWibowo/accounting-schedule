@@ -75,28 +75,34 @@
 }
 
 .opening-balance-table-container {
-  overflow-x: auto;
   margin-bottom: 24px;
 }
 
 .opening-balance-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;
+  table-layout: auto;
+}
+
+.opening-balance-table th:last-child,
+.opening-balance-table td:last-child {
+  width: 40px;
+  text-align: center;
 }
 
 .opening-balance-table th,
 .opening-balance-table td {
-  padding: 12px 16px;
+  padding: 8px 10px;
   text-align: left;
   border: 1px solid #dee2e6;
+  font-size: 14px;
+  word-wrap: break-word;
 }
 
 .opening-balance-table th {
   background-color: #f8f9fa;
   font-weight: 600;
   color: #333;
-  white-space: nowrap;
 }
 
 .opening-balance-table tbody tr:hover {
@@ -141,10 +147,10 @@
   background-color: #dc3545;
   color: white;
   border: none;
-  padding: 6px 10px;
+  padding: 4px 6px;
   border-radius: 4px;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;

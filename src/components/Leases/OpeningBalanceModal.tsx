@@ -74,7 +74,7 @@ const OpeningBalanceModal: React.FC<OpeningBalanceModalProps> = ({
                 <th>Depreciation Expense</th>
                 <th>Interest Expense Rent</th>
                 <th>Rent Expense</th>
-                <th>Actions</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
