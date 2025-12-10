@@ -1,7 +1,7 @@
 // App.tsx
 import React, { useState } from 'react';
-import HomeScreen from './components/HomeScreen';
-import LeaseDashboard from './components/LeaseDashboard';
+import HomeScreen from './components/Homepage/HomeScreen';
+import LeaseDashboard from './components/Leases/LeaseDashboard';
 import './App.css';
 
 type View = 'home' | 'leases';
