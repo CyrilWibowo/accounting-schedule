@@ -52,6 +52,12 @@
   background-color: #e9ecef;
 }
 
+.lease-table th:last-child,
+.lease-table td:last-child {
+  width: 140px;
+  min-width: 140px;
+}
+
 .lease-table tbody tr {
   border-bottom: 1px solid #dee2e6;
 }
