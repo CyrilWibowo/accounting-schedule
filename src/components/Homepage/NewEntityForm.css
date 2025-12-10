@@ -123,3 +123,15 @@
 .new-entity-submit:hover {
   background-color: #218838;
 }
+
+.new-entity-input-error {
+  border: 2px solid #dc3545 !important;
+  background-color: #fff5f5 !important;
+}
+
+.new-entity-error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}

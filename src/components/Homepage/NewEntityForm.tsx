@@ -11,19 +11,39 @@ interface NewEntityFormProps {
 
 const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntityCreated }) => {
   const [companyName, setCompanyName] = useState('');
+  const [companyCode, setCompanyCode] = useState('');
   const [abnAcn, setAbnAcn] = useState('');
   const [address, setAddress] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+
+  const handleFieldChange = (field: string) => {
+    if (errors[field]) {
+      setErrors({ ...errors, [field]: false });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const newErrors: { [key: string]: boolean } = {};
+
     if (!companyName.trim()) {
+      newErrors.companyName = true;
+    }
+    if (!companyCode.trim()) {
+      newErrors.companyCode = true;
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
     const newEntity: Entity = {
       id: crypto.randomUUID(),
       name: companyName.trim(),
+      companyCode: companyCode.trim(),
       abnAcn: abnAcn.trim(),
       address: address.trim(),
     };
@@ -31,8 +51,10 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
     const success = await saveEntity(newEntity);
     if (success) {
       setCompanyName('');
+      setCompanyCode('');
       setAbnAcn('');
       setAddress('');
+      setErrors({});
       onEntityCreated?.(newEntity);
       onClose();
     }
@@ -58,11 +80,30 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
         <form onSubmit={handleSubmit}>
           <div className="new-entity-field">
             <label htmlFor="companyName">Company Name</label>
+            {errors.companyName && <span className="new-entity-error-text">This field is required</span>}
             <input
               type="text"
               id="companyName"
+              className={errors.companyName ? 'new-entity-input-error' : ''}
               value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
+              onChange={(e) => {
+                setCompanyName(e.target.value);
+                handleFieldChange('companyName');
+              }}
+            />
+          </div>
+          <div className="new-entity-field">
+            <label htmlFor="companyCode">Company Code</label>
+            {errors.companyCode && <span className="new-entity-error-text">This field is required</span>}
+            <input
+              type="text"
+              id="companyCode"
+              className={errors.companyCode ? 'new-entity-input-error' : ''}
+              value={companyCode}
+              onChange={(e) => {
+                setCompanyCode(e.target.value);
+                handleFieldChange('companyCode');
+              }}
             />
           </div>
           <div className="new-entity-field">
