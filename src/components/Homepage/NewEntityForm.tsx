@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { saveEntity } from '../../utils/dataStorage';
 import { Entity } from '../../types/Entity';
 import './NewEntityForm.css';
@@ -7,14 +7,32 @@ interface NewEntityFormProps {
   isOpen: boolean;
   onClose: () => void;
   onEntityCreated?: (entity: Entity) => void;
+  editEntity?: Entity | null;
 }
 
-const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntityCreated }) => {
+const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntityCreated, editEntity }) => {
   const [companyName, setCompanyName] = useState('');
   const [companyCode, setCompanyCode] = useState('');
   const [abnAcn, setAbnAcn] = useState('');
   const [address, setAddress] = useState('');
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+
+  const isEditMode = !!editEntity;
+
+  useEffect(() => {
+    if (editEntity) {
+      setCompanyName(editEntity.name);
+      setCompanyCode(editEntity.companyCode);
+      setAbnAcn(editEntity.abnAcn);
+      setAddress(editEntity.address);
+    } else {
+      setCompanyName('');
+      setCompanyCode('');
+      setAbnAcn('');
+      setAddress('');
+    }
+    setErrors({});
+  }, [editEntity, isOpen]);
 
   const handleFieldChange = (field: string) => {
     if (errors[field]) {
@@ -40,22 +58,22 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
       return;
     }
 
-    const newEntity: Entity = {
-      id: crypto.randomUUID(),
+    const entityToSave: Entity = {
+      id: editEntity?.id ?? crypto.randomUUID(),
       name: companyName.trim(),
       companyCode: companyCode.trim(),
       abnAcn: abnAcn.trim(),
       address: address.trim(),
     };
 
-    const success = await saveEntity(newEntity);
+    const success = await saveEntity(entityToSave);
     if (success) {
       setCompanyName('');
       setCompanyCode('');
       setAbnAcn('');
       setAddress('');
       setErrors({});
-      onEntityCreated?.(newEntity);
+      onEntityCreated?.(entityToSave);
       onClose();
     }
   };
@@ -72,7 +90,7 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
     <div className="new-entity-overlay" onMouseDown={handleOverlayClick}>
       <div className="new-entity-modal">
         <div className="new-entity-header">
-          <h2>New Entity</h2>
+          <h2>{isEditMode ? 'Edit Entity' : 'New Entity'}</h2>
           <button className="new-entity-close" onClick={onClose}>
             &times;
           </button>
@@ -129,7 +147,7 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
               Cancel
             </button>
             <button type="submit" className="new-entity-submit">
-              Submit
+              {isEditMode ? 'Save Changes' : 'Submit'}
             </button>
           </div>
         </form>
