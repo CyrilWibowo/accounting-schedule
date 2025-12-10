@@ -1,19 +1,41 @@
 import React, { useState } from 'react';
+import { saveEntity } from '../../utils/dataStorage';
+import { Entity } from '../../types/Entity';
 import './NewEntityForm.css';
 
 interface NewEntityFormProps {
   isOpen: boolean;
   onClose: () => void;
+  onEntityCreated?: (entity: Entity) => void;
 }
 
-const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose }) => {
+const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntityCreated }) => {
   const [companyName, setCompanyName] = useState('');
   const [abnAcn, setAbnAcn] = useState('');
   const [address, setAddress] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission
+
+    if (!companyName.trim()) {
+      return;
+    }
+
+    const newEntity: Entity = {
+      id: crypto.randomUUID(),
+      name: companyName.trim(),
+      abnAcn: abnAcn.trim(),
+      address: address.trim(),
+    };
+
+    const success = await saveEntity(newEntity);
+    if (success) {
+      setCompanyName('');
+      setAbnAcn('');
+      setAddress('');
+      onEntityCreated?.(newEntity);
+      onClose();
+    }
   };
 
   const handleOverlayClick = (e: React.MouseEvent) => {
