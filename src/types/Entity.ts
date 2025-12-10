@@ -3,6 +3,7 @@
 export interface Entity {
   id: string;
   name: string;
+  companyCode: string;
   abnAcn: string;
   address: string;
 }
