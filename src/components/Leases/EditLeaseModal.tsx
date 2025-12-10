@@ -582,14 +582,14 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
 
           <div className="modal-actions">
             <div className="left-button-group">
-              <button className="delete-button" onClick={handleDelete}>
-                <DeleteIcon /> Delete
+              <button className="opening-balance-button" onClick={() => setShowOpeningBalance(true)}>
+                Manage Opening Balance
               </button>
               <button className="copy-button" onClick={handleCopy}>
                 <ContentCopyIcon /> Copy
               </button>
-              <button className="opening-balance-button" onClick={() => setShowOpeningBalance(true)}>
-                Manage Opening Balance
+              <button className="delete-button" onClick={handleDelete}>
+                <DeleteIcon /> Delete
               </button>
             </div>
             <div className="button-group">

@@ -180,11 +180,13 @@
 .left-button-group {
   display: flex;
   gap: 12px;
+  margin-right: auto;
 }
 
 .button-group {
   display: flex;
   gap: 20px;
+  margin-left: auto;
 }
 
 .cancel-button {
