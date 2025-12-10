@@ -6,6 +6,8 @@ import ReportModal from './ReportModal';
 import { loadLeases, addLease, updateLease, deleteLease } from '../../utils/dataStorage';
 import rimexLogo from '../../assets/rimexLogo.png';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import './LeaseDashboard.css';
 
 interface LeaseDashboardProps {
@@ -62,10 +64,10 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
         </div>
         <div className="header-buttons">
           <button className="add-card-button" onClick={() => setIsModalOpen(true)}>
-            New Card
+            <NoteAddIcon fontSize="small" /> New Card
           </button>
           <button className="report-button" onClick={() => setIsReportModalOpen(true)}>
-            AASB16 Report
+            <AssessmentIcon fontSize="small" /> AASB16 Report
           </button>
         </div>
       </header>
