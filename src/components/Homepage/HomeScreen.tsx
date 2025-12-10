@@ -7,6 +7,7 @@ import PercentIcon from '@mui/icons-material/Percent';
 import PaidIcon from '@mui/icons-material/Paid';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
+import rimexLogo from '../../assets/rimexLogo.png'
 import NewEntityForm from './NewEntityForm';
 import './HomeScreen.css';
 
@@ -20,7 +21,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
   return (
     <div className="home-screen">
       <header className="home-header">
-        <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="home-header-logo" />
+        <div className="header-logos">
+            <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="header-logo" />
+            <img src={rimexLogo} alt="C&W Technica Logo" className="header-logo" />
+          </div>
         <button
           className="new-entity-button"
           onClick={() => setIsNewEntityFormOpen(true)}
