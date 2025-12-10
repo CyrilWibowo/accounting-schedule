@@ -536,7 +536,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
           {/* Only show increment methods for Property leases, starting from year 1 */}
           {isPropertyLease && committedYears >= 1 && (
             <div className="increment-section">
-              <h4 className="increment-title">Increment Methods (Committed Years: {committedYears})</h4>
+              <h4 className="increment-title">Increment Methods</h4>
               <div className="increment-grid">
                 {Array.from({ length: committedYears }, (_, i) => i + 1).map((year) => (
                   <div key={year} className="increment-group">

@@ -337,7 +337,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
       {/* Only show increment methods for Property leases, starting from year 1 */}
       {isPropertyLease && committedYears >= 1 && (
         <div className="increment-methods-section">
-          <h4>Increment Methods (Committed Years: {committedYears})</h4>
+          <h4>Increment Methods</h4>
           <div className="increment-methods-grid">
             {Array.from({ length: committedYears }, (_, i) => i + 1).map((year) => (
               <div key={year} className="increment-method-group">
