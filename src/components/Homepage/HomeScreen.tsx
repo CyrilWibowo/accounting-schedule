@@ -22,9 +22,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
     <div className="home-screen">
       <header className="home-header">
         <div className="header-logos">
-            <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="header-logo" />
-            <img src={rimexLogo} alt="C&W Technica Logo" className="header-logo" />
-          </div>
+          <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="header-logo" />
+          <img src={rimexLogo} alt="C&W Technica Logo" className="header-logo" />
+        </div>
         <button
           className="new-entity-button"
           onClick={() => setIsNewEntityFormOpen(true)}
