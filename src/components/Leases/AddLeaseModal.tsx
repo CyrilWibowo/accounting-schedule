@@ -1,7 +1,6 @@
 // components/AddLeaseModal.tsx
 import React, { useState, useEffect } from 'react';
 import { Lease, PropertyLease, MotorVehicleLease } from '../../types/Lease';
-import TypeSelection from './TypeSelection';
 import LeaseForm from './LeaseForm';
 import { generateLeaseId } from '../../utils/helper';
 import './AddLeaseModal.css';
@@ -11,10 +10,56 @@ interface AddLeaseModalProps {
   onSave: (lease: Lease) => void;
 }
 
+const createPropertyLease = (): PropertyLease => {
+  const baseId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  return {
+    id: baseId,
+    leaseId: generateLeaseId('Property'),
+    type: 'Property',
+    entity: '',
+    lessor: '',
+    branch: '',
+    propertyAddress: '',
+    commencementDate: '',
+    expiryDate: '',
+    options: '',
+    annualRent: '',
+    rbaCpiRate: '',
+    fixedIncrementRate: '',
+    borrowingRate: '',
+    incrementMethods: {},
+    overrideAmounts: {},
+    openingBalances: [],
+  };
+};
+
+const createMotorVehicleLease = (): MotorVehicleLease => {
+  const baseId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  return {
+    id: baseId,
+    leaseId: generateLeaseId('Motor Vehicle'),
+    type: 'Motor Vehicle',
+    entity: '',
+    lessor: '',
+    branch: '',
+    description: '',
+    vinSerialNo: '',
+    regoNo: '',
+    engineNumber: '',
+    vehicleType: '',
+    deliveryDate: '',
+    expiryDate: '',
+    annualRent: '',
+    borrowingRate: '',
+    incrementMethods: {},
+    overrideAmounts: {},
+    openingBalances: [],
+  };
+};
+
 const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
-  const [step, setStep] = useState<'select' | 'form'>('select');
-  const [leaseType, setLeaseType] = useState<'Property' | 'Motor Vehicle' | null>(null);
-  const [lease, setLease] = useState<Lease | null>(null);
+  const [leaseType, setLeaseType] = useState<'Property' | 'Motor Vehicle'>('Property');
+  const [lease, setLease] = useState<Lease>(createPropertyLease());
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [committedYears, setCommittedYears] = useState(0);
 
@@ -69,53 +114,16 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
     }
   };
 
-  const handleTypeSelect = (type: 'Property' | 'Motor Vehicle') => {
+  const handleLeaseTypeChange = (type: 'Property' | 'Motor Vehicle') => {
     setLeaseType(type);
-    const baseId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    setErrors({});
+    setCommittedYears(0);
 
     if (type === 'Property') {
-      setLease({
-        id: baseId,
-        leaseId: generateLeaseId('Property'),
-        type: 'Property',
-        entity: '',
-        lessor: '',
-        branch: '',
-        propertyAddress: '',
-        commencementDate: '',
-        expiryDate: '',
-        options: '',
-        annualRent: '',
-        rbaCpiRate: '',
-        fixedIncrementRate: '',
-        borrowingRate: '',
-        incrementMethods: {},
-        overrideAmounts: {},
-        openingBalances: [],
-      } as PropertyLease);
+      setLease(createPropertyLease());
     } else {
-      setLease({
-        id: baseId,
-        leaseId: generateLeaseId('Motor Vehicle'),
-        type: 'Motor Vehicle',
-        entity: '',
-        lessor: '',
-        branch: '',
-        description: '',
-        vinSerialNo: '',
-        regoNo: '',
-        engineNumber: '',
-        vehicleType: '',
-        deliveryDate: '',
-        expiryDate: '',
-        annualRent: '',
-        borrowingRate: '',
-        incrementMethods: {},
-        overrideAmounts: {},
-        openingBalances: [],
-      } as MotorVehicleLease);
+      setLease(createMotorVehicleLease());
     }
-    setStep('form');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -259,23 +267,18 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
-        {step === 'select' ? (
-          <TypeSelection onTypeSelect={handleTypeSelect} onClose={onClose} />
-        ) : (
-          lease && (
-            <LeaseForm
-              lease={lease}
-              leaseType={leaseType!}
-              errors={errors}
-              committedYears={committedYears}
-              onInputChange={handleInputChange}
-              onIncrementMethodChange={handleIncrementMethodChange}
-              onOverrideAmountChange={handleOverrideAmountChange}
-              onSubmit={handleSubmit}
-              onClose={onClose}
-            />
-          )
-        )}
+        <LeaseForm
+          lease={lease}
+          leaseType={leaseType}
+          errors={errors}
+          committedYears={committedYears}
+          onInputChange={handleInputChange}
+          onIncrementMethodChange={handleIncrementMethodChange}
+          onOverrideAmountChange={handleOverrideAmountChange}
+          onLeaseTypeChange={handleLeaseTypeChange}
+          onSubmit={handleSubmit}
+          onClose={onClose}
+        />
       </div>
     </div>
   );
