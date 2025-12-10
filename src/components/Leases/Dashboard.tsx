@@ -310,9 +310,16 @@ const Dashboard: React.FC<DashboardProps> = ({
     const sortConfig = isPropertyTable ? propertySortConfig : motorVehicleSortConfig;
     const setSortConfig = isPropertyTable ? setPropertySortConfig : setMotorVehicleSortConfig;
 
-    const direction =
-      sortConfig.key === key && sortConfig.direction === 'asc' ? 'desc' : 'asc';
-    setSortConfig({ key, direction });
+    if (sortConfig.key !== key) {
+      // New column: start with ascending
+      setSortConfig({ key, direction: 'asc' });
+    } else if (sortConfig.direction === 'asc') {
+      // Currently ascending: switch to descending
+      setSortConfig({ key, direction: 'desc' });
+    } else {
+      // Currently descending: clear sort
+      setSortConfig({ key: null, direction: 'asc' });
+    }
   };
 
   const renderSortIndicator = (columnKey: string, isPropertyTable: boolean) => {
