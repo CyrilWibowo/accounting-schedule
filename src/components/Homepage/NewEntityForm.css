@@ -107,11 +107,11 @@
 }
 
 .new-entity-submit {
-  background-color: #666;
+  background-color: #28a745;
   border: none;
   color: white;
 }
 
 .new-entity-submit:hover {
-  background-color: #3a3a3a;
+  background-color: #218838;
 }

@@ -25,7 +25,7 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="new-entity-overlay" onClick={handleOverlayClick}>
+    <div className="new-entity-overlay" onMouseDown={handleOverlayClick}>
       <div className="new-entity-modal">
         <div className="new-entity-header">
           <h2>New Entity</h2>
