@@ -84,8 +84,8 @@
 }
 
 .entity-manager-table th:last-child {
-  width: 60px;
-  min-width: 60px;
+  width: 90px;
+  min-width: 90px;
 }
 
 .entity-manager-table td {
@@ -97,6 +97,15 @@
 
 .entity-manager-table tbody tr:hover {
   background-color: #f8f9fa;
+}
+
+.entity-manager-table tbody tr.entity-manager-row-current {
+  background-color: #e3f2fd;
+  border-left: 3px solid #1976d2;
+}
+
+.entity-manager-table tbody tr.entity-manager-row-current:hover {
+  background-color: #bbdefb;
 }
 
 .entity-manager-cell-readonly {
@@ -130,6 +139,105 @@
 
 .entity-manager-edit-btn:hover {
   background-color: #414141;
+}
+
+.entity-manager-actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.entity-manager-delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  width: 32px;
+}
+
+.entity-manager-delete-btn:hover {
+  background-color: #c82333;
+}
+
+/* Delete confirmation dialog */
+.entity-manager-confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+}
+
+.entity-manager-confirm-dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.entity-manager-confirm-title {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 18px;
+}
+
+.entity-manager-confirm-text {
+  margin: 0 0 20px 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.entity-manager-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.entity-manager-confirm-cancel {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.entity-manager-confirm-cancel:hover {
+  background-color: #5a6268;
+}
+
+.entity-manager-confirm-delete {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.entity-manager-confirm-delete:hover {
+  background-color: #c82333;
 }
 
 .entity-manager-actions {
