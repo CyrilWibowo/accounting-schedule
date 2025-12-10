@@ -1,0 +1,202 @@
+.add-ob-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+  padding: 20px;
+}
+
+.add-ob-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 32px 40px;
+  max-width: 600px;
+  width: 95%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.add-ob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.add-ob-title {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.add-ob-close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.add-ob-close-button:hover {
+  background-color: #f0f0f0;
+}
+
+.add-ob-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.add-ob-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.add-ob-form-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+}
+
+.add-ob-form-input {
+  padding: 12px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.add-ob-form-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.add-ob-form-input-error {
+  padding: 12px;
+  border: 2px solid #dc3545;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #fff5f5;
+}
+
+.add-ob-error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.add-ob-section-header {
+  margin-top: 10px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.add-ob-section-title {
+  margin: 0;
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.add-ob-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+}
+
+.add-ob-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #007bff;
+}
+
+.add-ob-balance-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.add-ob-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.add-ob-cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-ob-cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.add-ob-submit-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-ob-submit-button:hover {
+  background-color: #218838;
+}
+
+@media (max-width: 768px) {
+  .add-ob-content {
+    padding: 24px 20px;
+  }
+
+  .add-ob-actions {
+    flex-direction: column;
+  }
+
+  .add-ob-cancel-button,
+  .add-ob-submit-button {
+    width: 100%;
+  }
+
+  .add-ob-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

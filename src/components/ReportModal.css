@@ -1,0 +1,214 @@
+.report-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.report-modal-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 40px 50px;
+  max-width: 500px;
+  width: 95%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.report-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.report-modal-title {
+  margin: 0;
+  color: #333;
+  font-size: 28px;
+}
+
+.report-close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.report-close-button:hover {
+  background-color: #f0f0f0;
+}
+
+.report-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.report-form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.report-form-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 16px;
+}
+
+.report-form-input {
+  padding: 14px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.report-form-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.report-form-input-error {
+  padding: 14px;
+  border: 2px solid #dc3545;
+  border-radius: 6px;
+  font-size: 16px;
+  background-color: #fff5f5;
+}
+
+.report-error-text {
+  color: #dc3545;
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.report-opening-balance-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.report-ob-button {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.report-ob-button:hover {
+  background-color: #138496;
+}
+
+.report-modal-actions {
+  display: flex;
+  gap: 20px;
+  justify-content: flex-end;
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 2px solid #dee2e6;
+}
+
+.report-cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.report-generate-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-generate-button:hover {
+  background-color: #0056b3;
+}
+
+.report-generate-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.report-generate-button:disabled:hover {
+  background-color: #ccc;
+}
+
+.report-missing-balances-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: 20px;
+  color: #856404;
+}
+
+.report-missing-balances-warning strong {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.report-missing-balances-warning ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.report-missing-balances-warning li {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+  .report-modal-content {
+    padding: 30px 20px;
+  }
+
+  .report-modal-actions {
+    flex-direction: column;
+  }
+
+  .report-cancel-button,
+  .report-generate-button {
+    width: 100%;
+  }
+}
