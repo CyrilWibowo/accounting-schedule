@@ -1,0 +1,52 @@
+.type-selection {
+  text-align: center;
+}
+
+.type-selection h2 {
+  margin-top: 0;
+  margin-bottom: 40px;
+  color: #333;
+  font-size: 32px;
+}
+
+.type-buttons {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 40px;
+  justify-content: center;
+}
+
+.type-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 30px 60px;
+  border-radius: 8px;
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 280px;
+}
+
+.type-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button:hover {
+  background-color: #5a6268;
+}

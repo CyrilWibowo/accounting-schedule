@@ -1,0 +1,155 @@
+.opening-balance-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.opening-balance-content {
+  background-color: white;
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 1400px;
+  width: 95%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.opening-balance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.opening-balance-title {
+  margin: 0;
+  color: #333;
+  font-size: 24px;
+}
+
+.opening-balance-close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.opening-balance-close-button:hover {
+  background-color: #f0f0f0;
+}
+
+.opening-balance-actions {
+  margin-bottom: 20px;
+}
+
+.add-opening-balance-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-opening-balance-button:hover {
+  background-color: #0056b3;
+}
+
+.opening-balance-table-container {
+  overflow-x: auto;
+  margin-bottom: 24px;
+}
+
+.opening-balance-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1200px;
+}
+
+.opening-balance-table th,
+.opening-balance-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border: 1px solid #dee2e6;
+}
+
+.opening-balance-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+}
+
+.opening-balance-table tbody tr:hover {
+  background-color: #f5f5f5;
+}
+
+.opening-balance-table tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.opening-balance-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
+}
+
+.opening-balance-cancel-button {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.opening-balance-cancel-button:hover {
+  background-color: #5a6268;
+}
+
+.opening-balance-empty {
+  text-align: center;
+  padding: 40px 16px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.opening-balance-delete-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.opening-balance-delete-button:hover {
+  background-color: #c82333;
+}
