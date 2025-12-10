@@ -14,9 +14,9 @@
 
 .xlsx-modal-content {
   background-color: white;
-  border-radius: 12px;
-  padding: 40px 50px;
-  max-width: 600px;
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 550px;
   width: 95%;
   max-height: 90vh;
   overflow-y: auto;
@@ -27,13 +27,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 
 .xlsx-modal-title {
   margin: 0;
   color: #333;
-  font-size: 28px;
+  font-size: 20px;
 }
 
 .xlsx-close-button {
@@ -56,16 +56,17 @@
 
 .xlsx-form-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 24px;
-  margin-bottom: 30px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+  align-items: end;
 }
 
 .xlsx-section-header {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #dee2e6;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dee2e6;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -76,7 +77,7 @@
 .xlsx-section-title {
   margin: 0;
   color: #333;
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -103,16 +104,16 @@
 
 .xlsx-form-label {
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: #333;
-  font-size: 16px;
+  font-size: 13px;
 }
 
 .xlsx-form-input {
-  padding: 14px;
-  border: 2px solid #ccc;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
   transition: border-color 0.2s;
 }
 
@@ -122,10 +123,10 @@
 }
 
 .xlsx-form-input-error {
-  padding: 14px;
-  border: 2px solid #dc3545;
-  border-radius: 6px;
-  font-size: 16px;
+  padding: 8px 10px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  font-size: 14px;
   background-color: #fff5f5;
 }
 
@@ -138,20 +139,20 @@
 
 .xlsx-modal-actions {
   display: flex;
-  gap: 20px;
+  gap: 12px;
   justify-content: flex-end;
-  margin-top: 40px;
-  padding-top: 28px;
-  border-top: 2px solid #dee2e6;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
 }
 
 .xlsx-cancel-button {
   background-color: #6c757d;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -165,9 +166,9 @@
   background-color: #28a745;
   color: white;
   border: none;
-  padding: 14px 32px;
-  border-radius: 6px;
-  font-size: 18px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -179,7 +180,11 @@
 
 @media (max-width: 768px) {
   .xlsx-modal-content {
-    padding: 30px 20px;
+    padding: 16px;
+  }
+
+  .xlsx-form-grid {
+    grid-template-columns: 1fr;
   }
 
   .xlsx-modal-actions {
