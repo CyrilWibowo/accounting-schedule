@@ -6,10 +6,12 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import PercentIcon from '@mui/icons-material/Percent';
 import PaidIcon from '@mui/icons-material/Paid';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import BusinessIcon from '@mui/icons-material/Business';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
 import rimexLogo from '../../assets/rimexLogo.png'
 import NewEntityForm from './NewEntityForm';
+import EntityManager from './EntityManager';
 import { Entity } from '../../types/Entity';
 import { loadEntities, loadAppState, saveAppState } from '../../utils/dataStorage';
 import './HomeScreen.css';
@@ -20,6 +22,7 @@ interface HomeScreenProps {
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
   const [isNewEntityFormOpen, setIsNewEntityFormOpen] = useState(false);
+  const [isEntityManagerOpen, setIsEntityManagerOpen] = useState(false);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
@@ -63,6 +66,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
     setEntities(loadedEntities);
   };
 
+  const handleEditEntity = (entity: Entity) => {
+    // For now, do nothing - placeholder for future edit functionality
+    console.log('Edit entity:', entity);
+  };
+
   return (
     <div className="home-screen">
       <header className="home-header">
@@ -98,19 +106,35 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
           )}
         </div>
 
-        <button
-          className="new-entity-button"
-          onClick={() => setIsNewEntityFormOpen(true)}
-        >
-          <AddBusinessIcon className="new-entity-button-icon" />
-          New Entity
-        </button>
+        <div className="header-entity-buttons">
+          <button
+            className="new-entity-button new-entity-button-green"
+            onClick={() => setIsNewEntityFormOpen(true)}
+          >
+            <AddBusinessIcon className="new-entity-button-icon" />
+            New Entity
+          </button>
+          <button
+            className="new-entity-button"
+            onClick={() => setIsEntityManagerOpen(true)}
+          >
+            <BusinessIcon className="new-entity-button-icon" />
+            Manage Entities
+          </button>
+        </div>
       </header>
       <NewEntityForm
         isOpen={isNewEntityFormOpen}
         onClose={() => setIsNewEntityFormOpen(false)}
         onEntityCreated={handleEntityCreated}
       />
+      {isEntityManagerOpen && (
+        <EntityManager
+          entities={entities}
+          onClose={() => setIsEntityManagerOpen(false)}
+          onEdit={handleEditEntity}
+        />
+      )}
       <div className="home-content">
         <h1>Accounting Schedule</h1>
         <div className="tool-buttons-grid">
