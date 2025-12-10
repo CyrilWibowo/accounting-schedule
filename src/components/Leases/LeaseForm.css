@@ -12,6 +12,16 @@
   margin-bottom: 30px;
 }
 
+.form-group.lease-type-select {
+  grid-column: 1 / -1;
+  max-width: 320px;
+}
+
+.form-group.lease-type-select select {
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;

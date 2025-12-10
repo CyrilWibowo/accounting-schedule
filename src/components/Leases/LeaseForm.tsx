@@ -13,6 +13,7 @@ interface LeaseFormProps {
   onInputChange: (field: string, value: string) => void;
   onIncrementMethodChange: (year: number, value: string) => void;
   onOverrideAmountChange: (year: number, value: string) => void;
+  onLeaseTypeChange: (type: 'Property' | 'Motor Vehicle') => void;
   onSubmit: () => void;
   onClose: () => void;
 }
@@ -25,6 +26,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
   onInputChange,
   onIncrementMethodChange,
   onOverrideAmountChange,
+  onLeaseTypeChange,
   onSubmit,
   onClose
 }) => {
@@ -47,9 +49,21 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
 
   return (
     <div className="lease-form-modal">
-      <h2>Add {leaseType} Lease</h2>
+      <h2>Add New Lease</h2>
 
       <div className="form-grid">
+        {/* Lease Type Dropdown */}
+        <div className="form-group lease-type-select">
+          <label>Lease Type *</label>
+          <select
+            value={leaseType}
+            onChange={(e) => onLeaseTypeChange(e.target.value as 'Property' | 'Motor Vehicle')}
+          >
+            <option value="Property">Property</option>
+            <option value="Motor Vehicle">Motor Vehicle</option>
+          </select>
+        </div>
+
         {/* Entity - Common field */}
         <div className="form-group">
           <label>Entity *</label>
