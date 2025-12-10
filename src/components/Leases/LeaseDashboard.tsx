@@ -1,13 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Lease, PropertyLease, MotorVehicleLease } from '../../types/Lease';
+import { Entity } from '../../types/Entity';
 import Dashboard from './Dashboard';
 import AddLeaseModal from './AddLeaseModal';
 import ReportModal from './ReportModal';
-import { loadLeases, addLease, updateLease, deleteLease } from '../../utils/dataStorage';
-import rimexLogo from '../../assets/rimexLogo.png';
+import {
+  loadEntities,
+  loadEntityLeases,
+  addEntityLease,
+  updateEntityLease,
+  deleteEntityLease,
+  loadAppState,
+  saveAppState,
+} from '../../utils/dataStorage';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
+import rimexLogo from '../../assets/rimexLogo.png'
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import './LeaseDashboard.css';
 
 interface LeaseDashboardProps {
@@ -16,40 +26,79 @@ interface LeaseDashboardProps {
 
 const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
   const [leases, setLeases] = useState<Lease[]>([]);
+  const [entities, setEntities] = useState<Entity[]>([]);
+  const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const initLeases = async () => {
-      const loaded = await loadLeases();
-      setLeases(loaded);
+    const init = async () => {
+      const loadedEntities = await loadEntities();
+      setEntities(loadedEntities);
+
+      const appState = await loadAppState();
+      if (appState.selectedEntityId) {
+        const entity = loadedEntities.find(e => e.id === appState.selectedEntityId);
+        if (entity) {
+          setSelectedEntity(entity);
+          const entityLeases = await loadEntityLeases(entity.id);
+          setLeases(entityLeases);
+        }
+      }
     };
-    initLeases();
+    init();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsEntityDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSelectEntity = async (entity: Entity) => {
+    setSelectedEntity(entity);
+    setIsEntityDropdownOpen(false);
+    await saveAppState({ selectedEntityId: entity.id });
+    const entityLeases = await loadEntityLeases(entity.id);
+    setLeases(entityLeases);
+  };
+
   const handleAddLease = async (newLease: Lease) => {
-    const updatedLeases = await addLease(newLease);
+    if (!selectedEntity) return;
+    const updatedLeases = await addEntityLease(selectedEntity.id, newLease);
     setLeases(updatedLeases);
     setIsModalOpen(false);
   };
 
   const handleUpdateLease = async (updatedLease: Lease) => {
-    const updatedLeases = await updateLease(updatedLease);
+    if (!selectedEntity) return;
+    const updatedLeases = await updateEntityLease(selectedEntity.id, updatedLease);
     setLeases(updatedLeases);
   };
 
   const handleDeleteLease = async (leaseId: string) => {
-    const updatedLeases = await deleteLease(leaseId);
+    if (!selectedEntity) return;
+    const updatedLeases = await deleteEntityLease(selectedEntity.id, leaseId);
     setLeases(updatedLeases);
   };
 
   const handleCopyLease = async (copiedLease: Lease) => {
-    const updatedLeases = await addLease(copiedLease);
+    if (!selectedEntity) return;
+    const updatedLeases = await addEntityLease(selectedEntity.id, copiedLease);
     setLeases(updatedLeases);
   };
 
   const propertyLeases = leases.filter((lease): lease is PropertyLease => lease.type === 'Property');
   const motorVehicleLeases = leases.filter((lease): lease is MotorVehicleLease => lease.type === 'Motor Vehicle');
+
+  const isEntitySelected = selectedEntity !== null;
 
   return (
     <div className="lease-dashboard">
@@ -60,13 +109,50 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
           </button>
           <div className="header-logos">
             <img src={cwTechnicaLogo} alt="C&W Technica Logo" className="header-logo" />
+            <img src={rimexLogo} alt="C&W Technica Logo" className="header-logo" />
           </div>
         </div>
+
+        <div className="entity-selector" ref={dropdownRef}>
+          <button
+            className={`entity-selector-button ${!isEntitySelected ? 'no-entity' : ''}`}
+            onClick={() => setIsEntityDropdownOpen(!isEntityDropdownOpen)}
+          >
+            {selectedEntity ? selectedEntity.name : 'No Entity Selected'}
+            <ArrowDropDownIcon className="entity-dropdown-icon" />
+          </button>
+          {isEntityDropdownOpen && (
+            <div className="entity-dropdown">
+              {entities.length === 0 ? (
+                <div className="entity-dropdown-empty">No entities available</div>
+              ) : (
+                entities.map(entity => (
+                  <button
+                    key={entity.id}
+                    className={`entity-dropdown-item ${selectedEntity?.id === entity.id ? 'selected' : ''}`}
+                    onClick={() => handleSelectEntity(entity)}
+                  >
+                    {entity.name}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="header-buttons">
-          <button className="add-card-button" onClick={() => setIsModalOpen(true)}>
+          <button
+            className="add-card-button"
+            onClick={() => setIsModalOpen(true)}
+            disabled={!isEntitySelected}
+          >
             <NoteAddIcon fontSize="small" /> New Card
           </button>
-          <button className="report-button" onClick={() => setIsReportModalOpen(true)}>
+          <button
+            className="report-button"
+            onClick={() => setIsReportModalOpen(true)}
+            disabled={!isEntitySelected}
+          >
             <AssessmentIcon fontSize="small" /> AASB16 Report
           </button>
         </div>
