@@ -62,7 +62,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
         </div>
         <div className="header-buttons">
           <button className="add-card-button" onClick={() => setIsModalOpen(true)}>
-            Add Card
+            New Card
           </button>
           <button className="report-button" onClick={() => setIsReportModalOpen(true)}>
             AASB16 Report
