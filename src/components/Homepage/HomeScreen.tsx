@@ -13,7 +13,7 @@ import rimexLogo from '../../assets/rimexLogo.png'
 import NewEntityForm from './NewEntityForm';
 import EntityManager from './EntityManager';
 import { Entity } from '../../types/Entity';
-import { loadEntities, loadAppState, saveAppState } from '../../utils/dataStorage';
+import { loadEntities, loadAppState, saveAppState, deleteEntity } from '../../utils/dataStorage';
 import './HomeScreen.css';
 
 interface HomeScreenProps {
@@ -26,6 +26,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
+  const [editingEntity, setEditingEntity] = useState<Entity | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,14 +62,46 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
     await saveAppState({ selectedEntityId: entity.id });
   };
 
-  const handleEntityCreated = async () => {
+  const handleEntityCreated = async (entity: Entity) => {
     const loadedEntities = await loadEntities();
     setEntities(loadedEntities);
+
+    // If we were editing the currently selected entity, update it
+    if (selectedEntity && selectedEntity.id === entity.id) {
+      setSelectedEntity(entity);
+    }
+
+    setEditingEntity(null);
   };
 
   const handleEditEntity = (entity: Entity) => {
-    // For now, do nothing - placeholder for future edit functionality
-    console.log('Edit entity:', entity);
+    setEditingEntity(entity);
+    setIsNewEntityFormOpen(true);
+  };
+
+  const handleDeleteEntity = async (entityId: string) => {
+    const success = await deleteEntity(entityId);
+    if (success) {
+      const loadedEntities = await loadEntities();
+      setEntities(loadedEntities);
+
+      // If the deleted entity was the selected one, switch to another entity
+      if (selectedEntity && selectedEntity.id === entityId) {
+        if (loadedEntities.length > 0) {
+          const newSelectedEntity = loadedEntities[0];
+          setSelectedEntity(newSelectedEntity);
+          await saveAppState({ selectedEntityId: newSelectedEntity.id });
+        } else {
+          setSelectedEntity(null);
+          await saveAppState({ selectedEntityId: null });
+        }
+      }
+    }
+  };
+
+  const handleCloseEntityForm = () => {
+    setIsNewEntityFormOpen(false);
+    setEditingEntity(null);
   };
 
   return (
@@ -109,7 +142,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
         <div className="header-entity-buttons">
           <button
             className="new-entity-button new-entity-button-green"
-            onClick={() => setIsNewEntityFormOpen(true)}
+            onClick={() => {
+              setEditingEntity(null);
+              setIsNewEntityFormOpen(true);
+            }}
           >
             <AddBusinessIcon className="new-entity-button-icon" />
             New Entity
@@ -125,14 +161,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
       </header>
       <NewEntityForm
         isOpen={isNewEntityFormOpen}
-        onClose={() => setIsNewEntityFormOpen(false)}
+        onClose={handleCloseEntityForm}
         onEntityCreated={handleEntityCreated}
+        editEntity={editingEntity}
       />
       {isEntityManagerOpen && (
         <EntityManager
           entities={entities}
+          currentEntityId={selectedEntity?.id ?? null}
           onClose={() => setIsEntityManagerOpen(false)}
           onEdit={handleEditEntity}
+          onDelete={handleDeleteEntity}
         />
       )}
       <div className="home-content">
