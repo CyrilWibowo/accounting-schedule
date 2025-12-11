@@ -64,16 +64,15 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
           </select>
         </div>
 
-        {/* Entity - Common field */}
+        {/* Entity - Common field (read-only, auto-filled from selected entity's company code) */}
         <div className="form-group">
-          <label>Entity *</label>
-          {errors.entity && <span className="error-text">This field is required</span>}
+          <label>Entity</label>
           <input
             type="text"
-            className={errors.entity ? 'error' : ''}
+            className="readonly-input"
             value={lease.entity}
-            onChange={(e) => onInputChange('entity', e.target.value)}
-            placeholder="Enter entity"
+            readOnly
+            disabled
           />
         </div>
 

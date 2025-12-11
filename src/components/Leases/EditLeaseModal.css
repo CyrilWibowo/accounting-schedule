@@ -94,6 +94,12 @@
   background-color: #fff5f5;
 }
 
+.readonly-input {
+  background-color: #e9ecef !important;
+  color: #495057;
+  cursor: not-allowed;
+}
+
 .error-text {
   color: #dc3545;
   font-size: 12px;

@@ -166,10 +166,11 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
         onCopyLease={handleCopyLease}
       />
 
-      {isModalOpen && (
+      {isModalOpen && selectedEntity && (
         <AddLeaseModal
           onClose={() => setIsModalOpen(false)}
           onSave={handleAddLease}
+          entityCompanyCode={selectedEntity.companyCode}
         />
       )}
 

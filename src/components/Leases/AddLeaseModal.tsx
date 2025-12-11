@@ -8,6 +8,7 @@ import './AddLeaseModal.css';
 interface AddLeaseModalProps {
   onClose: () => void;
   onSave: (lease: Lease) => void;
+  entityCompanyCode: string;
 }
 
 const createPropertyLease = (): PropertyLease => {
@@ -57,9 +58,12 @@ const createMotorVehicleLease = (): MotorVehicleLease => {
   };
 };
 
-const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
+const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCompanyCode }) => {
   const [leaseType, setLeaseType] = useState<'Property' | 'Motor Vehicle'>('Property');
-  const [lease, setLease] = useState<Lease>(createPropertyLease());
+  const [lease, setLease] = useState<Lease>(() => ({
+    ...createPropertyLease(),
+    entity: entityCompanyCode,
+  }));
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [committedYears, setCommittedYears] = useState(0);
 
@@ -120,9 +124,9 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
     setCommittedYears(0);
 
     if (type === 'Property') {
-      setLease(createPropertyLease());
+      setLease({ ...createPropertyLease(), entity: entityCompanyCode });
     } else {
-      setLease(createMotorVehicleLease());
+      setLease({ ...createMotorVehicleLease(), entity: entityCompanyCode });
     }
   };
 
@@ -160,11 +164,7 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave }) => {
     const newErrors: { [key: string]: boolean } = {};
     let isValid = true;
 
-    // Common validations
-    if (!lease.entity?.trim()) {
-      newErrors.entity = true;
-      isValid = false;
-    }
+    // Common validations (entity is auto-filled, no validation needed)
     if (!lease.lessor?.trim()) {
       newErrors.lessor = true;
       isValid = false;
