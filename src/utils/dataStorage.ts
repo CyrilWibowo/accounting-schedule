@@ -255,6 +255,24 @@ export const deleteEntityLease = async (entityId: string, leaseId: string): Prom
   return updatedLeases;
 };
 
+/**
+ * Update the entity field (company code) for all leases of a specific entity
+ */
+export const updateEntityLeasesCompanyCode = async (entityId: string, newCompanyCode: string): Promise<boolean> => {
+  try {
+    const leases = await loadEntityLeases(entityId);
+    const updatedLeases = leases.map(lease => ({
+      ...lease,
+      entity: newCompanyCode
+    }));
+    await saveEntityLeases(entityId, updatedLeases);
+    return true;
+  } catch (error) {
+    console.error('Error updating entity leases company code:', error);
+    return false;
+  }
+};
+
 // ============================================
 // App State functions
 // ============================================

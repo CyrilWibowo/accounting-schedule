@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { saveEntity } from '../../utils/dataStorage';
+import { saveEntity, updateEntityLeasesCompanyCode } from '../../utils/dataStorage';
 import { Entity } from '../../types/Entity';
 import './NewEntityForm.css';
 
@@ -68,6 +68,11 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
 
     const success = await saveEntity(entityToSave);
     if (success) {
+      // If editing and company code changed, update all leases for this entity
+      if (isEditMode && editEntity.companyCode !== companyCode.trim()) {
+        await updateEntityLeasesCompanyCode(entityToSave.id, companyCode.trim());
+      }
+
       setCompanyName('');
       setCompanyCode('');
       setAbnAcn('');
