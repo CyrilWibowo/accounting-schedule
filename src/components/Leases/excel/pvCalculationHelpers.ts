@@ -330,7 +330,8 @@ export const generateJournalTable = (
   openingBalanceLeaseLiabilityNonCurrent: number,
   openingBalanceLeaseLiabilityCurrent: number,
   openingBalanceAccDeprRightToUseAssets: number,
-  openingBalanceInterestExpenseRent: number
+  openingBalanceInterestExpenseRent: number,
+  isExtension: boolean
 ): JournalRow[] => {
   const rows: JournalRow[] = [];
 
@@ -338,9 +339,17 @@ export const generateJournalTable = (
   const normalizedClosing = normalizeDate(closingDate);
   const normalizedExpiry = normalizeDate(expiryDate);
 
+  let row3Value: number;
+  if (isExtension) {
+    row3Value = presentValue;
+  } else {
+    row3Value = 0;
+  }
+
   // Right to Use The Assets - Lease Liability - Current
   // Calculate row 4: sum of payments from the first two calendar years
   // e.g., if lease starts in May-22, sum all payments from 2022 and 2023 (up to Jan of 3rd year)
+  let row4Value: number;
   let paymentsFirstTwoYears = 0;
   if (allPaymentRows.length > 0) {
     const firstPaymentDate = normalizeDate(new Date(allPaymentRows[0].paymentDate));
@@ -355,10 +364,15 @@ export const generateJournalTable = (
       }
     });
   }
+  if (isExtension) {
+    row4Value = paymentsFirstTwoYears
+  } else {
+    row4Value = 0
+  }
 
   // Right to Use The Assets - Lease Liability - Non Current
   // Calculate row 5: -(row3 + row4)
-  const row5Value = -(presentValue + paymentsFirstTwoYears);
+  const row5Value = -(row3Value + row4Value);
 
   // Lease Liability - Non Current
   // Calculate row 9: =IF(H129=0,0,IF($F$6>='Lease Payments'!$C$6,-$H$129,-SUM($P$10:$Q$17)))
@@ -466,8 +480,8 @@ export const generateJournalTable = (
   // Build the 15 rows
   rows.push({ col1: '', col2: '', col3: '' }); // Row 1
   rows.push({ col1: '', col2: '', col3: '' }); // Row 2
-  rows.push({ col1: '164000', col2: 'Right to Use the Assets', col3: presentValue }); // Row 3
-  rows.push({ col1: '22005', col2: '   Lease Liability - Current', col3: paymentsFirstTwoYears }); // Row 4
+  rows.push({ col1: '164000', col2: 'Right to Use the Assets', col3: row3Value }); // Row 3
+  rows.push({ col1: '22005', col2: '   Lease Liability - Current', col3: row4Value }); // Row 4
   rows.push({ col1: '22010', col2: '   Lease Liability - Non-Current', col3: row5Value }); // Row 5
   rows.push({ col1: '', col2: '', col3: '' }); // Row 6
   rows.push({ col1: '', col2: '', col3: '' }); // Row 7

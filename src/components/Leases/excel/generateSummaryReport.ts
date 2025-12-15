@@ -127,7 +127,8 @@ const getLeaseBalanceSummary = (
     openingBalances.leaseLiabilityNonCurrent,
     openingBalances.leaseLiabilityCurrent,
     openingBalances.accDeprRightToUseAssets,
-    openingBalances.interestExpenseRent
+    openingBalances.interestExpenseRent,
+    isExtension
   );
 
   // Generate balance summary table

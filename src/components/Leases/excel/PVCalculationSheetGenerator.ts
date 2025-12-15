@@ -124,7 +124,8 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
     openingBalanceLeaseLiabilityNonCurrent,
     openingBalanceLeaseLiabilityCurrent,
     openingBalanceAccDeprRightToUseAssets,
-    openingBalanceInterestExpenseRent
+    openingBalanceInterestExpenseRent,
+    params.isExtension
   );
 
   // Build the data array with header
