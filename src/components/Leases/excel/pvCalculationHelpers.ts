@@ -1,5 +1,6 @@
 import { PaymentRow } from './excelHelper';
 import { normalizeDate } from '../../../utils/helper';
+import { Extension } from '@mui/icons-material';
 
 export interface CashFlowRow {
   paymentDate: Date;
@@ -339,6 +340,11 @@ export const generateJournalTable = (
   const normalizedClosing = normalizeDate(closingDate);
   const normalizedExpiry = normalizeDate(expiryDate);
 
+  // DONE
+  // if extension:
+  // present value
+  // else:
+  // 0
   let row3Value: number;
   if (isExtension) {
     row3Value = presentValue;
@@ -346,9 +352,14 @@ export const generateJournalTable = (
     row3Value = 0;
   }
 
+  // DONE
   // Right to Use The Assets - Lease Liability - Current
-  // Calculate row 4: sum of payments from the first two calendar years
+  // Calculate row 4:
+  // If extension:
+  // sum of payments from the first two calendar years
   // e.g., if lease starts in May-22, sum all payments from 2022 and 2023 (up to Jan of 3rd year)
+  // else:
+  // 0
   let row4Value: number;
   let paymentsFirstTwoYears = 0;
   if (allPaymentRows.length > 0) {
@@ -364,26 +375,27 @@ export const generateJournalTable = (
       }
     });
   }
+
   if (isExtension) {
     row4Value = paymentsFirstTwoYears
   } else {
     row4Value = 0
   }
 
+  // DONE
   // Right to Use The Assets - Lease Liability - Non Current
   // Calculate row 5: -(row3 + row4)
   const row5Value = -(row3Value + row4Value);
 
+  // DONE
   // Lease Liability - Non Current
   // Calculate row 9: =IF(H129=0,0,IF($F$6>='Lease Payments'!$C$6,-$H$129,-SUM($P$10:$Q$17)))
   // If opening balance Lease Liability Non Current is 0, row9 = 0
   // Else if closing date >= expiry date, row9 = -openingBalanceLeaseLiabilityNonCurrent
   // Else row9 = -SUM(payment + interest expense) for the period after closing
   let row9Value: number;
-  if (openingBalanceLeaseLiabilityNonCurrent === 0) {
+  if (isExtension) {
     row9Value = 0;
-  } else if (normalizedClosing >= normalizedExpiry) {
-    row9Value = -openingBalanceLeaseLiabilityNonCurrent;
   } else {
     let openingToClosingSum = 0;
     allPaymentRows.forEach((row, index) => {
@@ -399,78 +411,52 @@ export const generateJournalTable = (
     row9Value = -openingToClosingSum;
   }
 
+  // DONE
   // Lease Liability - Current
   // Calculate row 10: =IF($F$6>='Lease Payments'!$C$6,-$H$128,-SUM($P$42:$Q$53))
   // If closing date >= expiry date, row10 = -openingBalanceLeaseLiabilityCurrent
   // Else row10 = -SUM(payment + interest expense) for the period between opening and closing dates
   let row10Value: number;
-  if (normalizedClosing >= normalizedExpiry) {
-    row10Value = -openingBalanceLeaseLiabilityCurrent;
-  } else {
-    let openingToClosingTotal = 0;
+  let openingToClosingTotal = 0;
     allPaymentRows.forEach((row, index) => {
       const paymentDate = normalizeDate(new Date(row.paymentDate));
       if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && leaseLiabilityRows[index]) {
         openingToClosingTotal += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
       }
     });
-    row10Value = -openingToClosingTotal - row9Value;
-  }
+  row10Value = -openingToClosingTotal - row9Value;
 
   // Deprication Expense
   // Calculate row 11: -Acc.Depr Right to Use the Assets
   let row11Value: number;
 
+  // DONE
   // Interest Expense Rent
   // Calculate row 12: =IF($F$6>='Lease Payments'!$C$6,SUM($Q$10:$Q$53)-$H$131,SUM($Q$42:$Q$53))
   // If closing date >= expiry date: SUM(interest expense from beginning to closing) - openingBalanceInterestExpenseRent
   // Else: SUM(interest expense from opening to closing)
-  let interestExpenseTotal: number;
-  if (normalizedClosing >= normalizedExpiry) {
-    // Sum interest expense from beginning to closing date
-    let interestFromBeginningToClosing = 0;
-    allPaymentRows.forEach((row, index) => {
-      const paymentDate = normalizeDate(new Date(row.paymentDate));
-      if (paymentDate <= normalizedClosing && leaseLiabilityRows[index]) {
-        interestFromBeginningToClosing += leaseLiabilityRows[index].interestExpense;
-      }
-    });
-    interestExpenseTotal = interestFromBeginningToClosing - openingBalanceInterestExpenseRent;
-  } else {
-    interestExpenseTotal = 0;
-    allPaymentRows.forEach((row, index) => {
-      const paymentDate = normalizeDate(new Date(row.paymentDate));
-      if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && leaseLiabilityRows[index]) {
-        interestExpenseTotal += leaseLiabilityRows[index].interestExpense;
-      }
-    });
-  }
+  let interestExpenseTotal = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && leaseLiabilityRows[index]) {
+      interestExpenseTotal += leaseLiabilityRows[index].interestExpense;
+    }
+  });
 
   // Acc.Depr Right to Use the Assets
   // Calculate row 13: =-IF($F$6>='Lease Payments'!$C$6,-SUM($K$10:$K$53)+$H$127,SUM($K$42:$K$53))
   // If closing date >= expiry date: -(-SUM(depreciation from beginning to closing) + openingBalanceAccDeprRightToUseAssets)
   // Else: SUM(depreciation from opening to closing)
   let row13Value: number;
-  if (normalizedClosing >= normalizedExpiry) {
-    // Sum depreciation from beginning to closing date
-    let depreciationFromBeginningToClosing = 0;
-    allPaymentRows.forEach((row, index) => {
-      const paymentDate = normalizeDate(new Date(row.paymentDate));
-      if (paymentDate <= normalizedClosing && rightOfUseAssetRows[index]) {
-        depreciationFromBeginningToClosing += rightOfUseAssetRows[index].depreciation;
-      }
-    });
-    row13Value = -(-depreciationFromBeginningToClosing + openingBalanceAccDeprRightToUseAssets);
-  } else {
-    let depreciationTotal = 0;
-    allPaymentRows.forEach((row, index) => {
-      const paymentDate = normalizeDate(new Date(row.paymentDate));
-      if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && rightOfUseAssetRows[index]) {
-        depreciationTotal += rightOfUseAssetRows[index].depreciation;
-      }
-    });
-    row13Value = -depreciationTotal;
-  }
+
+  let depreciationTotal = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && rightOfUseAssetRows[index]) {
+      depreciationTotal += rightOfUseAssetRows[index].depreciation;
+    }
+  });
+  row13Value = -depreciationTotal;
   row11Value = -row13Value;
 
   // Rent Expense
