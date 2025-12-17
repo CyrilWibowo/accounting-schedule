@@ -640,77 +640,90 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   rows.push([
     '',
     '',
-    `Opening Balance 31/12/${lastYear}`,
+    `Audited Opening Balance 31/12/${lastYear}`,
     'Rent/Interest Rate Changed',
+    `Adj. Opening Balance 31/12/${lastYear}`,
     `Movement FY ${thisYear}`,
     `Closing Balance ${closingDateStr}`
   ]);
 
   // Row 1: 16400 Right to Use the Assets
+  const adjOpeningRow1 = openingBalances.rightToUseAssets + rateChangedRow1;
   rows.push([
     '16400',
     'Right to Use the Assets',
     openingBalances.rightToUseAssets,
     rateChangedRow1,
+    adjOpeningRow1,
     rightToUseAssetsMovement,
-    openingBalances.rightToUseAssets + rateChangedRow1 + rightToUseAssetsMovement
+    adjOpeningRow1 + rightToUseAssetsMovement
   ]);
 
   // Row 2: 16405 Acc.Depr. Right to Use the Assets
   // Movement = journal row 13 value
+  const adjOpeningRow2 = openingBalances.accDeprRightToUseAssets + rateChangedRow2;
   rows.push([
     '16405',
     'Acc.Depr. Right to Use the Assets',
     openingBalances.accDeprRightToUseAssets,
     rateChangedRow2,
+    adjOpeningRow2,
     -journalRow13Value,
-    openingBalances.accDeprRightToUseAssets + rateChangedRow2 - journalRow13Value
+    adjOpeningRow2 - journalRow13Value
   ]);
 
   // Row 3: 22005 Lease Liability - Current
   // Movement = journal row 10 value
   const row3Movement = isExtension ? journalRow10Value + journalRow4Value : journalRow10Value;
+  const adjOpeningRow3 = openingBalances.leaseLiabilityCurrent + rateChangedRow3;
   rows.push([
     '22005',
     'Lease Liability - Current',
     openingBalances.leaseLiabilityCurrent,
     rateChangedRow3,
+    adjOpeningRow3,
     row3Movement,
-    openingBalances.leaseLiabilityCurrent + rateChangedRow3 + row3Movement
+    adjOpeningRow3 + row3Movement
   ]);
 
   // Row 4: 22010 Lease Liability - Non Current
   // Movement = journal row 9 value
   const row4Movement = isExtension ? journalRow9Value + journalRow5Value : journalRow9Value;
+  const adjOpeningRow4 = openingBalances.leaseLiabilityNonCurrent + rateChangedRow4;
   rows.push([
     '22010',
     'Lease Liability - Non Current',
     openingBalances.leaseLiabilityNonCurrent,
     rateChangedRow4,
+    adjOpeningRow4,
     row4Movement,
-    openingBalances.leaseLiabilityNonCurrent + rateChangedRow4 + row4Movement
+    adjOpeningRow4 + row4Movement
   ]);
 
   // Row 5: 60080 Depreciation Expense
   // Movement = journal row 11 value
+  const adjOpeningRow5 = openingBalances.depreciationExpense + rateChangedRow5;
   rows.push([
     '60080',
     'Depreciation Expense',
     openingBalances.depreciationExpense,
     rateChangedRow5,
+    adjOpeningRow5,
     -journalRow11Value,
-    openingBalances.depreciationExpense + rateChangedRow5 - journalRow11Value
+    adjOpeningRow5 - journalRow11Value
   ]);
 
   // Row 6: 60275 Interest Expense Rent
   // Movement = journal row 12 value
+  const adjOpeningRow6 = openingBalances.interestExpenseRent + rateChangedRow6;
   rows.push([
     '60275',
     'Interest Expense Rent',
     openingBalances.interestExpenseRent,
     rateChangedRow6,
+    adjOpeningRow6,
     journalRow12Value,
-    openingBalances.interestExpenseRent + rateChangedRow6 + journalRow12Value
+    adjOpeningRow6 + journalRow12Value
   ]);
 
   const rentExpenseMovement = -(
@@ -724,13 +737,15 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
 
   // Row 7: 60270 Rent Expense
   // Movement = -(sum of opening balances column)
+  const adjOpeningRow7 = openingBalances.rentExpense + rateChangedRow7;
   rows.push([
     isPropertyLease ? '60270' : '60390',
     isPropertyLease ? 'Rent Expense' : 'Vehicle Expense',
     openingBalances.rentExpense,
     rateChangedRow7,
+    adjOpeningRow7,
     rentExpenseMovement,
-    openingBalances.rentExpense + rateChangedRow7 + rentExpenseMovement
+    adjOpeningRow7 + rentExpenseMovement
   ]);
 
   return rows;

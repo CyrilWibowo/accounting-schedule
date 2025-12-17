@@ -221,15 +221,16 @@ export const generateDetailReport = (
     data.push([
       '',
       '',
-      `Opening Balance 31/12/${lastYear}`,
+      `Audited Opening Balance 31/12/${lastYear}`,
       'Rent/Interest Rate Changed',
+      `Adj. Opening Balance 31/12/${lastYear}`,
       `Movement FY ${thisYear}`,
       `Closing Balance ${closingDateStr}`
     ]);
 
     // Add balance rows (skip the header row from balanceRows which is index 0)
     // balanceRows structure: [header, row1, row2, row3, row4, row5, row6, row7]
-    // Each row: [code, name, opening, rateChanged, movement, closing]
+    // Each row: [code, name, opening, rateChanged, adjOpening, movement, closing]
     for (let i = 1; i < summary.balanceRows.length; i++) {
       const row = summary.balanceRows[i];
       data.push([
@@ -237,8 +238,9 @@ export const generateDetailReport = (
         row[1], // name
         row[2], // opening balance
         row[3], // rate changed
-        row[4], // movement
-        row[5]  // closing balance
+        row[4], // adj opening balance
+        row[5], // movement
+        row[6]  // closing balance
       ]);
     }
   });
@@ -246,10 +248,10 @@ export const generateDetailReport = (
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
 
-  // Apply number format to all numeric cells in columns C, D, E, F (indices 2, 3, 4, 5)
+  // Apply number format to all numeric cells in columns C, D, E, F, G (indices 2, 3, 4, 5, 6)
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   for (let row = range.s.r; row <= range.e.r; row++) {
-    for (let col = 2; col <= 5; col++) {
+    for (let col = 2; col <= 6; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && typeof cell.v === 'number') {
@@ -264,8 +266,9 @@ export const generateDetailReport = (
     { wch: 35 }, // Name column B
     { wch: 25 }, // Opening Balance column C
     { wch: 25 }, // Rent/Interest Rate Changed column D
-    { wch: 20 }, // Movement column E
-    { wch: 25 }  // Closing Balance column F
+    { wch: 25 }, // Adj. Opening Balance column E
+    { wch: 20 }, // Movement column F
+    { wch: 25 }  // Closing Balance column G
   ];
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Detail Report');

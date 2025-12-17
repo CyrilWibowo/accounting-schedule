@@ -277,12 +277,12 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
   // Add empty row before balance summary table
   data.push([]);
 
-  // Add balance summary table (8 rows x 6 columns starting at column T)
+  // Add balance summary table (8 rows x 7 columns starting at column T)
   balanceSummaryRows.forEach(summaryRow => {
     // Empty cells up to column T (19 empty columns A-S)
     const row = Array(19).fill('');
-    // Add balance summary data in columns T, U, V, W, X, Y
-    row.push(summaryRow[0], summaryRow[1], summaryRow[2], summaryRow[3], summaryRow[4], summaryRow[5]);
+    // Add balance summary data in columns T, U, V, W, X, Y, Z
+    row.push(summaryRow[0], summaryRow[1], summaryRow[2], summaryRow[3], summaryRow[4], summaryRow[5], summaryRow[6]);
     data.push(row);
   });
 

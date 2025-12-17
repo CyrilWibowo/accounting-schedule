@@ -200,7 +200,7 @@ export const generateSummaryReport = (
   const data: any[][] = [];
 
   // Store totals for each account code for the summary section
-  const accountTotals: { [code: string]: { opening: number; rateChanged: number; movement: number; closing: number } } = {};
+  const accountTotals: { [code: string]: { opening: number; rateChanged: number; adjOpening: number; movement: number; closing: number } } = {};
 
   // Determine which row index to use from balance summary based on account code
   // Balance summary rows: [0]=header, [1]=16400, [2]=16405, [3]=22005, [4]=22010, [5]=60080, [6]=60275, [7]=60270/60390
@@ -228,8 +228,9 @@ export const generateSummaryReport = (
     // Add column headers
     data.push([
       '',
-      `Opening Balance 31/12/${lastYear}`,
+      `Audited Opening Balance 31/12/${lastYear}`,
       'Rent/Interest Rate Changed',
+      `Adj. Opening Balance 31/12/${lastYear}`,
       `Movement FY ${thisYear}`,
       `Closing Balance ${closingDateStr}`
     ]);
@@ -239,6 +240,7 @@ export const generateSummaryReport = (
     // Initialize totals
     let totalOpening = 0;
     let totalRateChanged = 0;
+    let totalAdjOpening = 0;
     let totalMovement = 0;
     let totalClosing = 0;
 
@@ -247,12 +249,12 @@ export const generateSummaryReport = (
       // Skip rent expense for motor vehicles or vehicle expense for property
       if (account.code === '60270' && !summary.isPropertyLease) {
         // Add empty row for rent expense when it's a motor vehicle lease
-        data.push([summary.leaseName, 0, 0, 0, 0]);
+        data.push([summary.leaseName, 0, 0, 0, 0, 0]);
         return;
       }
       if (account.code === '60390' && summary.isPropertyLease) {
         // Add empty row for vehicle expense when it's a property lease
-        data.push([summary.leaseName, 0, 0, 0, 0]);
+        data.push([summary.leaseName, 0, 0, 0, 0, 0]);
         return;
       }
 
@@ -260,19 +262,22 @@ export const generateSummaryReport = (
       if (balanceRow) {
         const opening = typeof balanceRow[2] === 'number' ? balanceRow[2] : 0;
         const rateChanged = typeof balanceRow[3] === 'number' ? balanceRow[3] : 0;
-        const movement = typeof balanceRow[4] === 'number' ? balanceRow[4] : 0;
-        const closing = typeof balanceRow[5] === 'number' ? balanceRow[5] : 0;
+        const adjOpening = typeof balanceRow[4] === 'number' ? balanceRow[4] : 0;
+        const movement = typeof balanceRow[5] === 'number' ? balanceRow[5] : 0;
+        const closing = typeof balanceRow[6] === 'number' ? balanceRow[6] : 0;
 
         data.push([
           summary.leaseName,
           opening,
           rateChanged,
+          adjOpening,
           movement,
           closing
         ]);
 
         totalOpening += opening;
         totalRateChanged += rateChanged;
+        totalAdjOpening += adjOpening;
         totalMovement += movement;
         totalClosing += closing;
       }
@@ -282,6 +287,7 @@ export const generateSummaryReport = (
     accountTotals[account.code] = {
       opening: totalOpening,
       rateChanged: totalRateChanged,
+      adjOpening: totalAdjOpening,
       movement: totalMovement,
       closing: totalClosing
     };
@@ -291,6 +297,7 @@ export const generateSummaryReport = (
       'Total',
       totalOpening,
       totalRateChanged,
+      totalAdjOpening,
       totalMovement,
       totalClosing
     ]);
@@ -299,17 +306,18 @@ export const generateSummaryReport = (
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
 
-  // Add summary section on the right (starting at column G, index 6 due to new column)
-  const summaryStartCol = 6;
+  // Add summary section on the right (starting at column H, index 7 due to new column)
+  const summaryStartCol = 7;
 
   // Add summary header row
   const summaryHeaderRow = 0;
   worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol })] = { t: 's', v: '' };
   worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 1 })] = { t: 's', v: '' };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 2 })] = { t: 's', v: `Opening Balance 31/12/${lastYear}` };
+  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 2 })] = { t: 's', v: `Audited Opening Balance 31/12/${lastYear}` };
   worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 3 })] = { t: 's', v: 'Rent/Interest Rate Changed' };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 4 })] = { t: 's', v: `Movement FY ${thisYear}` };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 5 })] = { t: 's', v: `Closing Balance ${closingDateStr}` };
+  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 4 })] = { t: 's', v: `Adj. Opening Balance 31/12/${lastYear}` };
+  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 5 })] = { t: 's', v: `Movement FY ${thisYear}` };
+  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 6 })] = { t: 's', v: `Closing Balance ${closingDateStr}` };
 
   // Add summary data rows for each account code
   ACCOUNT_CODES.forEach((account, index) => {
@@ -320,19 +328,20 @@ export const generateSummaryReport = (
     worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 1 })] = { t: 's', v: account.name };
     worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 2 })] = { t: 'n', v: totals.opening, z: '#,##0.00' };
     worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 3 })] = { t: 'n', v: totals.rateChanged, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 4 })] = { t: 'n', v: totals.movement, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 5 })] = { t: 'n', v: totals.closing, z: '#,##0.00' };
+    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 4 })] = { t: 'n', v: totals.adjOpening, z: '#,##0.00' };
+    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 5 })] = { t: 'n', v: totals.movement, z: '#,##0.00' };
+    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 6 })] = { t: 'n', v: totals.closing, z: '#,##0.00' };
   });
 
   // Update the range to include the summary section
   const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-  currentRange.e.c = Math.max(currentRange.e.c, summaryStartCol + 5);
+  currentRange.e.c = Math.max(currentRange.e.c, summaryStartCol + 6);
   worksheet['!ref'] = XLSX.utils.encode_range(currentRange);
 
-  // Apply number format to all numeric cells in the main table (columns B, C, D, E)
+  // Apply number format to all numeric cells in the main table (columns B, C, D, E, F)
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   for (let row = range.s.r; row <= range.e.r; row++) {
-    for (let col = 1; col <= 4; col++) { // Columns B, C, D, E (1, 2, 3, 4)
+    for (let col = 1; col <= 5; col++) { // Columns B, C, D, E, F (1, 2, 3, 4, 5)
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && typeof cell.v === 'number') {
@@ -346,15 +355,17 @@ export const generateSummaryReport = (
     { wch: 16 }, // Lease name column A
     { wch: 25 }, // Opening Balance column B
     { wch: 25 }, // Rent/Interest Rate Changed column C
-    { wch: 20 }, // Movement column D
-    { wch: 25 }, // Closing Balance column E
-    { wch: 3 },  // Gap column F
-    { wch: 8 },  // Summary Code column G
-    { wch: 30 }, // Summary Name column H
-    { wch: 25 }, // Summary Opening Balance column I
-    { wch: 25 }, // Summary Rent/Interest Rate Changed column J
-    { wch: 20 }, // Summary Movement column K
-    { wch: 25 }  // Summary Closing Balance column L
+    { wch: 25 }, // Adj. Opening Balance column D
+    { wch: 20 }, // Movement column E
+    { wch: 25 }, // Closing Balance column F
+    { wch: 3 },  // Gap column G
+    { wch: 8 },  // Summary Code column H
+    { wch: 30 }, // Summary Name column I
+    { wch: 25 }, // Summary Opening Balance column J
+    { wch: 25 }, // Summary Rent/Interest Rate Changed column K
+    { wch: 25 }, // Summary Adj. Opening Balance column L
+    { wch: 20 }, // Summary Movement column M
+    { wch: 25 }  // Summary Closing Balance column N
   ];
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Summary Report');

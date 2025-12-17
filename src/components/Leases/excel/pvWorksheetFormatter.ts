@@ -31,11 +31,11 @@ export const formatPVWorksheet = (
     { wch: 20 },  // Column S (Separator)
     { wch: 27 },  // Column T (Summary labels / Journal col1)
     { wch: 30 },  // Column U (Summary values / Journal col2)
-    { wch: 15 },  // Column V (Journal col3 / Opening Balance)
+    { wch: 25 },  // Column V (Journal col3 / Audited Opening Balance)
     { wch: 25 },  // Column W (Rent/Interest Rate Changed)
-    { wch: 20 },  // Column X (Movement)
-    { wch: 25 },  // Column Y (Closing Balance)
-    { wch: 20 }   // Column Z
+    { wch: 25 },  // Column X (Adj. Opening Balance)
+    { wch: 20 },  // Column Y (Movement)
+    { wch: 25 }   // Column Z (Closing Balance)
   ];
 
   // Format Present Value in header (row 1, column B - cell B2)
@@ -131,15 +131,15 @@ export const formatPVWorksheet = (
     }
   }
 
-  // Format currency in Balance Summary table (columns V, W, X, Y - Opening Balance, Rent/Interest Rate Changed, Movement, Closing Balance)
+  // Format currency in Balance Summary table (columns V, W, X, Y, Z - Audited Opening Balance, Rent/Interest Rate Changed, Adj. Opening Balance, Movement, Closing Balance)
   // Balance summary starts after journal + 1 empty row
   const balanceSummaryStartRow = journalStartRow + journalRowCount - 1;
 
   // Skip header row (row 0), format data rows (rows 1-7)
   for (let i = 1; i < balanceSummaryRowCount; i++) {
     const row = balanceSummaryStartRow + i;
-    // Columns V, W, X, Y (Opening Balance, Rent/Interest Rate Changed, Movement, Closing Balance)
-    [21, 22, 23, 24].forEach(col => {
+    // Columns V, W, X, Y, Z (Audited Opening Balance, Rent/Interest Rate Changed, Adj. Opening Balance, Movement, Closing Balance)
+    [21, 22, 23, 24, 25].forEach(col => {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       if (worksheet[cellAddress] && typeof worksheet[cellAddress].v === 'number') {
         worksheet[cellAddress].z = '#,##0.00';
