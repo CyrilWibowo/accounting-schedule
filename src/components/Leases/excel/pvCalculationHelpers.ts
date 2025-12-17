@@ -562,11 +562,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   // Else if closing date >= expiry date, movement = presentValue - opening balance
   // Else movement = 0
   let rightToUseAssetsMovement: number;
-  if (openingBalances.rightToUseAssets === 0) {
+  if (isExtension) {
     rightToUseAssetsMovement = presentValue;
-  } else if (normalizedClosing >= normalizedExpiry) {
-    rightToUseAssetsMovement = presentValue - openingBalances.rightToUseAssets;
-  } else {
+  }  else {
     rightToUseAssetsMovement = 0;
   }
 
