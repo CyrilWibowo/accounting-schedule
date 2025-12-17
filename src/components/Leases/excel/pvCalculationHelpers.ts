@@ -499,11 +499,15 @@ export interface BalanceSummaryParams {
   };
   journalRows: JournalRow[];
   isExtension: boolean;
+  // Additional data needed for Rent/Interest Rate Changed column
+  allPaymentRows: PaymentRow[];
+  leaseLiabilityRows: LeaseLiabilityRow[];
+  rightOfUseAssetRows: RightOfUseAssetRow[];
 }
 
 /**
- * Generates an 8x4 balance summary table with account codes, opening balances,
- * movements, and closing balances.
+ * Generates an 8x6 balance summary table with account codes, opening balances,
+ * rent/interest rate changed, movements, and closing balances.
  *
  * The table structure:
  * - Row 0: Headers
@@ -523,11 +527,15 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     expiryDate,
     openingBalances,
     journalRows,
-    isExtension
+    isExtension,
+    allPaymentRows,
+    leaseLiabilityRows,
+    rightOfUseAssetRows
   } = params;
 
   const normalizedClosing = normalizeDate(closingDate);
   const normalizedExpiry = normalizeDate(expiryDate);
+  const normalizedOpening = normalizeDate(openingDate);
 
   // Format date strings for headers
   const lastYear = openingDate.getFullYear() - 1;
@@ -562,9 +570,70 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     rightToUseAssetsMovement = 0;
   }
 
-  // Calculate Rent Expense movement: -(sum of opening balances in column 2)
-  // This is the negative sum of all opening balances
+  // Calculate Rent/Interest Rate Changed values
+  // These are calculated only when NOT an extension, otherwise 0
 
+  // Sum of depreciation before opening date (strictly before, not including opening date)
+  let depreciationBeforeOpening = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate < normalizedOpening && rightOfUseAssetRows[index]) {
+      depreciationBeforeOpening += rightOfUseAssetRows[index].depreciation;
+    }
+  });
+
+  // Sum of payment and interest expense between opening and closing dates
+  let paymentInterestOpeningToClosing = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate >= normalizedOpening && paymentDate <= normalizedClosing && leaseLiabilityRows[index]) {
+      paymentInterestOpeningToClosing += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
+    }
+  });
+
+  // Sum of payment and interest expense for the period after closing (next year)
+  // e.g., if closing is 31/12/2025, sum for the whole of 2026
+  const closingYear = normalizedClosing.getFullYear();
+  const nextPeriodStart = normalizeDate(new Date(closingYear + 1, 0, 1));
+  const nextPeriodEnd = normalizeDate(new Date(closingYear + 1, 11, 31));
+  let paymentInterestNextYear = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate >= nextPeriodStart && paymentDate <= nextPeriodEnd && leaseLiabilityRows[index]) {
+      paymentInterestNextYear += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
+    }
+  });
+
+  // Sum of interest expense from beginning to opening date (strictly before opening)
+  let interestBeforeOpening = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate < normalizedOpening && leaseLiabilityRows[index]) {
+      interestBeforeOpening += leaseLiabilityRows[index].interestExpense;
+    }
+  });
+
+  // Calculate Rent/Interest Rate Changed values for each row
+  // Row 1: Right to Use the Assets: if (isExtension): 0, else: present value - opening balance
+  const rateChangedRow1 = isExtension ? 0 : presentValue - openingBalances.rightToUseAssets;
+
+  // Row 2: Acc.Depr. Right to Use the Assets: if (isExtension): 0, else: (sum of depreciation before opening date) - opening balance
+  const rateChangedRow2 = isExtension ? 0 : depreciationBeforeOpening - openingBalances.accDeprRightToUseAssets;
+
+  // Row 3: Lease Liability - Current: if (isExtension): 0, else: (sum of payment and interest expense between opening and closing) - opening balance
+  const rateChangedRow3 = isExtension ? 0 : paymentInterestOpeningToClosing - openingBalances.leaseLiabilityCurrent;
+
+  // Row 4: Lease Liability - Non Current: if (isExtension): 0, else: (sum of payment and interest expense for next year) - opening balance
+  const rateChangedRow4 = isExtension ? 0 : paymentInterestNextYear - openingBalances.leaseLiabilityNonCurrent;
+
+  // Row 5: Depreciation Expense: if (isExtension): 0, else: (sum of depreciation before opening date) - opening balance
+  const rateChangedRow5 = isExtension ? 0 : -depreciationBeforeOpening - openingBalances.depreciationExpense;
+
+  // Row 6: Interest Expense Rent: if (isExtension): 0, else: (sum of interest expense from beginning to opening date) - opening balance
+  const rateChangedRow6 = isExtension ? 0 : interestBeforeOpening - openingBalances.interestExpenseRent;
+
+  // Row 7: Rent Expense/Vehicle Expense: -sum(of all rate changed values above)
+  const rateChangedRow7 = -(rateChangedRow1 + rateChangedRow2 + rateChangedRow3 + rateChangedRow4 + rateChangedRow5 + rateChangedRow6);
 
   // Build the table rows
   const rows: (string | number)[][] = [];
@@ -574,6 +643,7 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '',
     '',
     `Opening Balance 31/12/${lastYear}`,
+    'Rent/Interest Rate Changed',
     `Movement FY ${thisYear}`,
     `Closing Balance ${closingDateStr}`
   ]);
@@ -583,8 +653,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '16400',
     'Right to Use the Assets',
     openingBalances.rightToUseAssets,
+    rateChangedRow1,
     rightToUseAssetsMovement,
-    openingBalances.rightToUseAssets + rightToUseAssetsMovement
+    openingBalances.rightToUseAssets + rateChangedRow1 + rightToUseAssetsMovement
   ]);
 
   // Row 2: 16405 Acc.Depr. Right to Use the Assets
@@ -593,8 +664,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '16405',
     'Acc.Depr. Right to Use the Assets',
     openingBalances.accDeprRightToUseAssets,
+    rateChangedRow2,
     -journalRow13Value,
-    openingBalances.accDeprRightToUseAssets - journalRow13Value
+    openingBalances.accDeprRightToUseAssets + rateChangedRow2 - journalRow13Value
   ]);
 
   // Row 3: 22005 Lease Liability - Current
@@ -604,8 +676,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '22005',
     'Lease Liability - Current',
     openingBalances.leaseLiabilityCurrent,
+    rateChangedRow3,
     row3Movement,
-    openingBalances.leaseLiabilityCurrent + row3Movement
+    openingBalances.leaseLiabilityCurrent + rateChangedRow3 + row3Movement
   ]);
 
   // Row 4: 22010 Lease Liability - Non Current
@@ -615,8 +688,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '22010',
     'Lease Liability - Non Current',
     openingBalances.leaseLiabilityNonCurrent,
+    rateChangedRow4,
     row4Movement,
-    openingBalances.leaseLiabilityNonCurrent + row4Movement
+    openingBalances.leaseLiabilityNonCurrent + rateChangedRow4 + row4Movement
   ]);
 
   // Row 5: 60080 Depreciation Expense
@@ -625,8 +699,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '60080',
     'Depreciation Expense',
     openingBalances.depreciationExpense,
+    rateChangedRow5,
     -journalRow11Value,
-    openingBalances.depreciationExpense - journalRow11Value
+    openingBalances.depreciationExpense + rateChangedRow5 - journalRow11Value
   ]);
 
   // Row 6: 60275 Interest Expense Rent
@@ -635,8 +710,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     '60275',
     'Interest Expense Rent',
     openingBalances.interestExpenseRent,
+    rateChangedRow6,
     journalRow12Value,
-    openingBalances.interestExpenseRent + journalRow12Value
+    openingBalances.interestExpenseRent + rateChangedRow6 + journalRow12Value
   ]);
 
   const rentExpenseMovement = -(
@@ -654,8 +730,9 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     isPropertyLease ? '60270' : '60390',
     isPropertyLease ? 'Rent Expense' : 'Vehicle Expense',
     openingBalances.rentExpense,
+    rateChangedRow7,
     rentExpenseMovement,
-    openingBalances.rentExpense + rentExpenseMovement
+    openingBalances.rentExpense + rateChangedRow7 + rentExpenseMovement
   ]);
 
   return rows;
