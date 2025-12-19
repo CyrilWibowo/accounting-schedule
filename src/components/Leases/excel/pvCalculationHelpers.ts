@@ -332,7 +332,9 @@ export const generateJournalTable = (
   openingBalanceLeaseLiabilityCurrent: number,
   openingBalanceAccDeprRightToUseAssets: number,
   openingBalanceInterestExpenseRent: number,
-  isExtension: boolean
+  isExtension: boolean,
+  branch: string,
+  isPropertyLease: boolean
 ): JournalRow[] => {
   const rows: JournalRow[] = [];
 
@@ -474,10 +476,10 @@ export const generateJournalTable = (
   rows.push({ col1: '', col2: '', col3: '' }); // Row 8
   rows.push({ col1: '22010', col2: 'Lease Liability - Non-Current', col3: row9Value }); // Row 9
   rows.push({ col1: '22005', col2: 'Lease Liability - Current', col3: row10Value }); // Row 10
-  rows.push({ col1: '60080', col2: 'Depreciation Expense', col3: row11Value }); // Row 11
-  rows.push({ col1: '60275', col2: 'Interest Expense Rent', col3: interestExpenseTotal }); // Row 12
+  rows.push({ col1: '60080', col2: `Depreciation Expense ${branch}`, col3: row11Value }); // Row 11
+  rows.push({ col1: '60275', col2: `Interest Expense Rent ${branch}`, col3: interestExpenseTotal }); // Row 12
   rows.push({ col1: '16405', col2: 'Acc.Depr Right to Use Assets', col3: row13Value }); // Row 13
-  rows.push({ col1: '60270', col2: 'Rent Expense', col3: row14Value }); // Row 14
+  rows.push({ col1: isPropertyLease ? '60270' : '60390', col2: isPropertyLease ? `Rent Expense ${branch}` : `Vehicle Expense ${branch}`, col3: row14Value }); // Row 14
   rows.push({ col1: '', col2: `(Journal at ${formatDateToDateShort(closingDate)})`, col3: '' }); // Row 15
 
   return rows;
@@ -503,6 +505,7 @@ export interface BalanceSummaryParams {
   allPaymentRows: PaymentRow[];
   leaseLiabilityRows: LeaseLiabilityRow[];
   rightOfUseAssetRows: RightOfUseAssetRow[];
+  branch: string;
 }
 
 /**
@@ -530,7 +533,8 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     isExtension,
     allPaymentRows,
     leaseLiabilityRows,
-    rightOfUseAssetRows
+    rightOfUseAssetRows,
+    branch
   } = params;
 
   const normalizedClosing = normalizeDate(closingDate);
@@ -715,7 +719,7 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   const adjOpeningRow5 = openingBalances.depreciationExpense + rateChangedRow5;
   rows.push([
     '60080',
-    'Depreciation Expense',
+    `Depreciation Expense ${branch}`,
     openingBalances.depreciationExpense,
     rateChangedRow5,
     adjOpeningRow5,
@@ -728,7 +732,7 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   const adjOpeningRow6 = openingBalances.interestExpenseRent + rateChangedRow6;
   rows.push([
     '60275',
-    'Interest Expense Rent',
+    `Interest Expense Rent ${branch}`,
     openingBalances.interestExpenseRent,
     rateChangedRow6,
     adjOpeningRow6,
@@ -750,7 +754,7 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   const adjOpeningRow7 = openingBalances.rentExpense + rateChangedRow7;
   rows.push([
     isPropertyLease ? '60270' : '60390',
-    isPropertyLease ? 'Rent Expense' : 'Vehicle Expense',
+    isPropertyLease ? `Rent Expense ${branch}` : `Vehicle Expense ${branch}`,
     openingBalances.rentExpense,
     rateChangedRow7,
     adjOpeningRow7,
