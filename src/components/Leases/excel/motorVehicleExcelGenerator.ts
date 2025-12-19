@@ -3,7 +3,7 @@ import { MotorVehicleLease } from '../../../types/Lease';
 import { XLSXGenerationParams } from '../ToXLSXModal';
 import { PaymentRow, calculateXNPV } from './excelHelper';
 import { formatWorksheet } from './styleExcel';
-import { formatCurrency2 } from '../../../utils/helper';
+import { formatCurrency2, normalizeDate } from '../../../utils/helper';
 import { generatePVCalculation } from './PVCalculationSheetGenerator';
 
 export const generateExcelFromMotorVehicleLeases = (lease: MotorVehicleLease, params: XLSXGenerationParams) => {
@@ -59,12 +59,12 @@ export const generateMotorVehicleLeasePayments = (lease: MotorVehicleLease): XLS
 export const generateMotorVehiclePaymentRows = (lease: MotorVehicleLease): PaymentRow[] => {
   const rows: PaymentRow[] = [];
 
-  const deliveryDate = new Date(lease.deliveryDate);
-  const expiryDate = new Date(lease.expiryDate);
+  const deliveryDate = normalizeDate(new Date(lease.deliveryDate));
+  const expiryDate = normalizeDate(new Date(lease.expiryDate));
 
   const originalMonthlyPayment = Math.round((parseFloat(lease.annualRent) / 12) * 100) / 100;
   let currentAmount = originalMonthlyPayment;
-  let currentDate = new Date(deliveryDate);
+  let currentDate = normalizeDate(new Date(deliveryDate));
 
   let paymentCounter = 1;
   let leaseYear = 1;

@@ -467,8 +467,8 @@ export const generateJournalTable = (
   rows.push({ col1: '', col2: '', col3: '' }); // Row 1
   rows.push({ col1: '', col2: '', col3: '' }); // Row 2
   rows.push({ col1: '164000', col2: 'Right to Use the Assets', col3: row3Value }); // Row 3
-  rows.push({ col1: '22005', col2: '   Lease Liability - Current', col3: row4Value }); // Row 4
-  rows.push({ col1: '22010', col2: '   Lease Liability - Non-Current', col3: row5Value }); // Row 5
+  rows.push({ col1: '22005', col2: 'Lease Liability - Current', col3: row4Value }); // Row 4
+  rows.push({ col1: '22010', col2: 'Lease Liability - Non-Current', col3: row5Value }); // Row 5
   rows.push({ col1: '', col2: '', col3: '' }); // Row 6
   rows.push({ col1: '', col2: '', col3: '' }); // Row 7
   rows.push({ col1: '', col2: '', col3: '' }); // Row 8
@@ -476,8 +476,8 @@ export const generateJournalTable = (
   rows.push({ col1: '22005', col2: 'Lease Liability - Current', col3: row10Value }); // Row 10
   rows.push({ col1: '60080', col2: 'Depreciation Expense', col3: row11Value }); // Row 11
   rows.push({ col1: '60275', col2: 'Interest Expense Rent', col3: interestExpenseTotal }); // Row 12
-  rows.push({ col1: '16405', col2: '   Acc.Depr Right to Use Assets', col3: row13Value }); // Row 13
-  rows.push({ col1: '60270', col2: '   Rent Expense', col3: row14Value }); // Row 14
+  rows.push({ col1: '16405', col2: 'Acc.Depr Right to Use Assets', col3: row13Value }); // Row 13
+  rows.push({ col1: '60270', col2: 'Rent Expense', col3: row14Value }); // Row 14
   rows.push({ col1: '', col2: `(Journal at ${formatDateToDateShort(closingDate)})`, col3: '' }); // Row 15
 
   return rows;

@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import { PropertyLease } from '../../../types/Lease';
 import { PaymentRow, calculateXNPV } from './excelHelper';
 import { formatWorksheet } from './styleExcel';
-import { formatDate, formatCurrency2 } from '../../../utils/helper';
+import { formatDate, formatCurrency2, normalizeDate } from '../../../utils/helper';
 
 export const generateLeasePayments = (lease: PropertyLease): XLSX.WorkSheet => {
   const rows = generatePaymentRows(lease);
@@ -49,17 +49,17 @@ export const generateLeasePayments = (lease: PropertyLease): XLSX.WorkSheet => {
 export const generatePaymentRows = (lease: PropertyLease): PaymentRow[] => {
   const rows: PaymentRow[] = [];
 
-  const commencementDate = new Date(lease.commencementDate);
-  const expiryDate = new Date(lease.expiryDate);
+  const commencementDate = normalizeDate(new Date(lease.commencementDate));
+  const expiryDate = normalizeDate(new Date(lease.expiryDate));
   const optionsYears = parseInt(lease.options) || 0;
 
   // Calculate final date (expiry + options)
-  const finalDate = new Date(expiryDate);
+  const finalDate = normalizeDate(new Date(expiryDate));
   finalDate.setFullYear(finalDate.getFullYear() + optionsYears);
 
   const originalMonthlyPayment = Math.round((parseFloat(lease.annualRent) / 12) * 100) / 100;
   let currentAmount = originalMonthlyPayment;
-  let currentDate = new Date(commencementDate);
+  let currentDate = normalizeDate(new Date(commencementDate));
 
   let paymentCounter = 1;
   let leaseYear = 1;
