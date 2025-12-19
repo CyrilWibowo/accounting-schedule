@@ -589,7 +589,7 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     }
   });
 
-  // Sum of payment and interest expense for the period after closing (next year)
+  // Sum of payment and interest expense for the period after closing (next year only)
   // e.g., if closing is 31/12/2025, sum for the whole of 2026
   const closingYear = normalizedClosing.getFullYear();
   const nextPeriodStart = normalizeDate(new Date(closingYear + 1, 0, 1));
@@ -599,6 +599,16 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     const paymentDate = normalizeDate(new Date(row.paymentDate));
     if (paymentDate >= nextPeriodStart && paymentDate <= nextPeriodEnd && leaseLiabilityRows[index]) {
       paymentInterestNextYear += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
+    }
+  });
+
+  // Sum of payment and interest expense from next year to the end of the lease
+  // e.g., if closing is 31/12/2025, sum from 01/01/2026 to the end
+  let paymentInterestNextYearToEnd = 0;
+  allPaymentRows.forEach((row, index) => {
+    const paymentDate = normalizeDate(new Date(row.paymentDate));
+    if (paymentDate >= nextPeriodStart && leaseLiabilityRows[index]) {
+      paymentInterestNextYearToEnd += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
     }
   });
 
@@ -621,8 +631,8 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   // Row 3: Lease Liability - Current: if (isExtension): 0, else: (sum of payment and interest expense between opening and closing) - opening balance
   const rateChangedRow3 = isExtension ? 0 : paymentInterestOpeningToClosing - openingBalances.leaseLiabilityCurrent;
 
-  // Row 4: Lease Liability - Non Current: if (isExtension): 0, else: (sum of payment and interest expense for next year) - opening balance
-  const rateChangedRow4 = isExtension ? 0 : paymentInterestNextYear - openingBalances.leaseLiabilityNonCurrent;
+  // Row 4: Lease Liability - Non Current: if (isExtension): 0, else: (sum of payment and interest expense from next year to end) - opening balance
+  const rateChangedRow4 = isExtension ? 0 : paymentInterestNextYearToEnd - openingBalances.leaseLiabilityNonCurrent;
 
   // Row 5: Depreciation Expense: if (isExtension): 0, else: (sum of depreciation before opening date) - opening balance
   const rateChangedRow5 = isExtension ? 0 : -depreciationBeforeOpening - openingBalances.depreciationExpense;
