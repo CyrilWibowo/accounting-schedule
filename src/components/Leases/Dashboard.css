@@ -52,6 +52,11 @@
   background-color: #e9ecef;
 }
 
+.lease-table th.sorted {
+  background-color: #d4edfa;
+  color: #0056b3;
+}
+
 .lease-table th:last-child,
 .lease-table td:last-child {
   width: 140px;

@@ -334,6 +334,11 @@ const Dashboard: React.FC<DashboardProps> = ({
     );
   };
 
+  const isSorted = (columnKey: string, isPropertyTable: boolean) => {
+    const sortConfig = isPropertyTable ? propertySortConfig : motorVehicleSortConfig;
+    return sortConfig.key === columnKey;
+  };
+
   return (
     <div className="dashboard-container">
       {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) &&
@@ -347,34 +352,34 @@ const Dashboard: React.FC<DashboardProps> = ({
           <table className="lease-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('leaseId', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('leaseId', true)} style={{ cursor: 'pointer' }} className={isSorted('leaseId', true) ? 'sorted' : ''}>
                   ID{renderSortIndicator('leaseId', true)}
                 </th>
-                <th onClick={() => handleSort('entity', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('entity', true)} style={{ cursor: 'pointer' }} className={isSorted('entity', true) ? 'sorted' : ''}>
                   Entity{renderSortIndicator('entity', true)}
                 </th>
-                <th onClick={() => handleSort('lessor', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('lessor', true)} style={{ cursor: 'pointer' }} className={isSorted('lessor', true) ? 'sorted' : ''}>
                   Lessor{renderSortIndicator('lessor', true)}
                 </th>
-                <th onClick={() => handleSort('propertyAddress', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('propertyAddress', true)} style={{ cursor: 'pointer' }} className={isSorted('propertyAddress', true) ? 'sorted' : ''}>
                   Property Address{renderSortIndicator('propertyAddress', true)}
                 </th>
-                <th onClick={() => handleSort('branch', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('branch', true)} style={{ cursor: 'pointer' }} className={isSorted('branch', true) ? 'sorted' : ''}>
                   Branch{renderSortIndicator('branch', true)}
                 </th>
-                <th onClick={() => handleSort('commencementDate', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('commencementDate', true)} style={{ cursor: 'pointer' }} className={isSorted('commencementDate', true) ? 'sorted' : ''}>
                   Commencement Date{renderSortIndicator('commencementDate', true)}
                 </th>
-                <th onClick={() => handleSort('expiryDate', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('expiryDate', true)} style={{ cursor: 'pointer' }} className={isSorted('expiryDate', true) ? 'sorted' : ''}>
                   Expiry Date{renderSortIndicator('expiryDate', true)}
                 </th>
-                <th onClick={() => handleSort('options', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('options', true)} style={{ cursor: 'pointer' }} className={isSorted('options', true) ? 'sorted' : ''}>
                   Options{renderSortIndicator('options', true)}
                 </th>
-                <th onClick={() => handleSort('committedYears', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('committedYears', true)} style={{ cursor: 'pointer' }} className={isSorted('committedYears', true) ? 'sorted' : ''}>
                   Total Committed Years{renderSortIndicator('committedYears', true)}
                 </th>
-                <th onClick={() => handleSort('annualRent', true)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('annualRent', true)} style={{ cursor: 'pointer' }} className={isSorted('annualRent', true) ? 'sorted' : ''}>
                   Monthly Rent (exc. GST){renderSortIndicator('annualRent', true)}
                 </th>
                 <th></th>
@@ -393,43 +398,43 @@ const Dashboard: React.FC<DashboardProps> = ({
           <table className="lease-table">
             <thead>
               <tr>
-                <th onClick={() => handleSort('leaseId', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('leaseId', false)} style={{ cursor: 'pointer' }} className={isSorted('leaseId', false) ? 'sorted' : ''}>
                   ID{renderSortIndicator('leaseId', false)}
                 </th>
-                <th onClick={() => handleSort('entity', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('entity', false)} style={{ cursor: 'pointer' }} className={isSorted('entity', false) ? 'sorted' : ''}>
                   Entity{renderSortIndicator('entity', false)}
                 </th>
-                <th onClick={() => handleSort('lessor', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('lessor', false)} style={{ cursor: 'pointer' }} className={isSorted('lessor', false) ? 'sorted' : ''}>
                   Lessor{renderSortIndicator('lessor', false)}
                 </th>
-                <th onClick={() => handleSort('regoNo', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('regoNo', false)} style={{ cursor: 'pointer' }} className={isSorted('regoNo', false) ? 'sorted' : ''}>
                   Rego No.{renderSortIndicator('regoNo', false)}
                 </th>
-                <th onClick={() => handleSort('description', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('description', false)} style={{ cursor: 'pointer' }} className={isSorted('description', false) ? 'sorted' : ''}>
                   Description{renderSortIndicator('description', false)}
                 </th>
-                <th onClick={() => handleSort('branch', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('branch', false)} style={{ cursor: 'pointer' }} className={isSorted('branch', false) ? 'sorted' : ''}>
                   Branch{renderSortIndicator('branch', false)}
                 </th>
-                <th onClick={() => handleSort('vehicleType', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('vehicleType', false)} style={{ cursor: 'pointer' }} className={isSorted('vehicleType', false) ? 'sorted' : ''}>
                   Vehicle Type{renderSortIndicator('vehicleType', false)}
                 </th>
-                <th onClick={() => handleSort('engineNumber', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('engineNumber', false)} style={{ cursor: 'pointer' }} className={isSorted('engineNumber', false) ? 'sorted' : ''}>
                   Engine Number{renderSortIndicator('engineNumber', false)}
                 </th>
-                <th onClick={() => handleSort('vinSerialNo', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('vinSerialNo', false)} style={{ cursor: 'pointer' }} className={isSorted('vinSerialNo', false) ? 'sorted' : ''}>
                   VIN/Serial No.{renderSortIndicator('vinSerialNo', false)}
                 </th>
-                <th onClick={() => handleSort('deliveryDate', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('deliveryDate', false)} style={{ cursor: 'pointer' }} className={isSorted('deliveryDate', false) ? 'sorted' : ''}>
                   Delivery Date{renderSortIndicator('deliveryDate', false)}
                 </th>
-                <th onClick={() => handleSort('expiryDate', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('expiryDate', false)} style={{ cursor: 'pointer' }} className={isSorted('expiryDate', false) ? 'sorted' : ''}>
                   Expiry Date{renderSortIndicator('expiryDate', false)}
                 </th>
-                <th onClick={() => handleSort('committedYears', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('committedYears', false)} style={{ cursor: 'pointer' }} className={isSorted('committedYears', false) ? 'sorted' : ''}>
                   Lease Period{renderSortIndicator('committedYears', false)}
                 </th>
-                <th onClick={() => handleSort('annualRent', false)} style={{ cursor: 'pointer' }}>
+                <th onClick={() => handleSort('annualRent', false)} style={{ cursor: 'pointer' }} className={isSorted('annualRent', false) ? 'sorted' : ''}>
                   Monthly Rent (exc. GST){renderSortIndicator('annualRent', false)}
                 </th>
                 <th></th>
