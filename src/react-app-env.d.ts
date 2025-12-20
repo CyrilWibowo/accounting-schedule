@@ -27,6 +27,10 @@ declare global {
 
       // Dialog operations
       showOpenDialog: () => Promise<string | null>;
+
+      // Settings operations
+      getDataPath: () => Promise<string>;
+      setDataPath: (dataPath: string) => Promise<boolean>;
     };
   }
 }

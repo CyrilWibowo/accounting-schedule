@@ -4,10 +4,49 @@ const fs = require('fs');
 
 let mainWindow;
 
-// Get the base data directory
-const getDataDir = () => {
+// Get the settings file path (always in default userData, not custom path)
+const getSettingsPath = () => {
   const userDataPath = app.getPath('userData');
-  const dataDir = path.join(userDataPath, 'data');
+  return path.join(userDataPath, 'settings.json');
+};
+
+// Load settings from file
+const loadSettings = () => {
+  try {
+    const settingsPath = getSettingsPath();
+    if (fs.existsSync(settingsPath)) {
+      const data = fs.readFileSync(settingsPath, 'utf-8');
+      return JSON.parse(data);
+    }
+  } catch (error) {
+    console.error('Error loading settings:', error);
+  }
+  return { dataFilePath: null };
+};
+
+// Save settings to file
+const saveSettings = (settings) => {
+  try {
+    const settingsPath = getSettingsPath();
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Error saving settings:', error);
+    return false;
+  }
+};
+
+// Get the base data directory (uses custom path if set)
+const getDataDir = () => {
+  const settings = loadSettings();
+
+  let dataDir;
+  if (settings.dataFilePath) {
+    dataDir = settings.dataFilePath;
+  } else {
+    const userDataPath = app.getPath('userData');
+    dataDir = path.join(userDataPath, 'data');
+  }
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -207,6 +246,23 @@ ipcMain.handle('show-open-dialog', async () => {
   }
 
   return result.filePaths[0];
+});
+
+// Settings IPC handlers
+ipcMain.handle('get-data-path', async () => {
+  const settings = loadSettings();
+  if (settings.dataFilePath) {
+    return settings.dataFilePath;
+  }
+  // Return the default path if no custom path is set
+  const userDataPath = app.getPath('userData');
+  return path.join(userDataPath, 'data');
+});
+
+ipcMain.handle('set-data-path', async (event, dataPath) => {
+  const settings = loadSettings();
+  settings.dataFilePath = dataPath;
+  return saveSettings(settings);
 });
 
 function createWindow() {

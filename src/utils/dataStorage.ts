@@ -313,3 +313,40 @@ export const saveAppState = async (appState: AppState): Promise<boolean> => {
     return false;
   }
 };
+
+// ============================================
+// Settings functions
+// ============================================
+
+/**
+ * Get the current data file path
+ */
+export const getDataPath = async (): Promise<string> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.getDataPath();
+    } else {
+      return localStorage.getItem('data-path') || 'browser-storage';
+    }
+  } catch (error) {
+    console.error('Error getting data path:', error);
+    return '';
+  }
+};
+
+/**
+ * Set the data file path
+ */
+export const setDataPath = async (dataPath: string): Promise<boolean> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.setDataPath(dataPath);
+    } else {
+      localStorage.setItem('data-path', dataPath);
+      return true;
+    }
+  } catch (error) {
+    console.error('Error setting data path:', error);
+    return false;
+  }
+};

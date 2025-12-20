@@ -107,6 +107,16 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
     setEditingEntity(null);
   };
 
+  const handleDataPathChanged = async () => {
+    // Clear the selected entity
+    setSelectedEntity(null);
+    await saveAppState({ selectedEntityId: null, dataFilePath: null });
+
+    // Reload entities from the new location
+    const loadedEntities = await loadEntities();
+    setEntities(loadedEntities);
+  };
+
   return (
     <div className="home-screen">
       <header className="home-header">
@@ -187,6 +197,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
       <SettingsPopup
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        onDataPathChanged={handleDataPathChanged}
       />
       <div className="home-content">
         <h1>Accounting Schedule</h1>

@@ -10,4 +10,5 @@ export interface Entity {
 
 export interface AppState {
   selectedEntityId: string | null;
+  dataFilePath?: string | null;
 }

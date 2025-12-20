@@ -21,4 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Dialog operations
   showOpenDialog: () => ipcRenderer.invoke('show-open-dialog'),
+
+  // Settings operations
+  getDataPath: () => ipcRenderer.invoke('get-data-path'),
+  setDataPath: (dataPath) => ipcRenderer.invoke('set-data-path', dataPath),
 });
