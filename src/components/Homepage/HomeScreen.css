@@ -47,6 +47,35 @@
   background-color: #0d963f;
 }
 
+.new-entity-button-blue {
+  background-color: #2563eb;
+}
+
+.new-entity-button-blue:hover {
+  background-color: #1d4ed8;
+}
+
+.settings-button {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+}
+
+.settings-button:hover {
+  background-color: #414141;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .new-entity-button-icon {
   font-size: 20px !important;
 }

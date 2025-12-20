@@ -1,7 +1,9 @@
 /// <reference types="react-scripts" />
 
-import { Lease } from './types/Lease';
-import { Entity, AppState } from './types/Entity';
+import type { Lease } from './types/Lease';
+import type { Entity, AppState } from './types/Entity';
+
+export {};
 
 declare global {
   interface Window {
@@ -22,6 +24,9 @@ declare global {
       // App state operations
       loadAppState: () => Promise<AppState>;
       saveAppState: (appState: AppState) => Promise<boolean>;
+
+      // Dialog operations
+      showOpenDialog: () => Promise<string | null>;
     };
   }
 }

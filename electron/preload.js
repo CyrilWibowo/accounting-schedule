@@ -18,4 +18,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // App state operations
   loadAppState: () => ipcRenderer.invoke('load-app-state'),
   saveAppState: (appState) => ipcRenderer.invoke('save-app-state', appState),
+
+  // Dialog operations
+  showOpenDialog: () => ipcRenderer.invoke('show-open-dialog'),
 });

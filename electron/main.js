@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -193,6 +193,20 @@ ipcMain.handle('save-app-state', async (event, appState) => {
     console.error('Error saving app state:', error);
     return false;
   }
+});
+
+// Dialog IPC handler
+ipcMain.handle('show-open-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openDirectory'],
+    title: 'Select Data Folder',
+  });
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null;
+  }
+
+  return result.filePaths[0];
 });
 
 function createWindow() {

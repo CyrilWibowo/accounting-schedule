@@ -8,10 +8,12 @@ import PaidIcon from '@mui/icons-material/Paid';
 import AddBusinessIcon from '@mui/icons-material/AddBusiness';
 import BusinessIcon from '@mui/icons-material/Business';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import SettingsIcon from '@mui/icons-material/Settings';
 import cwTechnicaLogo from '../../assets/C&WTechnicaLogo.png';
 import rimexLogo from '../../assets/rimexLogo.png'
 import NewEntityForm from './NewEntityForm';
 import EntityManager from './EntityManager';
+import SettingsPopup from './SettingsPopup';
 import { Entity } from '../../types/Entity';
 import { loadEntities, loadAppState, saveAppState, deleteEntity } from '../../utils/dataStorage';
 import './HomeScreen.css';
@@ -23,6 +25,7 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
   const [isNewEntityFormOpen, setIsNewEntityFormOpen] = useState(false);
   const [isEntityManagerOpen, setIsEntityManagerOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [entities, setEntities] = useState<Entity[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<Entity | null>(null);
   const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
@@ -151,11 +154,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
             New Entity
           </button>
           <button
-            className="new-entity-button"
+            className="new-entity-button new-entity-button-blue"
             onClick={() => setIsEntityManagerOpen(true)}
           >
             <BusinessIcon className="new-entity-button-icon" />
             Manage Entities
+          </button>
+          <button
+            className="settings-button"
+            onClick={() => setIsSettingsOpen(true)}
+            title="Settings"
+          >
+            <SettingsIcon />
           </button>
         </div>
       </header>
@@ -174,6 +184,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
           onDelete={handleDeleteEntity}
         />
       )}
+      <SettingsPopup
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
       <div className="home-content">
         <h1>Accounting Schedule</h1>
         <div className="tool-buttons-grid">
