@@ -219,7 +219,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigateToLeases }) => {
             <ReceiptLongIcon className="tool-button-icon" />
           </button>
           <button className="tool-button disabled" disabled>
-            Royalty & Corp. Fee
+            Royalty & Corporate Fee
             <PercentIcon className="tool-button-icon" />
           </button>
           <button className="tool-button disabled" disabled>
