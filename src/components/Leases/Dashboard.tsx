@@ -347,7 +347,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         renderIncrementMethodsTooltip(motorVehicleLeases.find(l => l.id === hoveredLease)!)}
 
       <div className="table-section">
-        <h2>Property Leases</h2>
+        <h2>Property Leases ({propertyLeases.length})</h2>
         <div className="table-wrapper">
           <table className="lease-table">
             <thead>
@@ -393,7 +393,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="table-section">
-        <h2>Motor Vehicle Leases</h2>
+        <h2>Motor Vehicle Leases ({motorVehicleLeases.length})</h2>
         <div className="table-wrapper">
           <table className="lease-table">
             <thead>
