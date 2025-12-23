@@ -10,7 +10,9 @@ import {
   generateLeaseLiability,
   generateJournalTable,
   generateBalanceSummaryTable,
-  BalanceSummaryParams
+  calculateLeasePaymentsDue,
+  BalanceSummaryParams,
+  LeasePaymentsDueRow
 } from './pvCalculationHelpers';
 
 // Normalize date string to YYYY-MM-DD format for comparison
@@ -25,6 +27,7 @@ interface LeaseBalanceSummary {
   leaseTitle: string;
   isPropertyLease: boolean;
   balanceRows: (string | number)[][];
+  leasePaymentsDueRows: LeasePaymentsDueRow[];
 }
 
 const getLeaseBalanceSummary = (
@@ -152,10 +155,18 @@ const getLeaseBalanceSummary = (
 
   const balanceRows = generateBalanceSummaryTable(balanceSummaryParams, isPropertyLease);
 
+  // Generate lease payments due table
+  const leasePaymentsDueRows = calculateLeasePaymentsDue(
+    leaseLiabilityRows,
+    allPaymentRows,
+    closingDate
+  );
+
   return {
     leaseTitle,
     isPropertyLease,
-    balanceRows
+    balanceRows,
+    leasePaymentsDueRows
   };
 };
 
@@ -221,6 +232,9 @@ export const generateDetailReport = (
     data.push([]);
 
     // Add column headers (matching the balance summary format)
+    // Columns A-G: Balance summary table
+    // Column H: Gap
+    // Columns I-L: Lease Payments Due table
     data.push([
       '',
       '',
@@ -228,14 +242,22 @@ export const generateDetailReport = (
       'Rent/Interest Rate Changed',
       `Adj. Opening Balance 31/12/${lastYear}`,
       `Movement FY ${thisYear}`,
-      `Closing Balance ${closingDateStr}`
+      `Closing Balance ${closingDateStr}`,
+      '', // Gap column H
+      'Lease Payments Due', // Column I header
+      'Lease Payments',     // Column J header
+      'Interest',           // Column K header
+      'NPV'                 // Column L header
     ]);
 
-    // Add balance rows (skip the header row from balanceRows which is index 0)
+    // Add balance rows with corresponding Lease Payments Due rows
     // balanceRows structure: [header, row1, row2, row3, row4, row5, row6, row7]
     // Each row: [code, name, opening, rateChanged, adjOpening, movement, closing]
+    // leasePaymentsDueRows: [< 1 Year, 1-2 Years, 2-3 Years, 3-4 Years, 4-5 Years, > 5 Years, Total]
     for (let i = 1; i < summary.balanceRows.length; i++) {
       const row = summary.balanceRows[i];
+      const paymentDueRow = summary.leasePaymentsDueRows[i - 1]; // i-1 because balance rows have header at index 0
+
       data.push([
         row[0], // code
         row[1], // name
@@ -243,7 +265,12 @@ export const generateDetailReport = (
         row[3], // rate changed
         row[4], // adj opening balance
         row[5], // movement
-        row[6]  // closing balance
+        row[6], // closing balance
+        '',     // Gap column H
+        paymentDueRow ? paymentDueRow.period : '',        // Period (< 1 Year, 1-2 Years, etc.)
+        paymentDueRow ? paymentDueRow.leasePayments : '', // Lease Payments
+        paymentDueRow ? paymentDueRow.interest : '',      // Interest
+        paymentDueRow ? paymentDueRow.npv : ''            // NPV
       ]);
     }
   });
@@ -251,10 +278,19 @@ export const generateDetailReport = (
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
 
-  // Apply number format to all numeric cells in columns C, D, E, F, G (indices 2, 3, 4, 5, 6)
+  // Apply number format to all numeric cells in columns C, D, E, F, G (indices 2-6) and J, K, L (indices 9-11)
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   for (let row = range.s.r; row <= range.e.r; row++) {
+    // Balance summary columns (C-G)
     for (let col = 2; col <= 6; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      if (cell && typeof cell.v === 'number') {
+        cell.z = '#,##0.00';
+      }
+    }
+    // Lease Payments Due columns (J-L)
+    for (let col = 9; col <= 11; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && typeof cell.v === 'number') {
@@ -271,7 +307,12 @@ export const generateDetailReport = (
     { wch: 25 }, // Rent/Interest Rate Changed column D
     { wch: 25 }, // Adj. Opening Balance column E
     { wch: 20 }, // Movement column F
-    { wch: 25 }  // Closing Balance column G
+    { wch: 25 }, // Closing Balance column G
+    { wch: 3 },  // Gap column H
+    { wch: 18 }, // Lease Payments Due - Period column I
+    { wch: 15 }, // Lease Payments column J
+    { wch: 12 }, // Interest column K
+    { wch: 15 }  // NPV column L
   ];
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Detail Report');
