@@ -234,6 +234,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
                 <option value="Ute">Ute</option>
                 <option value="Wagon">Wagon</option>
                 <option value="Forklift">Forklift</option>
+                <option value="Other">Other</option>
               </select>
             </div>
 
