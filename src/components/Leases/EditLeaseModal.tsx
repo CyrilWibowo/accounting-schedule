@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import { Lease, PropertyLease, MotorVehicleLease, OpeningBalance, Branch } from '../../types/Lease';
+import { Lease, PropertyLease, MobileEquipmentLease, OpeningBalance, Branch } from '../../types/Lease';
 import { generateLeaseId } from '../../utils/helper';
 import OpeningBalanceModal from './OpeningBalanceModal';
 import './EditLeaseModal.css';
@@ -68,10 +68,10 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
         setCommittedYears(0);
       }
     } else {
-      const mvLease = editedLease as MotorVehicleLease;
-      if (mvLease.deliveryDate && mvLease.expiryDate) {
-        const start = new Date(mvLease.deliveryDate);
-        const end = new Date(mvLease.expiryDate);
+      const meLease = editedLease as MobileEquipmentLease;
+      if (meLease.deliveryDate && meLease.expiryDate) {
+        const start = new Date(meLease.deliveryDate);
+        const end = new Date(meLease.expiryDate);
 
         // Calculate total months
         const months = (end.getFullYear() - start.getFullYear()) * 12 +
@@ -176,24 +176,24 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
         }
       }
     } else {
-      const mvLease = editedLease as MotorVehicleLease;
-      if (!mvLease.description?.trim()) {
+      const meLease = editedLease as MobileEquipmentLease;
+      if (!meLease.description?.trim()) {
         newErrors.description = true;
         isValid = false;
       }
-      if (!mvLease.vinSerialNo?.trim()) {
+      if (!meLease.vinSerialNo?.trim()) {
         newErrors.vinSerialNo = true;
         isValid = false;
       }
-      if (!mvLease.regoNo?.trim()) {
+      if (!meLease.regoNo?.trim()) {
         newErrors.regoNo = true;
         isValid = false;
       }
-      if (!mvLease.deliveryDate) {
+      if (!meLease.deliveryDate) {
         newErrors.deliveryDate = true;
         isValid = false;
       }
-      if (!mvLease.expiryDate) {
+      if (!meLease.expiryDate) {
         newErrors.expiryDate = true;
         isValid = false;
       }
@@ -351,7 +351,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
               </>
             )}
 
-            {/* Motor Vehicle Lease Fields */}
+            {/* Mobile Equipment Lease Fields */}
             {!isPropertyLease && (
               <>
                 <div className="form-group">
@@ -360,7 +360,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="text"
                     className={errors.description ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).description}
+                    value={(editedLease as MobileEquipmentLease).description}
                     onChange={(e) => handleInputChange('description', e.target.value)}
                     placeholder="Enter description"
                   />
@@ -386,7 +386,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   {errors.vehicleType && <span className="error-text">This field is required</span>}
                   <select
                     className={errors.vehicleType ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).vehicleType}
+                    value={(editedLease as MobileEquipmentLease).vehicleType}
                     onChange={(e) => handleInputChange('vehicleType', e.target.value)}
                   >
                     <option value="">Select vehicle type...</option>
@@ -402,7 +402,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="text"
                     className={errors.engineNumber ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).engineNumber}
+                    value={(editedLease as MobileEquipmentLease).engineNumber}
                     onChange={(e) => handleInputChange('engineNumber', e.target.value)}
                     placeholder="Enter Engine Number"
                   />
@@ -414,7 +414,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="text"
                     className={errors.vinSerialNo ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).vinSerialNo}
+                    value={(editedLease as MobileEquipmentLease).vinSerialNo}
                     onChange={(e) => handleInputChange('vinSerialNo', e.target.value)}
                     placeholder="Enter VIN/Serial No."
                   />
@@ -426,7 +426,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="text"
                     className={errors.regoNo ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).regoNo}
+                    value={(editedLease as MobileEquipmentLease).regoNo}
                     onChange={(e) => handleInputChange('regoNo', e.target.value)}
                     placeholder="Enter Rego No."
                   />
@@ -438,7 +438,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="date"
                     className={errors.deliveryDate ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).deliveryDate}
+                    value={(editedLease as MobileEquipmentLease).deliveryDate}
                     onChange={(e) => handleInputChange('deliveryDate', e.target.value)}
                   />
                 </div>
@@ -449,7 +449,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                   <input
                     type="date"
                     className={errors.expiryDate ? 'form-input-error' : 'form-input'}
-                    value={(editedLease as MotorVehicleLease).expiryDate}
+                    value={(editedLease as MobileEquipmentLease).expiryDate}
                     onChange={(e) => handleInputChange('expiryDate', e.target.value)}
                   />
                 </div>

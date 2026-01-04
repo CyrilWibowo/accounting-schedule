@@ -1,22 +1,22 @@
 import * as XLSX from 'xlsx';
-import { MotorVehicleLease } from '../../../types/Lease';
+import { MobileEquipmentLease } from '../../../types/Lease';
 import { XLSXGenerationParams } from '../ToXLSXModal';
 import { PaymentRow, calculateXNPV } from './excelHelper';
 import { formatWorksheet } from './styleExcel';
 import { formatCurrency2, normalizeDate } from '../../../utils/helper';
 import { generatePVCalculation } from './PVCalculationSheetGenerator';
 
-export const generateExcelFromMotorVehicleLeases = (lease: MotorVehicleLease, params: XLSXGenerationParams) => {
+export const generateExcelFromMobileEquipmentLeases = (lease: MobileEquipmentLease, params: XLSXGenerationParams) => {
   const workbook = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(workbook, generateMotorVehicleLeasePayments(lease), "Lease Payments");
-  XLSX.utils.book_append_sheet(workbook, generateMotorVehiclePVCalculation(lease, params), "PV Calculation");
+  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentLeasePayments(lease), "Lease Payments");
+  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentPVCalculation(lease, params), "PV Calculation");
 
   XLSX.writeFile(workbook, `${lease.description}_${lease.regoNo}.xlsx`);
 };
 
-export const generateMotorVehicleLeasePayments = (lease: MotorVehicleLease): XLSX.WorkSheet => {
-  const rows = generateMotorVehiclePaymentRows(lease);
+export const generateMobileEquipmentLeasePayments = (lease: MobileEquipmentLease): XLSX.WorkSheet => {
+  const rows = generateMobileEquipmentPaymentRows(lease);
 
   // Calculate values for header
   const originalAnnualRent = parseFloat(lease.annualRent);
@@ -56,7 +56,7 @@ export const generateMotorVehicleLeasePayments = (lease: MotorVehicleLease): XLS
   return worksheet;
 };
 
-export const generateMotorVehiclePaymentRows = (lease: MotorVehicleLease): PaymentRow[] => {
+export const generateMobileEquipmentPaymentRows = (lease: MobileEquipmentLease): PaymentRow[] => {
   const rows: PaymentRow[] = [];
 
   const deliveryDate = normalizeDate(new Date(lease.deliveryDate));
@@ -82,7 +82,7 @@ export const generateMotorVehiclePaymentRows = (lease: MotorVehicleLease): Payme
       leaseYear: leaseYear,
       paymentDate: new Date(currentDate),
       amount: currentAmount,
-      note: '' // No increment methods for motor vehicles
+      note: '' // No increment methods for mobile equipment
     });
 
     // Move to next month
@@ -94,8 +94,8 @@ export const generateMotorVehiclePaymentRows = (lease: MotorVehicleLease): Payme
   return rows;
 };
 
-export const generateMotorVehiclePVCalculation = (lease: MotorVehicleLease, params: XLSXGenerationParams): XLSX.WorkSheet => {
-  // Convert MotorVehicleLease to PropertyLease-like structure for reusing the PV calculation logic
+export const generateMobileEquipmentPVCalculation = (lease: MobileEquipmentLease, params: XLSXGenerationParams): XLSX.WorkSheet => {
+  // Convert MobileEquipmentLease to PropertyLease-like structure for reusing the PV calculation logic
   const tempLease = {
     ...lease,
     type: 'Property' as const,

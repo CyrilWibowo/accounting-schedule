@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Lease, PropertyLease, MotorVehicleLease } from '../../types/Lease';
+import { Lease, PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import { Entity } from '../../types/Entity';
 import Dashboard from './Dashboard';
 import AddLeaseModal from './AddLeaseModal';
@@ -96,7 +96,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
   };
 
   const propertyLeases = leases.filter((lease): lease is PropertyLease => lease.type === 'Property');
-  const motorVehicleLeases = leases.filter((lease): lease is MotorVehicleLease => lease.type === 'Motor Vehicle');
+  const mobileEquipmentLeases = leases.filter((lease): lease is MobileEquipmentLease => lease.type === 'Mobile Equipment');
 
   const isEntitySelected = selectedEntity !== null;
 
@@ -160,7 +160,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
 
       <Dashboard
         propertyLeases={propertyLeases}
-        motorVehicleLeases={motorVehicleLeases}
+        mobileEquipmentLeases={mobileEquipmentLeases}
         onUpdateLease={handleUpdateLease}
         onDeleteLease={handleDeleteLease}
         onCopyLease={handleCopyLease}
@@ -178,7 +178,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
         <ReportModal
           onClose={() => setIsReportModalOpen(false)}
           propertyLeases={propertyLeases}
-          motorVehicleLeases={motorVehicleLeases}
+          mobileEquipmentLeases={mobileEquipmentLeases}
           onUpdateLeases={async (updatedLeases) => {
             for (const lease of updatedLeases) {
               await handleUpdateLease(lease);

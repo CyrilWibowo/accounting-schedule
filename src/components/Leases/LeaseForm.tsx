@@ -1,19 +1,19 @@
 // components/LeaseForm.tsx
 import React, { useState, useEffect } from 'react';
-import { Lease, PropertyLease, MotorVehicleLease, Branch } from '../../types/Lease';
+import { Lease, PropertyLease, MobileEquipmentLease, Branch } from '../../types/Lease';
 import './LeaseForm.css';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
 
 interface LeaseFormProps {
   lease: Lease;
-  leaseType: 'Property' | 'Motor Vehicle';
+  leaseType: 'Property' | 'Mobile Equipment';
   errors: { [key: string]: boolean };
   committedYears: number;
   onInputChange: (field: string, value: string) => void;
   onIncrementMethodChange: (year: number, value: string) => void;
   onOverrideAmountChange: (year: number, value: string) => void;
-  onLeaseTypeChange: (type: 'Property' | 'Motor Vehicle') => void;
+  onLeaseTypeChange: (type: 'Property' | 'Mobile Equipment') => void;
   onSubmit: () => void;
   onClose: () => void;
 }
@@ -57,10 +57,10 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
           <label>Lease Type *</label>
           <select
             value={leaseType}
-            onChange={(e) => onLeaseTypeChange(e.target.value as 'Property' | 'Motor Vehicle')}
+            onChange={(e) => onLeaseTypeChange(e.target.value as 'Property' | 'Mobile Equipment')}
           >
             <option value="Property">Property</option>
-            <option value="Motor Vehicle">Motor Vehicle</option>
+            <option value="Mobile Equipment">Mobile Equipment</option>
           </select>
         </div>
 
@@ -156,7 +156,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
           </>
         )}
 
-        {/* Motor Vehicle Lease Fields - Entity Name removed */}
+        {/* Mobile Equipment Lease Fields - Entity Name removed */}
         {!isPropertyLease && (
           <>
             <div className="form-group">
@@ -165,7 +165,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="text"
                 className={errors.description ? 'error' : ''}
-                value={(lease as MotorVehicleLease).description}
+                value={(lease as MobileEquipmentLease).description}
                 onChange={(e) => onInputChange('description', e.target.value)}
                 placeholder="Enter description"
               />
@@ -192,7 +192,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="text"
                 className={errors.vinSerialNo ? 'error' : ''}
-                value={(lease as MotorVehicleLease).vinSerialNo}
+                value={(lease as MobileEquipmentLease).vinSerialNo}
                 onChange={(e) => onInputChange('vinSerialNo', e.target.value)}
                 placeholder="Enter VIN/Serial No."
               />
@@ -204,7 +204,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="text"
                 className={errors.regoNo ? 'error' : ''}
-                value={(lease as MotorVehicleLease).regoNo}
+                value={(lease as MobileEquipmentLease).regoNo}
                 onChange={(e) => onInputChange('regoNo', e.target.value)}
                 placeholder="Enter Rego No."
               />
@@ -216,7 +216,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="text"
                 className={errors.engineNumber ? 'error' : ''}
-                value={(lease as MotorVehicleLease).engineNumber}
+                value={(lease as MobileEquipmentLease).engineNumber}
                 onChange={(e) => onInputChange('engineNumber', e.target.value)}
                 placeholder="Enter Engine Number"
               />
@@ -227,7 +227,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               {errors.vehicleType && <span className="error-text">This field is required</span>}
               <select
                 className={errors.vehicleType ? 'error' : ''}
-                value={(lease as MotorVehicleLease).vehicleType}
+                value={(lease as MobileEquipmentLease).vehicleType}
                 onChange={(e) => onInputChange('vehicleType', e.target.value)}
               >
                 <option value="">Select vehicle type...</option>
@@ -243,7 +243,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="date"
                 className={errors.deliveryDate ? 'error' : ''}
-                value={(lease as MotorVehicleLease).deliveryDate}
+                value={(lease as MobileEquipmentLease).deliveryDate}
                 onChange={(e) => onInputChange('deliveryDate', e.target.value)}
               />
             </div>
@@ -254,7 +254,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
               <input
                 type="date"
                 className={errors.expiryDate ? 'error' : ''}
-                value={(lease as MotorVehicleLease).expiryDate}
+                value={(lease as MobileEquipmentLease).expiryDate}
                 onChange={(e) => onInputChange('expiryDate', e.target.value)}
               />
             </div>

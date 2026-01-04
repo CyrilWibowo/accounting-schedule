@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-import { PropertyLease, MotorVehicleLease, OpeningBalance } from '../../types/Lease';
+import { PropertyLease, MobileEquipmentLease, OpeningBalance } from '../../types/Lease';
 import './OpeningBalanceManager.css';
 
 interface OpeningBalanceManagerProps {
-  type: 'Property' | 'Motor Vehicle';
+  type: 'Property' | 'Mobile Equipment';
   propertyLeases: PropertyLease[];
-  motorVehicleLeases: MotorVehicleLease[];
+  mobileEquipmentLeases: MobileEquipmentLease[];
   onClose: () => void;
-  onSave: (updatedLeases: (PropertyLease | MotorVehicleLease)[]) => void;
+  onSave: (updatedLeases: (PropertyLease | MobileEquipmentLease)[]) => void;
   openingDate?: string;
 }
 
@@ -37,7 +37,7 @@ const normalizeDateString = (dateStr: string): string => {
 const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   type,
   propertyLeases,
-  motorVehicleLeases,
+  mobileEquipmentLeases,
   onClose,
   onSave,
   openingDate
@@ -45,7 +45,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   const [editableData, setEditableData] = useState<EditableOpeningBalance[]>([]);
 
   useEffect(() => {
-    const leases = type === 'Property' ? propertyLeases : motorVehicleLeases;
+    const leases = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
 
     const data: EditableOpeningBalance[] = leases.map((lease) => {
@@ -65,7 +65,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
           leaseId: lease.leaseId,
           leaseIdentifier: type === 'Property'
             ? (lease as PropertyLease).propertyAddress
-            : (lease as MotorVehicleLease).regoNo,
+            : (lease as MobileEquipmentLease).regoNo,
           lessor: lease.lessor,
           isNewLeaseExtension: matchingBalance.isNewLeaseExtension,
           rightToUseAssets: matchingBalance.rightToUseAssets,
@@ -83,7 +83,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
         leaseId: lease.leaseId,
         leaseIdentifier: type === 'Property'
           ? (lease as PropertyLease).propertyAddress
-          : (lease as MotorVehicleLease).regoNo,
+          : (lease as MobileEquipmentLease).regoNo,
         lessor: lease.lessor,
         isNewLeaseExtension: false,
         rightToUseAssets: '',
@@ -96,7 +96,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
       };
     });
     setEditableData(data);
-  }, [type, propertyLeases, motorVehicleLeases, openingDate]);
+  }, [type, propertyLeases, mobileEquipmentLeases, openingDate]);
 
   const handleCheckboxChange = (index: number) => {
     const newData = [...editableData];
@@ -129,7 +129,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   };
 
   const handleSave = () => {
-    const leases = type === 'Property' ? propertyLeases : motorVehicleLeases;
+    const leases = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
 
     const updatedLeases = leases.map((lease) => {
@@ -186,7 +186,7 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
 
   const title = type === 'Property'
     ? 'Manage Property Opening Balances'
-    : 'Manage Motor Vehicle Opening Balances';
+    : 'Manage Mobile Equipment Opening Balances';
 
   const identifierLabel = type === 'Property' ? 'Property Address' : 'Rego No';
 

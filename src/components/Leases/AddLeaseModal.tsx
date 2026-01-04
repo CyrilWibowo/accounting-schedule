@@ -1,6 +1,6 @@
 // components/AddLeaseModal.tsx
 import React, { useState, useEffect } from 'react';
-import { Lease, PropertyLease, MotorVehicleLease } from '../../types/Lease';
+import { Lease, PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import LeaseForm from './LeaseForm';
 import { generateLeaseId } from '../../utils/helper';
 import './AddLeaseModal.css';
@@ -34,12 +34,12 @@ const createPropertyLease = (): PropertyLease => {
   };
 };
 
-const createMotorVehicleLease = (): MotorVehicleLease => {
+const createMobileEquipmentLease = (): MobileEquipmentLease => {
   const baseId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
   return {
     id: baseId,
-    leaseId: generateLeaseId('Motor Vehicle'),
-    type: 'Motor Vehicle',
+    leaseId: generateLeaseId('Mobile Equipment'),
+    type: 'Mobile Equipment',
     entity: '',
     lessor: '',
     branch: '',
@@ -59,7 +59,7 @@ const createMotorVehicleLease = (): MotorVehicleLease => {
 };
 
 const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCompanyCode }) => {
-  const [leaseType, setLeaseType] = useState<'Property' | 'Motor Vehicle'>('Property');
+  const [leaseType, setLeaseType] = useState<'Property' | 'Mobile Equipment'>('Property');
   const [lease, setLease] = useState<Lease>(() => ({
     ...createPropertyLease(),
     entity: entityCompanyCode,
@@ -98,10 +98,10 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
         setCommittedYears(0);
       }
     } else {
-      const mvLease = lease as MotorVehicleLease;
-      if (mvLease.deliveryDate && mvLease.expiryDate) {
-        const start = new Date(mvLease.deliveryDate);
-        const end = new Date(mvLease.expiryDate);
+      const meLease = lease as MobileEquipmentLease;
+      if (meLease.deliveryDate && meLease.expiryDate) {
+        const start = new Date(meLease.deliveryDate);
+        const end = new Date(meLease.expiryDate);
 
         // Calculate total months
         const months = (end.getFullYear() - start.getFullYear()) * 12 +
@@ -118,7 +118,7 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
     }
   };
 
-  const handleLeaseTypeChange = (type: 'Property' | 'Motor Vehicle') => {
+  const handleLeaseTypeChange = (type: 'Property' | 'Mobile Equipment') => {
     setLeaseType(type);
     setErrors({});
     setCommittedYears(0);
@@ -126,7 +126,7 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
     if (type === 'Property') {
       setLease({ ...createPropertyLease(), entity: entityCompanyCode });
     } else {
-      setLease({ ...createMotorVehicleLease(), entity: entityCompanyCode });
+      setLease({ ...createMobileEquipmentLease(), entity: entityCompanyCode });
     }
   };
 
@@ -223,32 +223,32 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
         }
       }
     } else {
-      const mvLease = lease as MotorVehicleLease;
-      if (!mvLease.description?.trim()) {
+      const meLease = lease as MobileEquipmentLease;
+      if (!meLease.description?.trim()) {
         newErrors.description = true;
         isValid = false;
       }
-      if (!mvLease.vinSerialNo?.trim()) {
+      if (!meLease.vinSerialNo?.trim()) {
         newErrors.vinSerialNo = true;
         isValid = false;
       }
-      if (!mvLease.regoNo?.trim()) {
+      if (!meLease.regoNo?.trim()) {
         newErrors.regoNo = true;
         isValid = false;
       }
-      if (!mvLease.engineNumber?.trim()) {
+      if (!meLease.engineNumber?.trim()) {
         newErrors.engineNumber = true;
         isValid = false;
       }
-      if (!mvLease.vehicleType?.trim()) {
+      if (!meLease.vehicleType?.trim()) {
         newErrors.vehicleType = true;
         isValid = false;
       }
-      if (!mvLease.deliveryDate) {
+      if (!meLease.deliveryDate) {
         newErrors.deliveryDate = true;
         isValid = false;
       }
-      if (!mvLease.expiryDate) {
+      if (!meLease.expiryDate) {
         newErrors.expiryDate = true;
         isValid = false;
       }

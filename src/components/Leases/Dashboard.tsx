@@ -1,9 +1,9 @@
 // components/Dashboard.tsx
 import React, { useState } from 'react';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Lease, PropertyLease, MotorVehicleLease } from '../../types/Lease';
+import { Lease, PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import { generateExcelFromLeases } from './excel/excelGenerator';
-import { generateExcelFromMotorVehicleLeases } from './excel/motorVehicleExcelGenerator';
+import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentExcelGenerator';
 import EditLeaseModal from './EditLeaseModal';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import './Dashboard.css';
@@ -11,7 +11,7 @@ import { formatCurrency, formatDate, getYearDiff } from '../../utils/helper';
 
 interface DashboardProps {
   propertyLeases: PropertyLease[];
-  motorVehicleLeases: MotorVehicleLease[];
+  mobileEquipmentLeases: MobileEquipmentLease[];
   onUpdateLease: (lease: Lease) => void;
   onDeleteLease: (leaseId: string) => void;
   onCopyLease: (lease: Lease) => void;
@@ -19,7 +19,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({
   propertyLeases,
-  motorVehicleLeases,
+  mobileEquipmentLeases,
   onUpdateLease,
   onDeleteLease,
   onCopyLease
@@ -27,13 +27,13 @@ const Dashboard: React.FC<DashboardProps> = ({
   const [hoveredLease, setHoveredLease] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [editingLease, setEditingLease] = useState<Lease | null>(null);
-  const [xlsxModalLease, setXlsxModalLease] = useState<PropertyLease | MotorVehicleLease | null>(null);
+  const [xlsxModalLease, setXlsxModalLease] = useState<PropertyLease | MobileEquipmentLease | null>(null);
   const emptyRows = 10;
   const [propertySortConfig, setPropertySortConfig] = useState<{
     key: string | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
-  const [motorVehicleSortConfig, setMotorVehicleSortConfig] = useState<{
+  const [mobileEquipmentSortConfig, setMobileEquipmentSortConfig] = useState<{
     key: string | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
@@ -50,10 +50,10 @@ const Dashboard: React.FC<DashboardProps> = ({
         return total > 0 ? total : 0;
       }
     } else {
-      const mvLease = lease as MotorVehicleLease;
-      if (mvLease.deliveryDate && mvLease.expiryDate) {
-        const start = new Date(mvLease.deliveryDate);
-        const end = new Date(mvLease.expiryDate);
+      const meLease = lease as MobileEquipmentLease;
+      if (meLease.deliveryDate && meLease.expiryDate) {
+        const start = new Date(meLease.deliveryDate);
+        const end = new Date(meLease.expiryDate);
         const yearsDiff = getYearDiff(start, end);
         return Math.floor(yearsDiff) > 0 ? Math.floor(yearsDiff) : 0;
       }
@@ -61,15 +61,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     return 0;
   };
 
-  const handleGenerateExcel = (lease: PropertyLease | MotorVehicleLease, params: XLSXGenerationParams) => {
+  const handleGenerateExcel = (lease: PropertyLease | MobileEquipmentLease, params: XLSXGenerationParams) => {
     if (lease.type === 'Property') {
       generateExcelFromLeases(lease as PropertyLease, params);
     } else {
-      generateExcelFromMotorVehicleLeases(lease as MotorVehicleLease, params);
+      generateExcelFromMobileEquipmentLeases(lease as MobileEquipmentLease, params);
     }
   };
 
-  const isLeaseExpired = (lease: PropertyLease | MotorVehicleLease): boolean => {
+  const isLeaseExpired = (lease: PropertyLease | MobileEquipmentLease): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -79,7 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return expiryDate < today;
   };
 
-  const isWithinThreeMonthsOfExpiry = (lease: PropertyLease | MotorVehicleLease): boolean => {
+  const isWithinThreeMonthsOfExpiry = (lease: PropertyLease | MobileEquipmentLease): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -196,9 +196,9 @@ const Dashboard: React.FC<DashboardProps> = ({
     return rows;
   };
 
-  const renderMotorVehicleTableRows = () => {
+  const renderMobileEquipmentTableRows = () => {
     const rows = [];
-    const sortedLeases = sortData(motorVehicleLeases, motorVehicleSortConfig);
+    const sortedLeases = sortData(mobileEquipmentLeases, mobileEquipmentSortConfig);
 
     for (let i = 0; i < Math.max(emptyRows, sortedLeases.length); i++) {
       const lease = sortedLeases[i];
@@ -258,7 +258,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     return rows;
   };
 
-  const sortData = <T extends PropertyLease | MotorVehicleLease>(
+  const sortData = <T extends PropertyLease | MobileEquipmentLease>(
     data: T[],
     sortConfig: { key: string | null; direction: 'asc' | 'desc' }
   ): T[] => {
@@ -307,8 +307,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     key: string,
     isPropertyTable: boolean
   ) => {
-    const sortConfig = isPropertyTable ? propertySortConfig : motorVehicleSortConfig;
-    const setSortConfig = isPropertyTable ? setPropertySortConfig : setMotorVehicleSortConfig;
+    const sortConfig = isPropertyTable ? propertySortConfig : mobileEquipmentSortConfig;
+    const setSortConfig = isPropertyTable ? setPropertySortConfig : setMobileEquipmentSortConfig;
 
     if (sortConfig.key !== key) {
       // New column: start with ascending
@@ -323,7 +323,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const renderSortIndicator = (columnKey: string, isPropertyTable: boolean) => {
-    const sortConfig = isPropertyTable ? propertySortConfig : motorVehicleSortConfig;
+    const sortConfig = isPropertyTable ? propertySortConfig : mobileEquipmentSortConfig;
 
     if (sortConfig.key !== columnKey) return null;
 
@@ -335,7 +335,7 @@ const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const isSorted = (columnKey: string, isPropertyTable: boolean) => {
-    const sortConfig = isPropertyTable ? propertySortConfig : motorVehicleSortConfig;
+    const sortConfig = isPropertyTable ? propertySortConfig : mobileEquipmentSortConfig;
     return sortConfig.key === columnKey;
   };
 
@@ -343,8 +343,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     <div className="dashboard-container">
       {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) &&
         renderIncrementMethodsTooltip(propertyLeases.find(l => l.id === hoveredLease)!)}
-      {hoveredLease && motorVehicleLeases.find(l => l.id === hoveredLease) &&
-        renderIncrementMethodsTooltip(motorVehicleLeases.find(l => l.id === hoveredLease)!)}
+      {hoveredLease && mobileEquipmentLeases.find(l => l.id === hoveredLease) &&
+        renderIncrementMethodsTooltip(mobileEquipmentLeases.find(l => l.id === hoveredLease)!)}
 
       <div className="table-section">
         <h2>Property Leases ({propertyLeases.length})</h2>
@@ -393,7 +393,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="table-section">
-        <h2>Motor Vehicle Leases ({motorVehicleLeases.length})</h2>
+        <h2>Mobile Equipment Leases ({mobileEquipmentLeases.length})</h2>
         <div className="table-wrapper">
           <table className="lease-table">
             <thead>
@@ -441,7 +441,7 @@ const Dashboard: React.FC<DashboardProps> = ({
               </tr>
             </thead>
             <tbody>
-              {renderMotorVehicleTableRows()}
+              {renderMobileEquipmentTableRows()}
             </tbody>
           </table>
         </div>

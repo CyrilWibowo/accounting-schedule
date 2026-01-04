@@ -1,8 +1,8 @@
 import * as XLSX from 'xlsx';
-import { PropertyLease, MotorVehicleLease, Lease } from '../../../types/Lease';
+import { PropertyLease, MobileEquipmentLease, Lease } from '../../../types/Lease';
 import { ReportParams } from '../ReportModal';
 import { generatePaymentRows } from './leasePaymentsSheetGenerator';
-import { generateMotorVehiclePaymentRows } from './motorVehicleExcelGenerator';
+import { generateMobileEquipmentPaymentRows } from './mobileEquipmentExcelGenerator';
 import {
   calculatePresentValue,
   generateCashFlowsOfFutureLeasePayment,
@@ -40,12 +40,12 @@ const getLeaseBalanceSummary = (
   // Generate lease name
   const leaseName = isPropertyLease
     ? `${lease.lessor} ${(lease as PropertyLease).propertyAddress}`
-    : `${lease.lessor} ${(lease as MotorVehicleLease).regoNo}`;
+    : `${lease.lessor} ${(lease as MobileEquipmentLease).regoNo}`;
 
   // Get payment rows based on lease type
   const allPaymentRows = isPropertyLease
     ? generatePaymentRows(lease as PropertyLease)
-    : generateMotorVehiclePaymentRows(lease as MotorVehicleLease);
+    : generateMobileEquipmentPaymentRows(lease as MobileEquipmentLease);
 
   // Constants
   const ALLOCATION_TO_LEASE_COMPONENT = 1;
@@ -182,7 +182,7 @@ const ACCOUNT_CODES = [
 
 export const generateSummaryReport = (
   propertyLeases: PropertyLease[],
-  motorVehicleLeases: MotorVehicleLease[],
+  mobileEquipmentLeases: MobileEquipmentLease[],
   params: ReportParams
 ): void => {
   const workbook = XLSX.utils.book_new();
@@ -194,11 +194,11 @@ export const generateSummaryReport = (
   const includedPropertyLeases = params.includedLeases === 'Property' || params.includedLeases === 'All'
     ? propertyLeases
     : [];
-  const includedMotorLeases = params.includedLeases === 'Motor' || params.includedLeases === 'All'
-    ? motorVehicleLeases
+  const includedMobileEquipmentLeases = params.includedLeases === 'Motor' || params.includedLeases === 'All'
+    ? mobileEquipmentLeases
     : [];
 
-  const allLeases: Lease[] = [...includedPropertyLeases, ...includedMotorLeases];
+  const allLeases: Lease[] = [...includedPropertyLeases, ...includedMobileEquipmentLeases];
 
   // Get balance summaries for all leases
   const leaseBalanceSummaries = allLeases.map(lease =>
@@ -239,7 +239,7 @@ export const generateSummaryReport = (
 
     // Sum values from each lease
     leaseBalanceSummaries.forEach(summary => {
-      // Skip rent expense for motor vehicles or vehicle expense for property
+      // Skip rent expense for mobile equipment or vehicle expense for property
       if (account.code === '60270' && !summary.isPropertyLease) {
         return;
       }

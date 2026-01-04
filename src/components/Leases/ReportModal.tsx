@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-import { PropertyLease, MotorVehicleLease } from '../../types/Lease';
+import { PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import OpeningBalanceManager from './OpeningBalanceManager';
 import { generateSummaryReport } from './excel/generateSummaryReport';
 import { generateDetailReport } from './excel/generateDetailReport';
@@ -17,8 +17,8 @@ const normalizeDateString = (dateStr: string): string => {
 interface ReportModalProps {
   onClose: () => void;
   propertyLeases: PropertyLease[];
-  motorVehicleLeases: MotorVehicleLease[];
-  onUpdateLeases: (leases: (PropertyLease | MotorVehicleLease)[]) => void;
+  mobileEquipmentLeases: MobileEquipmentLease[];
+  onUpdateLeases: (leases: (PropertyLease | MobileEquipmentLease)[]) => void;
 }
 
 export interface ReportParams {
@@ -31,7 +31,7 @@ export interface ReportParams {
 const ReportModal: React.FC<ReportModalProps> = ({
   onClose,
   propertyLeases,
-  motorVehicleLeases,
+  mobileEquipmentLeases,
   onUpdateLeases
 }) => {
   const [params, setParams] = useState<ReportParams>({
@@ -42,14 +42,14 @@ const ReportModal: React.FC<ReportModalProps> = ({
   });
 
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
-  const [openingBalanceManagerType, setOpeningBalanceManagerType] = useState<'Property' | 'Motor Vehicle' | null>(null);
+  const [openingBalanceManagerType, setOpeningBalanceManagerType] = useState<'Property' | 'Mobile Equipment' | null>(null);
 
   // Check which leases are missing opening balances for the selected date
   const missingOpeningBalances = useMemo(() => {
     const normalizedDate = normalizeDateString(params.leaseLiabilityOpening);
     if (!normalizedDate) return { property: [], motor: [] };
 
-    const checkLeasesForMissingBalances = (leases: (PropertyLease | MotorVehicleLease)[]): string[] => {
+    const checkLeasesForMissingBalances = (leases: (PropertyLease | MobileEquipmentLease)[]): string[] => {
       return leases
         .filter(lease => {
           if (!lease.openingBalances || lease.openingBalances.length === 0) return true;
@@ -67,10 +67,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
         ? checkLeasesForMissingBalances(propertyLeases)
         : [],
       motor: (params.includedLeases === 'Motor' || params.includedLeases === 'All')
-        ? checkLeasesForMissingBalances(motorVehicleLeases)
+        ? checkLeasesForMissingBalances(mobileEquipmentLeases)
         : []
     };
-  }, [params.leaseLiabilityOpening, params.includedLeases, propertyLeases, motorVehicleLeases]);
+  }, [params.leaseLiabilityOpening, params.includedLeases, propertyLeases, mobileEquipmentLeases]);
 
   const hasMissingOpeningBalances = missingOpeningBalances.property.length > 0 || missingOpeningBalances.motor.length > 0;
 
@@ -105,9 +105,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
   const handleGenerate = () => {
     if (validateForm()) {
       if (params.reportType === 'Summary') {
-        generateSummaryReport(propertyLeases, motorVehicleLeases, params);
+        generateSummaryReport(propertyLeases, mobileEquipmentLeases, params);
       } else if (params.reportType === 'Detail') {
-        generateDetailReport(propertyLeases, motorVehicleLeases, params);
+        generateDetailReport(propertyLeases, mobileEquipmentLeases, params);
       }
       onClose();
     }
@@ -184,9 +184,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
           {(params.includedLeases === 'Motor' || params.includedLeases === 'All') && (
             <button
               className="report-ob-button"
-              onClick={() => setOpeningBalanceManagerType('Motor Vehicle')}
+              onClick={() => setOpeningBalanceManagerType('Mobile Equipment')}
             >
-              Manage Motor Vehicle Opening Balance
+              Manage Mobile Equipment Opening Balance
             </button>
           )}
         </div>
@@ -199,7 +199,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
                 <li>Property: {missingOpeningBalances.property.join(', ')}</li>
               )}
               {missingOpeningBalances.motor.length > 0 && (
-                <li>Motor Vehicle: {missingOpeningBalances.motor.join(', ')}</li>
+                <li>Mobile Equipment: {missingOpeningBalances.motor.join(', ')}</li>
               )}
             </ul>
           </div>
@@ -222,7 +222,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
         <OpeningBalanceManager
           type={openingBalanceManagerType}
           propertyLeases={propertyLeases}
-          motorVehicleLeases={motorVehicleLeases}
+          mobileEquipmentLeases={mobileEquipmentLeases}
           onClose={() => setOpeningBalanceManagerType(null)}
           onSave={onUpdateLeases}
           openingDate={params.leaseLiabilityOpening}

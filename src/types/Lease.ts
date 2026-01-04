@@ -37,8 +37,8 @@ export interface PropertyLease extends BaseLease {
   rbaCpiRate: string;
 }
 
-export interface MotorVehicleLease extends BaseLease {
-  type: 'Motor Vehicle';
+export interface MobileEquipmentLease extends BaseLease {
+  type: 'Mobile Equipment';
   description: string;
   vinSerialNo: string;
   regoNo: string;
@@ -49,4 +49,4 @@ export interface MotorVehicleLease extends BaseLease {
   annualRent: string;
 }
 
-export type Lease = PropertyLease | MotorVehicleLease;
+export type Lease = PropertyLease | MobileEquipmentLease;

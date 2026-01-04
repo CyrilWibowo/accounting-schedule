@@ -35,7 +35,7 @@ export const normalizeDate = (date: Date) => {
   return d;
 };
 
-export const generateLeaseId = (type: 'Property' | 'Motor Vehicle'): string => {
+export const generateLeaseId = (type: 'Property' | 'Mobile Equipment'): string => {
   const prefix = type === 'Property' ? 'P' : 'M';
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let id = '';
