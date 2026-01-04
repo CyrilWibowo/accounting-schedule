@@ -223,7 +223,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
             </div>
 
             <div className="form-group">
-              <label>Vehicle Type *</label>
+              <label>Type *</label>
               {errors.vehicleType && <span className="error-text">This field is required</span>}
               <select
                 className={errors.vehicleType ? 'error' : ''}

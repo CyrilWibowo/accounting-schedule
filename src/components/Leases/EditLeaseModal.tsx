@@ -382,7 +382,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Vehicle Type *</label>
+                  <label className="form-label">Type *</label>
                   {errors.vehicleType && <span className="error-text">This field is required</span>}
                   <select
                     className={errors.vehicleType ? 'form-input-error' : 'form-input'}

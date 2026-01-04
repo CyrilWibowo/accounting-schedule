@@ -417,7 +417,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   Branch{renderSortIndicator('branch', false)}
                 </th>
                 <th onClick={() => handleSort('vehicleType', false)} style={{ cursor: 'pointer' }} className={isSorted('vehicleType', false) ? 'sorted' : ''}>
-                  Vehicle Type{renderSortIndicator('vehicleType', false)}
+                  Type{renderSortIndicator('vehicleType', false)}
                 </th>
                 <th onClick={() => handleSort('engineNumber', false)} style={{ cursor: 'pointer' }} className={isSorted('engineNumber', false) ? 'sorted' : ''}>
                   Engine Number{renderSortIndicator('engineNumber', false)}
