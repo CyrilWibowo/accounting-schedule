@@ -62,6 +62,7 @@
   "build": {
     "appId": "com.rimex.accounting-schedule",
     "productName": "Accounting Schedule",
+    "extends": null,
     "directories": {
       "output": "dist"
     },
@@ -69,9 +70,13 @@
       "build/**/*",
       "electron/**/*"
     ],
+    "extraMetadata": {
+      "main": "electron/main.js"
+    },
     "win": {
       "target": "nsis",
-      "icon": "public/logo.png"
+      "icon": "public/logo.png",
+      "signAndEditExecutable": false
     }
   }
 }

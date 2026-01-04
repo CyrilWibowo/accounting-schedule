@@ -10,7 +10,9 @@ import {
   generateLeaseLiability,
   generateJournalTable,
   generateBalanceSummaryTable,
-  BalanceSummaryParams
+  calculateLeasePaymentsDue,
+  BalanceSummaryParams,
+  LeasePaymentsDueRow
 } from './pvCalculationHelpers';
 
 // Normalize date string to YYYY-MM-DD format for comparison
@@ -25,6 +27,7 @@ interface LeaseBalanceSummary {
   leaseName: string;
   isPropertyLease: boolean;
   balanceRows: (string | number)[][];
+  leasePaymentsDueRows: LeasePaymentsDueRow[];
 }
 
 const getLeaseBalanceSummary = (
@@ -150,10 +153,18 @@ const getLeaseBalanceSummary = (
 
   const balanceRows = generateBalanceSummaryTable(balanceSummaryParams, isPropertyLease);
 
+  // Generate lease payments due table
+  const leasePaymentsDueRows = calculateLeasePaymentsDue(
+    leaseLiabilityRows,
+    allPaymentRows,
+    closingDate
+  );
+
   return {
     leaseName,
     isPropertyLease,
-    balanceRows
+    balanceRows,
+    leasePaymentsDueRows
   };
 };
 
@@ -199,10 +210,7 @@ export const generateSummaryReport = (
   const thisYear = closingDate.getFullYear();
   const closingDateStr = formatDateForHeader(closingDate);
 
-  // Build the data array
-  const data: any[][] = [];
-
-  // Store totals for each account code for the summary section
+  // Store totals for each account code
   const accountTotals: { [code: string]: { opening: number; rateChanged: number; adjOpening: number; movement: number; closing: number } } = {};
 
   // Determine which row index to use from balance summary based on account code
@@ -218,26 +226,8 @@ export const generateSummaryReport = (
     '60390': 7
   };
 
-  // Process each account code as a separate table section
-  ACCOUNT_CODES.forEach((account, accountIndex) => {
-    // Add spacing between tables (except for first table)
-    if (accountIndex > 0) {
-      data.push([]);
-    }
-
-    // Add code and name header
-    data.push([account.code, account.name]);
-
-    // Add column headers
-    data.push([
-      '',
-      `Audited Opening Balance 31/12/${lastYear}`,
-      'Rent/Interest Rate Changed',
-      `Adj. Opening Balance 31/12/${lastYear}`,
-      `Movement FY ${thisYear}`,
-      `Closing Balance ${closingDateStr}`
-    ]);
-
+  // Calculate totals for each account code
+  ACCOUNT_CODES.forEach((account) => {
     const balanceRowIndex = rowIndexMap[account.code];
 
     // Initialize totals
@@ -247,17 +237,13 @@ export const generateSummaryReport = (
     let totalMovement = 0;
     let totalClosing = 0;
 
-    // Add data rows for each lease
+    // Sum values from each lease
     leaseBalanceSummaries.forEach(summary => {
       // Skip rent expense for motor vehicles or vehicle expense for property
       if (account.code === '60270' && !summary.isPropertyLease) {
-        // Add empty row for rent expense when it's a motor vehicle lease
-        data.push([summary.leaseName, 0, 0, 0, 0, 0]);
         return;
       }
       if (account.code === '60390' && summary.isPropertyLease) {
-        // Add empty row for vehicle expense when it's a property lease
-        data.push([summary.leaseName, 0, 0, 0, 0, 0]);
         return;
       }
 
@@ -268,15 +254,6 @@ export const generateSummaryReport = (
         const adjOpening = typeof balanceRow[4] === 'number' ? balanceRow[4] : 0;
         const movement = typeof balanceRow[5] === 'number' ? balanceRow[5] : 0;
         const closing = typeof balanceRow[6] === 'number' ? balanceRow[6] : 0;
-
-        data.push([
-          summary.leaseName,
-          opening,
-          rateChanged,
-          adjOpening,
-          movement,
-          closing
-        ]);
 
         totalOpening += opening;
         totalRateChanged += rateChanged;
@@ -294,57 +271,82 @@ export const generateSummaryReport = (
       movement: totalMovement,
       closing: totalClosing
     };
+  });
 
-    // Add totals row
+  // Build the data array with only the final totals journal
+  const data: any[][] = [];
+
+  // Add header row
+  data.push([
+    '',
+    '',
+    `Audited Opening Balance 31/12/${lastYear}`,
+    'Rent/Interest Rate Changed',
+    `Adj. Opening Balance 31/12/${lastYear}`,
+    `Movement FY ${thisYear}`,
+    `Closing Balance ${closingDateStr}`
+  ]);
+
+  // Add data rows for each account code
+  ACCOUNT_CODES.forEach((account) => {
+    const totals = accountTotals[account.code];
     data.push([
-      'Total',
-      totalOpening,
-      totalRateChanged,
-      totalAdjOpening,
-      totalMovement,
-      totalClosing
+      account.code,
+      account.name,
+      totals.opening,
+      totals.rateChanged,
+      totals.adjOpening,
+      totals.movement,
+      totals.closing
+    ]);
+  });
+
+  // Calculate sum totals for Lease Payments Due across all leases
+  const leasePaymentsDueTotals: { period: string; leasePayments: number; interest: number; npv: number }[] = [];
+
+  // Initialize totals for each period (including Total row)
+  const periodNames = ['< 1 Year', '1-2 Years', '2-3 Years', '3-4 Years', '4-5 Years', '> 5 Years', 'Total'];
+  periodNames.forEach(period => {
+    leasePaymentsDueTotals.push({ period, leasePayments: 0, interest: 0, npv: 0 });
+  });
+
+  // Sum up lease payments due from all leases
+  leaseBalanceSummaries.forEach(summary => {
+    summary.leasePaymentsDueRows.forEach((row, index) => {
+      if (index < leasePaymentsDueTotals.length) {
+        leasePaymentsDueTotals[index].leasePayments += row.leasePayments;
+        leasePaymentsDueTotals[index].interest += row.interest;
+        leasePaymentsDueTotals[index].npv += row.npv;
+      }
+    });
+  });
+
+  // Add empty rows before Lease Payments Due section
+  data.push([]);
+  data.push([]);
+
+  // Add Lease Payments Due header
+  data.push(['', 'Lease Payments Due (All Leases)', '', 'Lease Payments', 'Interest', 'NPV']);
+
+  // Add Lease Payments Due rows
+  leasePaymentsDueTotals.forEach(row => {
+    data.push([
+      '',
+      row.period,
+      '',
+      row.leasePayments,
+      row.interest,
+      row.npv
     ]);
   });
 
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
 
-  // Add summary section on the right (starting at column H, index 7 due to new column)
-  const summaryStartCol = 7;
-
-  // Add summary header row
-  const summaryHeaderRow = 0;
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol })] = { t: 's', v: '' };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 1 })] = { t: 's', v: '' };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 2 })] = { t: 's', v: `Audited Opening Balance 31/12/${lastYear}` };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 3 })] = { t: 's', v: 'Rent/Interest Rate Changed' };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 4 })] = { t: 's', v: `Adj. Opening Balance 31/12/${lastYear}` };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 5 })] = { t: 's', v: `Movement FY ${thisYear}` };
-  worksheet[XLSX.utils.encode_cell({ r: summaryHeaderRow, c: summaryStartCol + 6 })] = { t: 's', v: `Closing Balance ${closingDateStr}` };
-
-  // Add summary data rows for each account code
-  ACCOUNT_CODES.forEach((account, index) => {
-    const row = index + 1; // Start from row 1 (after header)
-    const totals = accountTotals[account.code];
-
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol })] = { t: 's', v: account.code };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 1 })] = { t: 's', v: account.name };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 2 })] = { t: 'n', v: totals.opening, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 3 })] = { t: 'n', v: totals.rateChanged, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 4 })] = { t: 'n', v: totals.adjOpening, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 5 })] = { t: 'n', v: totals.movement, z: '#,##0.00' };
-    worksheet[XLSX.utils.encode_cell({ r: row, c: summaryStartCol + 6 })] = { t: 'n', v: totals.closing, z: '#,##0.00' };
-  });
-
-  // Update the range to include the summary section
-  const currentRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-  currentRange.e.c = Math.max(currentRange.e.c, summaryStartCol + 6);
-  worksheet['!ref'] = XLSX.utils.encode_range(currentRange);
-
-  // Apply number format to all numeric cells in the main table (columns B, C, D, E, F)
+  // Apply number format to all numeric cells
   const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
   for (let row = range.s.r; row <= range.e.r; row++) {
-    for (let col = 1; col <= 5; col++) { // Columns B, C, D, E, F (1, 2, 3, 4, 5)
+    for (let col = 2; col <= 6; col++) {
       const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
       const cell = worksheet[cellAddress];
       if (cell && typeof cell.v === 'number') {
@@ -355,20 +357,13 @@ export const generateSummaryReport = (
 
   // Set column widths
   worksheet['!cols'] = [
-    { wch: 16 }, // Lease name column A
-    { wch: 25 }, // Opening Balance column B
-    { wch: 25 }, // Rent/Interest Rate Changed column C
-    { wch: 25 }, // Adj. Opening Balance column D
-    { wch: 20 }, // Movement column E
-    { wch: 25 }, // Closing Balance column F
-    { wch: 3 },  // Gap column G
-    { wch: 8 },  // Summary Code column H
-    { wch: 30 }, // Summary Name column I
-    { wch: 25 }, // Summary Opening Balance column J
-    { wch: 25 }, // Summary Rent/Interest Rate Changed column K
-    { wch: 25 }, // Summary Adj. Opening Balance column L
-    { wch: 20 }, // Summary Movement column M
-    { wch: 25 }  // Summary Closing Balance column N
+    { wch: 8 },  // Code column A
+    { wch: 35 }, // Name column B
+    { wch: 25 }, // Opening Balance column C
+    { wch: 25 }, // Rent/Interest Rate Changed column D
+    { wch: 25 }, // Adj. Opening Balance column E
+    { wch: 20 }, // Movement column F
+    { wch: 25 }  // Closing Balance column G
   ];
 
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Summary Report');
