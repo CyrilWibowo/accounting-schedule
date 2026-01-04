@@ -127,7 +127,8 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
     openingBalanceInterestExpenseRent,
     params.isExtension,
     lease.branch,
-    isPropertyLease
+    isPropertyLease,
+    undefined // vehicleType - not applicable for property leases
   );
 
   // Build the data array with header
@@ -272,7 +273,8 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
     allPaymentRows,
     leaseLiabilityRows,
     rightOfUseAssetRows,
-    branch: lease.branch
+    branch: lease.branch,
+    vehicleType: undefined
     },
     isPropertyLease
   );

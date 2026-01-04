@@ -36,6 +36,7 @@ const getLeaseBalanceSummary = (
   closingDate: Date
 ): LeaseBalanceSummary => {
   const isPropertyLease = lease.type === 'Property';
+  const vehicleType = isPropertyLease ? undefined : (lease as MobileEquipmentLease).vehicleType;
 
   // Generate lease title
   // Property: "{Lessor} {Property Address}"
@@ -135,7 +136,8 @@ const getLeaseBalanceSummary = (
     openingBalances.interestExpenseRent,
     isExtension,
     lease.branch,
-    isPropertyLease
+    isPropertyLease,
+    vehicleType
   );
 
   // Generate balance summary table
@@ -150,7 +152,8 @@ const getLeaseBalanceSummary = (
     allPaymentRows,
     leaseLiabilityRows,
     rightOfUseAssetRows,
-    branch: lease.branch
+    branch: lease.branch,
+    vehicleType
   };
 
   const balanceRows = generateBalanceSummaryTable(balanceSummaryParams, isPropertyLease);

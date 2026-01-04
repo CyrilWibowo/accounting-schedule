@@ -53,6 +53,36 @@ export interface BalanceSummaryRow {
   closingBalance: number;
 }
 
+export interface ExpenseTypeInfo {
+  code: string;
+  name: string;
+}
+
+/**
+ * Determines the expense account code and name based on lease type and vehicle type.
+ * - Property → 60270 Rent Expense
+ * - Mobile Equipment Ute/Wagon → 60390 Vehicle Expense
+ * - Mobile Equipment Forklift → 60150 Forklift Expense
+ * - Mobile Equipment Other → 60140 Equipment Rent
+ */
+export const getExpenseTypeInfo = (isPropertyLease: boolean, vehicleType?: string): ExpenseTypeInfo => {
+  if (isPropertyLease) {
+    return { code: '60270', name: 'Rent Expense' };
+  }
+
+  // Mobile Equipment
+  switch (vehicleType) {
+    case 'Ute':
+    case 'Wagon':
+      return { code: '60390', name: 'Vehicle Expense' };
+    case 'Forklift':
+      return { code: '60150', name: 'Forklift Expense' };
+    case 'Other':
+    default:
+      return { code: '60140', name: 'Equipment Rent' };
+  }
+};
+
 export const calculatePresentValue = (
   cashFlows: number[],
   monthlyRate: number,
@@ -334,7 +364,8 @@ export const generateJournalTable = (
   openingBalanceInterestExpenseRent: number,
   isExtension: boolean,
   branch: string,
-  isPropertyLease: boolean
+  isPropertyLease: boolean,
+  vehicleType?: string
 ): JournalRow[] => {
   const rows: JournalRow[] = [];
 
@@ -479,7 +510,8 @@ export const generateJournalTable = (
   rows.push({ col1: '60080', col2: `Depreciation Expense ${branch}`, col3: row11Value }); // Row 11
   rows.push({ col1: '60275', col2: `Interest Expense Rent ${branch}`, col3: interestExpenseTotal }); // Row 12
   rows.push({ col1: '16405', col2: 'Acc.Depr Right to Use Assets', col3: row13Value }); // Row 13
-  rows.push({ col1: isPropertyLease ? '60270' : '60390', col2: isPropertyLease ? `Rent Expense ${branch}` : `Vehicle Expense ${branch}`, col3: row14Value }); // Row 14
+  const expenseInfo = getExpenseTypeInfo(isPropertyLease, vehicleType);
+  rows.push({ col1: expenseInfo.code, col2: `${expenseInfo.name} ${branch}`, col3: row14Value }); // Row 14
   rows.push({ col1: '', col2: `(Journal at ${formatDateToDateShort(closingDate)})`, col3: '' }); // Row 15
 
   return rows;
@@ -506,6 +538,7 @@ export interface BalanceSummaryParams {
   leaseLiabilityRows: LeaseLiabilityRow[];
   rightOfUseAssetRows: RightOfUseAssetRow[];
   branch: string;
+  vehicleType?: string;
 }
 
 /**
@@ -534,7 +567,8 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     allPaymentRows,
     leaseLiabilityRows,
     rightOfUseAssetRows,
-    branch
+    branch,
+    vehicleType
   } = params;
 
   const normalizedClosing = normalizeDate(closingDate);
@@ -749,12 +783,13 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
     journalRow12Value
   );
 
-  // Row 7: 60270 Rent Expense
+  // Row 7: Expense (60270 Rent Expense, 60390 Vehicle Expense, 60150 Forklift Expense, or 60140 Equipment Rent)
   // Movement = -(sum of opening balances column)
   const adjOpeningRow7 = openingBalances.rentExpense + rateChangedRow7;
+  const expenseInfo = getExpenseTypeInfo(isPropertyLease, vehicleType);
   rows.push([
-    isPropertyLease ? '60270' : '60390',
-    isPropertyLease ? `Rent Expense ${branch}` : `Vehicle Expense ${branch}`,
+    expenseInfo.code,
+    `${expenseInfo.name} ${branch}`,
     openingBalances.rentExpense,
     rateChangedRow7,
     adjOpeningRow7,

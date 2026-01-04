@@ -12,7 +12,8 @@ import {
   generateBalanceSummaryTable,
   calculateLeasePaymentsDue,
   BalanceSummaryParams,
-  LeasePaymentsDueRow
+  LeasePaymentsDueRow,
+  getExpenseTypeInfo
 } from './pvCalculationHelpers';
 
 // Normalize date string to YYYY-MM-DD format for comparison
@@ -26,6 +27,7 @@ const normalizeDateString = (dateStr: string): string => {
 interface LeaseBalanceSummary {
   leaseName: string;
   isPropertyLease: boolean;
+  expenseCode: string;
   balanceRows: (string | number)[][];
   leasePaymentsDueRows: LeasePaymentsDueRow[];
 }
@@ -36,6 +38,8 @@ const getLeaseBalanceSummary = (
   closingDate: Date
 ): LeaseBalanceSummary => {
   const isPropertyLease = lease.type === 'Property';
+  const vehicleType = isPropertyLease ? undefined : (lease as MobileEquipmentLease).vehicleType;
+  const expenseInfo = getExpenseTypeInfo(isPropertyLease, vehicleType);
 
   // Generate lease name
   const leaseName = isPropertyLease
@@ -133,7 +137,8 @@ const getLeaseBalanceSummary = (
     openingBalances.interestExpenseRent,
     isExtension,
     lease.branch,
-    isPropertyLease
+    isPropertyLease,
+    vehicleType
   );
 
   // Generate balance summary table
@@ -148,7 +153,8 @@ const getLeaseBalanceSummary = (
     allPaymentRows,
     leaseLiabilityRows,
     rightOfUseAssetRows,
-    branch: lease.branch
+    branch: lease.branch,
+    vehicleType
   };
 
   const balanceRows = generateBalanceSummaryTable(balanceSummaryParams, isPropertyLease);
@@ -163,6 +169,7 @@ const getLeaseBalanceSummary = (
   return {
     leaseName,
     isPropertyLease,
+    expenseCode: expenseInfo.code,
     balanceRows,
     leasePaymentsDueRows
   };
@@ -177,8 +184,13 @@ const ACCOUNT_CODES = [
   { code: '60080', name: 'Depreciation Expense' },
   { code: '60275', name: 'Interest Expense Rent' },
   { code: '60270', name: 'Rent Expense' },
-  { code: '60390', name: 'Vehicle Expense' }
+  { code: '60390', name: 'Vehicle Expense' },
+  { code: '60150', name: 'Forklift Expense' },
+  { code: '60140', name: 'Equipment Rent' }
 ];
+
+// Expense account codes (for special handling in aggregation)
+const EXPENSE_ACCOUNT_CODES = ['60270', '60390', '60150', '60140'];
 
 export const generateSummaryReport = (
   propertyLeases: PropertyLease[],
@@ -214,7 +226,7 @@ export const generateSummaryReport = (
   const accountTotals: { [code: string]: { opening: number; rateChanged: number; adjOpening: number; movement: number; closing: number } } = {};
 
   // Determine which row index to use from balance summary based on account code
-  // Balance summary rows: [0]=header, [1]=16400, [2]=16405, [3]=22005, [4]=22010, [5]=60080, [6]=60275, [7]=60270/60390
+  // Balance summary rows: [0]=header, [1]=16400, [2]=16405, [3]=22005, [4]=22010, [5]=60080, [6]=60275, [7]=expense
   const rowIndexMap: { [key: string]: number } = {
     '16400': 1,
     '16405': 2,
@@ -223,7 +235,9 @@ export const generateSummaryReport = (
     '60080': 5,
     '60275': 6,
     '60270': 7,
-    '60390': 7
+    '60390': 7,
+    '60150': 7,
+    '60140': 7
   };
 
   // Calculate totals for each account code
@@ -239,12 +253,12 @@ export const generateSummaryReport = (
 
     // Sum values from each lease
     leaseBalanceSummaries.forEach(summary => {
-      // Skip rent expense for mobile equipment or vehicle expense for property
-      if (account.code === '60270' && !summary.isPropertyLease) {
-        return;
-      }
-      if (account.code === '60390' && summary.isPropertyLease) {
-        return;
+      // For expense accounts (60270, 60390, 60150, 60140), only include leases
+      // whose expense code matches this account code
+      if (EXPENSE_ACCOUNT_CODES.includes(account.code)) {
+        if (summary.expenseCode !== account.code) {
+          return;
+        }
       }
 
       const balanceRow = summary.balanceRows[balanceRowIndex];
