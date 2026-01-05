@@ -37,6 +37,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     key: string | null;
     direction: 'asc' | 'desc';
   }>({ key: null, direction: 'asc' });
+  const [propertyFilter, setPropertyFilter] = useState<'All' | 'Active' | 'Non-Active'>('All');
+  const [mobileEquipmentFilter, setMobileEquipmentFilter] = useState<'All' | 'Active' | 'Non-Active'>('All');
 
   const calculateCommittedYears = (lease: Lease): number => {
     if (lease.type === 'Property') {
@@ -59,6 +61,22 @@ const Dashboard: React.FC<DashboardProps> = ({
       }
     }
     return 0;
+  };
+
+  const isLeaseActive = (lease: PropertyLease | MobileEquipmentLease): boolean => {
+    const currentYear = new Date().getFullYear();
+    const expiryDate = new Date(lease.expiryDate);
+    const expiryYear = expiryDate.getFullYear();
+    return expiryYear >= currentYear;
+  };
+
+  const filterLeases = <T extends PropertyLease | MobileEquipmentLease>(
+    leases: T[],
+    filter: 'All' | 'Active' | 'Non-Active'
+  ): T[] => {
+    if (filter === 'All') return leases;
+    if (filter === 'Active') return leases.filter(lease => isLeaseActive(lease));
+    return leases.filter(lease => !isLeaseActive(lease));
   };
 
   const handleGenerateExcel = (lease: PropertyLease | MobileEquipmentLease, params: XLSXGenerationParams) => {
@@ -123,7 +141,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const renderPropertyTableRows = () => {
     const rows = [];
-    const sortedLeases = sortData(propertyLeases, propertySortConfig);
+    const filteredLeases = filterLeases(propertyLeases, propertyFilter);
+    const sortedLeases = sortData(filteredLeases, propertySortConfig);
 
     const handleMouseEnter = (lease: PropertyLease, event: React.MouseEvent<HTMLTableCellElement>) => {
       const rect = event.currentTarget.getBoundingClientRect();
@@ -198,7 +217,8 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const renderMobileEquipmentTableRows = () => {
     const rows = [];
-    const sortedLeases = sortData(mobileEquipmentLeases, mobileEquipmentSortConfig);
+    const filteredLeases = filterLeases(mobileEquipmentLeases, mobileEquipmentFilter);
+    const sortedLeases = sortData(filteredLeases, mobileEquipmentSortConfig);
 
     for (let i = 0; i < Math.max(emptyRows, sortedLeases.length); i++) {
       const lease = sortedLeases[i];
@@ -347,7 +367,18 @@ const Dashboard: React.FC<DashboardProps> = ({
         renderIncrementMethodsTooltip(mobileEquipmentLeases.find(l => l.id === hoveredLease)!)}
 
       <div className="table-section">
-        <h2>Property Leases ({propertyLeases.length})</h2>
+        <div className="table-header">
+          <h2>Property Leases ({filterLeases(propertyLeases, propertyFilter).length})</h2>
+          <select
+            className="lease-filter-dropdown"
+            value={propertyFilter}
+            onChange={(e) => setPropertyFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}
+          >
+            <option value="All">All</option>
+            <option value="Active">Active</option>
+            <option value="Non-Active">Non-Active</option>
+          </select>
+        </div>
         <div className="table-wrapper">
           <table className="lease-table">
             <thead>
@@ -393,7 +424,18 @@ const Dashboard: React.FC<DashboardProps> = ({
       </div>
 
       <div className="table-section">
-        <h2>Mobile Equipment Leases ({mobileEquipmentLeases.length})</h2>
+        <div className="table-header">
+          <h2>Mobile Equipment Leases ({filterLeases(mobileEquipmentLeases, mobileEquipmentFilter).length})</h2>
+          <select
+            className="lease-filter-dropdown"
+            value={mobileEquipmentFilter}
+            onChange={(e) => setMobileEquipmentFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}
+          >
+            <option value="All">All</option>
+            <option value="Active">Active</option>
+            <option value="Non-Active">Non-Active</option>
+          </select>
+        </div>
         <div className="table-wrapper">
           <table className="lease-table">
             <thead>
