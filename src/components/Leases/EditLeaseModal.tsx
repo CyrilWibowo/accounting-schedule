@@ -1,10 +1,7 @@
 // components/EditLeaseModal.tsx
 import React, { useState, useEffect } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { Lease, PropertyLease, MobileEquipmentLease, OpeningBalance, Branch } from '../../types/Lease';
-import { generateLeaseId } from '../../utils/helper';
 import OpeningBalanceModal from './OpeningBalanceModal';
 import './EditLeaseModal.css';
 
@@ -14,16 +11,12 @@ interface EditLeaseModalProps {
   lease: Lease;
   onClose: () => void;
   onSave: (lease: Lease) => void;
-  onDelete: (leaseId: string) => void;
-  onCopy: (lease: Lease) => void;
 }
 
-const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave, onDelete, onCopy }) => {
+const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave }) => {
   const [editedLease, setEditedLease] = useState<Lease>(lease);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [committedYears, setCommittedYears] = useState(0);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showCopyConfirm, setShowCopyConfirm] = useState(false);
   const [showOpeningBalance, setShowOpeningBalance] = useState(false);
 
   // Local state for monthly rent to allow typing without immediate formatting
@@ -208,31 +201,6 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
       onSave(editedLease);
       onClose();
     }
-  };
-
-  const handleDelete = () => {
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = () => {
-    onDelete(lease.id);
-    setShowDeleteConfirm(false);
-    onClose();
-  };
-
-  const handleCopy = () => {
-    setShowCopyConfirm(true);
-  };
-
-  const confirmCopy = () => {
-    const copiedLease: Lease = {
-      ...editedLease,
-      id: crypto.randomUUID(),
-      leaseId: generateLeaseId(editedLease.type),
-    };
-    onCopy(copiedLease);
-    setShowCopyConfirm(false);
-    onClose();
   };
 
   const handleAddOpeningBalance = (openingBalance: OpeningBalance) => {
@@ -422,7 +390,7 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Rego No. *</label>
+                  <label className="form-label">Rego/Equipment No. *</label>
                   {errors.regoNo && <span className="error-text">This field is required</span>}
                   <input
                     type="text"
@@ -581,12 +549,6 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
               <button className="opening-balance-button" onClick={() => setShowOpeningBalance(true)}>
                 Manage Opening Balance
               </button>
-              <button className="copy-button" onClick={handleCopy}>
-                <ContentCopyIcon /> Copy
-              </button>
-              <button className="delete-button" onClick={handleDelete}>
-                <DeleteIcon /> Delete
-              </button>
             </div>
             <div className="button-group">
               <button className="cancel-button" onClick={onClose}>Cancel</button>
@@ -595,44 +557,6 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave,
           </div>
         </div>
       </div>
-
-      {showDeleteConfirm && (
-        <div className="confirm-overlay" onMouseDown={() => setShowDeleteConfirm(false)}>
-          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
-            <h3 className="confirm-title">Delete Lease?</h3>
-            <p className="confirm-text">
-              Are you sure you want to delete this lease? This action cannot be undone.
-            </p>
-            <div className="confirm-actions">
-              <button className="confirm-cancel-button" onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
-              </button>
-              <button className="confirm-delete-button" onClick={confirmDelete}>
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showCopyConfirm && (
-        <div className="confirm-overlay" onMouseDown={() => setShowCopyConfirm(false)}>
-          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
-            <h3 className="confirm-title">Copy Lease?</h3>
-            <p className="confirm-text">
-              This will create a duplicate of this lease with all the same details. Continue?
-            </p>
-            <div className="confirm-actions">
-              <button className="confirm-cancel-button" onClick={() => setShowCopyConfirm(false)}>
-                Cancel
-              </button>
-              <button className="confirm-copy-button" onClick={confirmCopy}>
-                Copy
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showOpeningBalance && (
         <OpeningBalanceModal

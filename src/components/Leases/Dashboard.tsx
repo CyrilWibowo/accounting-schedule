@@ -683,7 +683,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                   Lessor{renderSortIndicator('lessor', false)}
                 </th>
                 <th onClick={() => handleSort('regoNo', false)} style={{ cursor: 'pointer' }} className={isSorted('regoNo', false) ? 'sorted' : ''}>
-                  Rego No.{renderSortIndicator('regoNo', false)}
+                  Rego/Equipment No.{renderSortIndicator('regoNo', false)}
                 </th>
                 <th onClick={() => handleSort('description', false)} style={{ cursor: 'pointer' }} className={isSorted('description', false) ? 'sorted' : ''}>
                   Description{renderSortIndicator('description', false)}
@@ -727,8 +727,6 @@ const Dashboard: React.FC<DashboardProps> = ({
           lease={editingLease}
           onClose={() => setEditingLease(null)}
           onSave={onUpdateLease}
-          onDelete={onDeleteLease}
-          onCopy={onCopyLease}
         />
       )}
 

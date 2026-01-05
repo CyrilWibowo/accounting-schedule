@@ -17,7 +17,10 @@ import {
 } from './pvCalculationHelpers';
 import { formatPVWorksheet } from './pvWorksheetFormatter';
 
-export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerationParams, isPropertyLease: boolean): XLSX.WorkSheet => {
+export const generatePVCalculation = (lease: PropertyLease | any, params: XLSXGenerationParams, isPropertyLease: boolean): XLSX.WorkSheet => {
+  // Extract vehicleType for mobile equipment leases
+  const vehicleType = !isPropertyLease && 'vehicleType' in lease ? lease.vehicleType : undefined;
+
   // Get all payment rows from the lease payments logic
   const allPaymentRows = generatePaymentRows(lease);
 
@@ -128,7 +131,7 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
     params.isExtension,
     lease.branch,
     isPropertyLease,
-    undefined // vehicleType - not applicable for property leases
+    vehicleType
   );
 
   // Build the data array with header
@@ -274,7 +277,7 @@ export const generatePVCalculation = (lease: PropertyLease, params: XLSXGenerati
     leaseLiabilityRows,
     rightOfUseAssetRows,
     branch: lease.branch,
-    vehicleType: undefined
+    vehicleType: vehicleType
     },
     isPropertyLease
   );

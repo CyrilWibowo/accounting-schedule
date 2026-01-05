@@ -70,14 +70,17 @@ export const getExpenseTypeInfo = (isPropertyLease: boolean, vehicleType?: strin
     return { code: '60270', name: 'Rent Expense' };
   }
 
-  // Mobile Equipment
-  switch (vehicleType) {
-    case 'Ute':
-    case 'Wagon':
+  // Mobile Equipment - normalize vehicle type (trim whitespace, convert to lowercase for comparison)
+  const normalizedVehicleType = vehicleType?.trim().toLowerCase();
+
+  switch (normalizedVehicleType) {
+    case 'ute':
+    case 'wagon':
       return { code: '60390', name: 'Vehicle Expense' };
-    case 'Forklift':
+    case 'forklift':
+    case 'forklifts':
       return { code: '60150', name: 'Forklift Expense' };
-    case 'Other':
+    case 'other':
     default:
       return { code: '60140', name: 'Equipment Rent' };
   }

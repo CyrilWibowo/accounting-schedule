@@ -199,7 +199,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
             </div>
 
             <div className="form-group">
-              <label>Rego No. *</label>
+              <label>Rego/Equipment No. *</label>
               {errors.regoNo && <span className="error-text">This field is required</span>}
               <input
                 type="text"
