@@ -7,6 +7,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Lease, PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import { generateExcelFromLeases } from './excel/excelGenerator';
 import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentExcelGenerator';
+import { exportPropertyLeasesToExcel, exportMobileEquipmentLeasesToExcel } from './excel/tableExporter';
 import EditLeaseModal from './EditLeaseModal';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import './Dashboard.css';
@@ -491,15 +492,18 @@ const Dashboard: React.FC<DashboardProps> = ({
   const handleBatchExport = (isPropertyTable: boolean) => {
     const selectedSet = isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
 
-    const leasesToExport = isPropertyTable
-      ? propertyLeases.filter(l => selectedSet.has(l.id))
-      : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+    if (selectedSet.size === 0) return;
 
-    if (leasesToExport.length === 0) return;
-
-    // For now, open XLSX modal for first lease
-    // Future enhancement: batch export multiple leases
-    setXlsxModalLease(leasesToExport[0]);
+    // Export selected leases to Excel as a table
+    if (isPropertyTable) {
+      const leasesToExport = propertyLeases.filter(l => selectedSet.has(l.id));
+      const timestamp = new Date().toISOString().split('T')[0];
+      exportPropertyLeasesToExcel(leasesToExport, `PropertyLeases_${timestamp}.xlsx`);
+    } else {
+      const leasesToExport = mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+      const timestamp = new Date().toISOString().split('T')[0];
+      exportMobileEquipmentLeasesToExcel(leasesToExport, `MobileEquipmentLeases_${timestamp}.xlsx`);
+    }
   };
 
   // Update indeterminate checkbox state
