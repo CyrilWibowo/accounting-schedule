@@ -10,7 +10,7 @@ import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentE
 import EditLeaseModal from './EditLeaseModal';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import './Dashboard.css';
-import { formatCurrency, formatDate, getYearDiff } from '../../utils/helper';
+import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
 
 interface DashboardProps {
   propertyLeases: PropertyLease[];
@@ -174,7 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const committedYears = lease ? calculateCommittedYears(lease) : 0;
 
       rows.push(
-        <tr key={i}>
+        <tr key={lease?.id || `empty-${i}`}>
           <td onClick={(e) => e.stopPropagation()}>
             {lease && (
               <input
@@ -251,7 +251,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       const lease = sortedLeases[i];
       const leasePeriod = lease ? calculateCommittedYears(lease) : 0;
       rows.push(
-        <tr key={i}>
+        <tr key={lease?.id || `empty-${i}`}>
           <td onClick={(e) => e.stopPropagation()}>
             {lease && (
               <input
@@ -438,7 +438,13 @@ const Dashboard: React.FC<DashboardProps> = ({
       : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
 
     for (const lease of leasesToCopy) {
-      await onCopyLease(lease);
+      // Create a new lease with new UUID and leaseId (like EditLeaseModal does)
+      const copiedLease: Lease = {
+        ...lease,
+        id: crypto.randomUUID(),
+        leaseId: generateLeaseId(lease.type),
+      };
+      await onCopyLease(copiedLease);
     }
 
     // Clear selection after copy
@@ -457,18 +463,18 @@ const Dashboard: React.FC<DashboardProps> = ({
     setShowBatchDeleteConfirm(true);
   };
 
-  const handleConfirmBatchDelete = () => {
+  const handleConfirmBatchDelete = async () => {
     if (!batchDeleteContext) return;
 
     const selectedSet = batchDeleteContext.isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
     const setState = batchDeleteContext.isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
 
-    const leasesToDelete = batchDeleteContext.isPropertyTable
-      ? propertyLeases.filter(l => selectedSet.has(l.id))
-      : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+    // Capture all IDs to delete before any deletions (to avoid issues with changing props)
+    const leaseIdsToDelete = Array.from(selectedSet);
 
-    for (const lease of leasesToDelete) {
-      onDeleteLease(lease.id);
+    // Delete all leases sequentially (await each one)
+    for (const leaseId of leaseIdsToDelete) {
+      await onDeleteLease(leaseId);
     }
 
     // Clear selection and close dialog
