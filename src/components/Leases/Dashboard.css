@@ -9,38 +9,13 @@
 }
 
 .table-header {
-  display: flex;
-  justify-content: flex-start;
-  align-items: baseline;
-  gap: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .table-section h2 {
   color: #333;
   margin-bottom: 0;
   font-size: 24px;
-}
-
-.lease-filter-dropdown {
-  padding: 8px 16px;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  background-color: white;
-  color: #495057;
-  font-size: 14px;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.lease-filter-dropdown:hover {
-  border-color: #adb5bd;
-}
-
-.lease-filter-dropdown:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
 .table-wrapper {
@@ -197,4 +172,117 @@
 
 .edit-btn:hover {
   background-color: #414141;
+}
+
+/* Checkbox Styles */
+.lease-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #007bff;
+}
+
+.lease-table td:has(.lease-checkbox) {
+  text-align: center;
+  padding: 8px;
+}
+
+/* Selection Bar - Minimal Design */
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  min-height: 40px;
+}
+
+.filter-dropdown {
+  margin-left: auto;
+  padding: 6px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background-color: white;
+  color: #495057;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-dropdown:hover {
+  border-color: #adb5bd;
+}
+
+.filter-dropdown:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.select-all-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #007bff;
+  margin: 0;
+}
+
+.selection-hint {
+  font-size: 13px;
+  color: #999;
+  margin-left: 4px;
+}
+
+.selection-count {
+  font-size: 13px;
+  color: #333;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.selection-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  background-color: transparent;
+  color: #666;
+}
+
+.action-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.action-copy:hover {
+  color: #17a2b8;
+  background-color: rgba(23, 162, 184, 0.1);
+}
+
+.action-export:hover {
+  color: #28a745;
+  background-color: rgba(40, 167, 69, 0.1);
+}
+
+.action-delete:hover {
+  color: #dc3545;
+  background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Adjust table wrapper */
+.table-section {
+  position: relative;
 }

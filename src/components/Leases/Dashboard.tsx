@@ -1,6 +1,9 @@
 // components/Dashboard.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import DeleteIcon from '@mui/icons-material/Delete';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Lease, PropertyLease, MobileEquipmentLease } from '../../types/Lease';
 import { generateExcelFromLeases } from './excel/excelGenerator';
 import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentExcelGenerator';
@@ -39,6 +42,19 @@ const Dashboard: React.FC<DashboardProps> = ({
   }>({ key: null, direction: 'asc' });
   const [propertyFilter, setPropertyFilter] = useState<'All' | 'Active' | 'Non-Active'>('All');
   const [mobileEquipmentFilter, setMobileEquipmentFilter] = useState<'All' | 'Active' | 'Non-Active'>('All');
+
+  // Multi-select state
+  const [selectedPropertyLeases, setSelectedPropertyLeases] = useState<Set<string>>(new Set());
+  const [selectedMobileLeases, setSelectedMobileLeases] = useState<Set<string>>(new Set());
+  const propertySelectAllRef = useRef<HTMLInputElement>(null);
+  const mobileSelectAllRef = useRef<HTMLInputElement>(null);
+
+  // Batch delete confirmation
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
+  const [batchDeleteContext, setBatchDeleteContext] = useState<{
+    isPropertyTable: boolean;
+    count: number;
+  } | null>(null);
 
   const calculateCommittedYears = (lease: Lease): number => {
     if (lease.type === 'Property') {
@@ -159,6 +175,17 @@ const Dashboard: React.FC<DashboardProps> = ({
 
       rows.push(
         <tr key={i}>
+          <td onClick={(e) => e.stopPropagation()}>
+            {lease && (
+              <input
+                type="checkbox"
+                className="lease-checkbox"
+                checked={selectedPropertyLeases.has(lease.id)}
+                onChange={() => handleToggleSelect(lease.id, true)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </td>
           <td>{lease ? lease.leaseId : ''}</td>
           <td>{lease ? lease.entity : ''}</td>
           <td>{lease ? lease.lessor : ''}</td>
@@ -225,6 +252,17 @@ const Dashboard: React.FC<DashboardProps> = ({
       const leasePeriod = lease ? calculateCommittedYears(lease) : 0;
       rows.push(
         <tr key={i}>
+          <td onClick={(e) => e.stopPropagation()}>
+            {lease && (
+              <input
+                type="checkbox"
+                className="lease-checkbox"
+                checked={selectedMobileLeases.has(lease.id)}
+                onChange={() => handleToggleSelect(lease.id, false)}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </td>
           <td>{lease ? lease.leaseId : ''}</td>
           <td>{lease ? lease.entity : ''}</td>
           <td>{lease ? lease.lessor : ''}</td>
@@ -359,6 +397,133 @@ const Dashboard: React.FC<DashboardProps> = ({
     return sortConfig.key === columnKey;
   };
 
+  // Multi-select handlers
+  const handleToggleSelect = (leaseId: string, isPropertyTable: boolean) => {
+    const setState = isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
+    setState(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(leaseId)) {
+        newSet.delete(leaseId);
+      } else {
+        newSet.add(leaseId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (isPropertyTable: boolean) => {
+    const selectedSet = isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
+    const setState = isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
+
+    const filteredLeases = isPropertyTable
+      ? filterLeases(propertyLeases, propertyFilter)
+      : filterLeases(mobileEquipmentLeases, mobileEquipmentFilter);
+
+    if (selectedSet.size === filteredLeases.length && selectedSet.size > 0) {
+      // All selected - deselect all
+      setState(new Set());
+    } else {
+      // Select all visible
+      setState(new Set(filteredLeases.map(l => l.id)));
+    }
+  };
+
+  // Batch operations
+  const handleBatchCopy = async (isPropertyTable: boolean) => {
+    const selectedSet = isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
+    const setState = isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
+
+    const leasesToCopy = isPropertyTable
+      ? propertyLeases.filter(l => selectedSet.has(l.id))
+      : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+
+    for (const lease of leasesToCopy) {
+      await onCopyLease(lease);
+    }
+
+    // Clear selection after copy
+    setState(new Set());
+  };
+
+  const handleBatchDelete = (isPropertyTable: boolean) => {
+    const selectedSet = isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
+
+    if (selectedSet.size === 0) return;
+
+    setBatchDeleteContext({
+      isPropertyTable,
+      count: selectedSet.size
+    });
+    setShowBatchDeleteConfirm(true);
+  };
+
+  const handleConfirmBatchDelete = () => {
+    if (!batchDeleteContext) return;
+
+    const selectedSet = batchDeleteContext.isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
+    const setState = batchDeleteContext.isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
+
+    const leasesToDelete = batchDeleteContext.isPropertyTable
+      ? propertyLeases.filter(l => selectedSet.has(l.id))
+      : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+
+    for (const lease of leasesToDelete) {
+      onDeleteLease(lease.id);
+    }
+
+    // Clear selection and close dialog
+    setState(new Set());
+    setShowBatchDeleteConfirm(false);
+    setBatchDeleteContext(null);
+  };
+
+  const handleCancelBatchDelete = () => {
+    setShowBatchDeleteConfirm(false);
+    setBatchDeleteContext(null);
+  };
+
+  const handleBatchExport = (isPropertyTable: boolean) => {
+    const selectedSet = isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
+
+    const leasesToExport = isPropertyTable
+      ? propertyLeases.filter(l => selectedSet.has(l.id))
+      : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
+
+    if (leasesToExport.length === 0) return;
+
+    // For now, open XLSX modal for first lease
+    // Future enhancement: batch export multiple leases
+    setXlsxModalLease(leasesToExport[0]);
+  };
+
+  // Update indeterminate checkbox state
+  useEffect(() => {
+    if (propertySelectAllRef.current) {
+      const filteredCount = filterLeases(propertyLeases, propertyFilter).length;
+      const selectedCount = selectedPropertyLeases.size;
+      propertySelectAllRef.current.indeterminate =
+        selectedCount > 0 && selectedCount < filteredCount;
+    }
+  }, [selectedPropertyLeases, propertyLeases, propertyFilter]);
+
+  useEffect(() => {
+    if (mobileSelectAllRef.current) {
+      const filteredCount = filterLeases(mobileEquipmentLeases, mobileEquipmentFilter).length;
+      const selectedCount = selectedMobileLeases.size;
+      mobileSelectAllRef.current.indeterminate =
+        selectedCount > 0 && selectedCount < filteredCount;
+    }
+  }, [selectedMobileLeases, mobileEquipmentLeases, mobileEquipmentFilter]);
+
+  // Clear selection when filter changes
+  useEffect(() => {
+    setSelectedPropertyLeases(new Set());
+  }, [propertyFilter]);
+
+  useEffect(() => {
+    setSelectedMobileLeases(new Set());
+  }, [mobileEquipmentFilter]);
+
   return (
     <div className="dashboard-container">
       {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) &&
@@ -369,8 +534,36 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="table-section">
         <div className="table-header">
           <h2>Property Leases ({filterLeases(propertyLeases, propertyFilter).length})</h2>
+        </div>
+        <div className="selection-bar">
+          <input
+            type="checkbox"
+            ref={propertySelectAllRef}
+            className="select-all-checkbox"
+            checked={selectedPropertyLeases.size > 0 && selectedPropertyLeases.size === filterLeases(propertyLeases, propertyFilter).length}
+            onChange={() => handleSelectAll(true)}
+            title="Select all"
+          />
+          {selectedPropertyLeases.size > 0 ? (
+            <>
+              <span className="selection-count">{selectedPropertyLeases.size} selected</span>
+              <div className="selection-actions">
+                <button className="action-btn action-copy" onClick={() => handleBatchCopy(true)} title="Copy">
+                  <ContentCopyIcon fontSize="small" />
+                </button>
+                <button className="action-btn action-export" onClick={() => handleBatchExport(true)} title="Export">
+                  <FileDownloadIcon fontSize="small" />
+                </button>
+                <button className="action-btn action-delete" onClick={() => handleBatchDelete(true)} title="Delete">
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <span className="selection-hint">Select items</span>
+          )}
           <select
-            className="lease-filter-dropdown"
+            className="filter-dropdown"
             value={propertyFilter}
             onChange={(e) => setPropertyFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}
           >
@@ -383,6 +576,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <table className="lease-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', minWidth: '40px' }}></th>
                 <th onClick={() => handleSort('leaseId', true)} style={{ cursor: 'pointer' }} className={isSorted('leaseId', true) ? 'sorted' : ''}>
                   ID{renderSortIndicator('leaseId', true)}
                 </th>
@@ -426,8 +620,36 @@ const Dashboard: React.FC<DashboardProps> = ({
       <div className="table-section">
         <div className="table-header">
           <h2>Mobile Equipment Leases ({filterLeases(mobileEquipmentLeases, mobileEquipmentFilter).length})</h2>
+        </div>
+        <div className="selection-bar">
+          <input
+            type="checkbox"
+            ref={mobileSelectAllRef}
+            className="select-all-checkbox"
+            checked={selectedMobileLeases.size > 0 && selectedMobileLeases.size === filterLeases(mobileEquipmentLeases, mobileEquipmentFilter).length}
+            onChange={() => handleSelectAll(false)}
+            title="Select all"
+          />
+          {selectedMobileLeases.size > 0 ? (
+            <>
+              <span className="selection-count">{selectedMobileLeases.size} selected</span>
+              <div className="selection-actions">
+                <button className="action-btn action-copy" onClick={() => handleBatchCopy(false)} title="Copy">
+                  <ContentCopyIcon fontSize="small" />
+                </button>
+                <button className="action-btn action-export" onClick={() => handleBatchExport(false)} title="Export">
+                  <FileDownloadIcon fontSize="small" />
+                </button>
+                <button className="action-btn action-delete" onClick={() => handleBatchDelete(false)} title="Delete">
+                  <DeleteIcon fontSize="small" />
+                </button>
+              </div>
+            </>
+          ) : (
+            <span className="selection-hint">Select items</span>
+          )}
           <select
-            className="lease-filter-dropdown"
+            className="filter-dropdown"
             value={mobileEquipmentFilter}
             onChange={(e) => setMobileEquipmentFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}
           >
@@ -440,6 +662,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <table className="lease-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', minWidth: '40px' }}></th>
                 <th onClick={() => handleSort('leaseId', false)} style={{ cursor: 'pointer' }} className={isSorted('leaseId', false) ? 'sorted' : ''}>
                   ID{renderSortIndicator('leaseId', false)}
                 </th>
@@ -505,6 +728,26 @@ const Dashboard: React.FC<DashboardProps> = ({
           onGenerate={(params) => handleGenerateExcel(xlsxModalLease, params)}
           openingBalances={xlsxModalLease.openingBalances}
         />
+      )}
+
+      {showBatchDeleteConfirm && batchDeleteContext && (
+        <div className="confirm-overlay" onMouseDown={handleCancelBatchDelete}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete {batchDeleteContext.count} Leases?</h3>
+            <p className="confirm-text">
+              Are you sure you want to delete {batchDeleteContext.count} selected lease{batchDeleteContext.count > 1 ? 's' : ''}?
+              This action cannot be undone.
+            </p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={handleCancelBatchDelete}>
+                Cancel
+              </button>
+              <button className="confirm-delete-button" onClick={handleConfirmBatchDelete}>
+                Delete {batchDeleteContext.count} Lease{batchDeleteContext.count > 1 ? 's' : ''}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
