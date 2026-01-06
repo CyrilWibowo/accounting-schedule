@@ -61,6 +61,12 @@
   overflow: auto;
   flex: 1;
   max-height: calc(90vh - 180px);
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 .ob-manager-table {

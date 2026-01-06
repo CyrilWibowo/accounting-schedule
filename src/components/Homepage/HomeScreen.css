@@ -205,6 +205,11 @@
   overflow-y: auto;
   z-index: 1001;
   margin-top: 8px;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  backface-visibility: hidden;
 }
 
 .entity-dropdown-empty {
