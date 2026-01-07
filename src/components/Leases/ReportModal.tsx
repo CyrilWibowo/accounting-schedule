@@ -49,9 +49,17 @@ const ReportModal: React.FC<ReportModalProps> = ({
     const normalizedDate = normalizeDateString(params.leaseLiabilityOpening);
     if (!normalizedDate) return { property: [], motor: [] };
 
+    const openingYear = new Date(params.leaseLiabilityOpening).getFullYear();
+
     const checkLeasesForMissingBalances = (leases: (PropertyLease | MobileEquipmentLease)[]): string[] => {
       return leases
         .filter(lease => {
+          // Only check leases that are active at the opening date
+          const expiryDate = new Date(lease.expiryDate);
+          const expiryYear = expiryDate.getFullYear();
+          if (expiryYear < openingYear) return false;
+
+          // Check if this active lease has a matching opening balance
           if (!lease.openingBalances || lease.openingBalances.length === 0) return true;
           const hasMatchingBalance = lease.openingBalances.some(ob => {
             const normalizedObDate = normalizeDateString(ob.openingDate);

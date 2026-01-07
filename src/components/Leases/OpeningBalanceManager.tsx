@@ -45,8 +45,16 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   const [editableData, setEditableData] = useState<EditableOpeningBalance[]>([]);
 
   useEffect(() => {
-    const leases = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
+    const allLeases: (PropertyLease | MobileEquipmentLease)[] = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
+
+    // Filter leases that are active at the opening date
+    const openingYear = openingDate ? new Date(openingDate).getFullYear() : new Date().getFullYear();
+    const leases = allLeases.filter(lease => {
+      const expiryDate = new Date(lease.expiryDate);
+      const expiryYear = expiryDate.getFullYear();
+      return expiryYear >= openingYear;
+    });
 
     const data: EditableOpeningBalance[] = leases.map((lease) => {
       // Find matching opening balance by date if openingDate is provided
@@ -129,10 +137,23 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   };
 
   const handleSave = () => {
-    const leases = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
+    const allLeases: (PropertyLease | MobileEquipmentLease)[] = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
 
-    const updatedLeases = leases.map((lease) => {
+    // Filter leases that are active at the opening date
+    const openingYear = openingDate ? new Date(openingDate).getFullYear() : new Date().getFullYear();
+    const isLeaseActive = (lease: PropertyLease | MobileEquipmentLease): boolean => {
+      const expiryDate = new Date(lease.expiryDate);
+      const expiryYear = expiryDate.getFullYear();
+      return expiryYear >= openingYear;
+    };
+
+    const updatedLeases = allLeases.map((lease) => {
+      // Only update active leases
+      if (!isLeaseActive(lease)) {
+        return lease;
+      }
+
       const editedData = editableData.find(d => d.leaseId === lease.id);
       if (!editedData) return lease;
 

@@ -196,13 +196,21 @@ export const generateDetailReport = (
 
   const openingDate = new Date(params.leaseLiabilityOpening);
   const closingDate = new Date(params.leaseLiabilityClosing);
+  const openingYear = openingDate.getFullYear();
 
-  // Determine which leases to include
+  // Filter leases that are active at the opening date
+  const isLeaseActiveAtOpeningDate = (lease: Lease): boolean => {
+    const expiryDate = new Date(lease.expiryDate);
+    const expiryYear = expiryDate.getFullYear();
+    return expiryYear >= openingYear;
+  };
+
+  // Determine which leases to include (only active leases at opening date)
   const includedPropertyLeases = params.includedLeases === 'Property' || params.includedLeases === 'All'
-    ? propertyLeases
+    ? propertyLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
   const includedMobileEquipmentLeases = params.includedLeases === 'Motor' || params.includedLeases === 'All'
-    ? mobileEquipmentLeases
+    ? mobileEquipmentLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
 
   const allLeases: Lease[] = [...includedPropertyLeases, ...includedMobileEquipmentLeases];
