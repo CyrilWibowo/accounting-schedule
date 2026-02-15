@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Entity } from '../../types/Entity';
+import { View } from '../Layout/Sidebar';
 import { saveEntity, updateEntityLeasesCompanyCode } from '../../utils/dataStorage';
 import '../Leases/Dashboard.css';
 import '../Leases/EditLeaseModal.css';
@@ -11,6 +13,7 @@ interface EntitiesPageProps {
   onDelete: (entityId: string) => void;
   onAdd: () => void;
   onEntityUpdated: (entity: Entity) => void;
+  onNavigate: (view: View) => void;
 }
 
 const DEFAULT_PANEL_WIDTH = 420;
@@ -22,6 +25,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
   onDelete,
   onAdd,
   onEntityUpdated,
+  onNavigate,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editedEntity, setEditedEntity] = useState<Entity | null>(null);
@@ -212,11 +216,14 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
       <div className="dashboard-main" style={selectedId ? { marginRight: `${panelWidth}px` } : undefined}>
         <div className="dashboard-container">
           <div className="table-section">
-            <div className="entities-page-header">
+            <div className="page-header">
+              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home"><ArrowBackIcon fontSize="small" /></button>
               <h2>Entities ({entities.length})</h2>
-              <button className="entities-add-button" onClick={onAdd}>
-                New Entity
-              </button>
+              <div className="page-header-actions">
+                <button className="entities-add-button" onClick={onAdd}>
+                  New Entity
+                </button>
+              </div>
             </div>
             <div className="entities-table-wrapper">
               <table className="lease-table">

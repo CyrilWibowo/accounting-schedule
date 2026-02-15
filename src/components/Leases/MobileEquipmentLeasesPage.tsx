@@ -9,7 +9,9 @@ import { exportMobileEquipmentLeasesToExcel } from './excel/tableExporter';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import AddOpeningBalanceForm from './AddOpeningBalanceForm';
 import './Dashboard.css';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
+import { View } from '../Layout/Sidebar';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
 const DEFAULT_PANEL_WIDTH = 520;
@@ -25,6 +27,7 @@ interface MobileEquipmentLeasesPageProps {
   onAddLease: () => void;
   onOpenReport: () => void;
   isEntitySelected: boolean;
+  onNavigate: (view: View) => void;
 }
 
 const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
@@ -35,7 +38,8 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
   entityName,
   onAddLease,
   onOpenReport,
-  isEntitySelected
+  isEntitySelected,
+  onNavigate,
 }) => {
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
@@ -367,9 +371,10 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
       <div className="dashboard-main" style={selectedLeaseId ? { marginRight: `${panelWidth}px` } : undefined}>
         <div className="dashboard-container">
           <div className="table-section">
-            <div className="entities-page-header">
+            <div className="page-header">
+              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home"><ArrowBackIcon fontSize="small" /></button>
               <h2>Mobile Equipment Leases ({filterLeases(mobileEquipmentLeases, filter).length})</h2>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="page-header-actions">
                 <button className="entities-add-button" onClick={onAddLease} disabled={!isEntitySelected}>New Card</button>
                 <button className="entities-add-button" onClick={onOpenReport} disabled={!isEntitySelected} style={{ backgroundColor: '#007bff' }}>AASB16 Report</button>
               </div>

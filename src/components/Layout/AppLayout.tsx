@@ -159,7 +159,12 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
   const renderContent = () => {
     switch (currentView) {
       case 'home':
-        return <HomeScreen onNavigate={onNavigate} />;
+        return (
+          <HomeScreen
+            onNavigate={onNavigate}
+            selectedEntity={selectedEntity}
+          />
+        );
       case 'entities':
         return (
           <EntitiesPage
@@ -170,6 +175,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
               setIsNewEntityFormOpen(true);
             }}
             onEntityUpdated={handleEntityCreated}
+            onNavigate={onNavigate}
           />
         );
       case 'property-leases':
@@ -183,6 +189,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
             onAddLease={() => setIsAddLeaseModalOpen(true)}
             onOpenReport={() => setIsReportModalOpen(true)}
             isEntitySelected={isEntitySelected}
+            onNavigate={onNavigate}
           />
         );
       case 'mobile-equipment-leases':
@@ -196,16 +203,22 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
             onAddLease={() => setIsAddLeaseModalOpen(true)}
             onOpenReport={() => setIsReportModalOpen(true)}
             isEntitySelected={isEntitySelected}
+            onNavigate={onNavigate}
           />
         );
       case 'fixed-assets-registration':
-        return <FixedAssetsRegistration />;
+        return <FixedAssetsRegistration onNavigate={onNavigate} />;
       case 'cip-schedule':
-        return <CIPSchedule />;
+        return <CIPSchedule onNavigate={onNavigate} />;
       case 'settings':
         return <SettingsPage onDataPathChanged={handleDataPathChanged} />;
       default:
-        return <HomeScreen onNavigate={onNavigate} />;
+        return (
+          <HomeScreen
+            onNavigate={onNavigate}
+            selectedEntity={selectedEntity}
+          />
+        );
     }
   };
 

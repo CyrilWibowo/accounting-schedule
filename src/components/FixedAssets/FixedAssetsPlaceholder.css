@@ -7,10 +7,16 @@
   color: #6c757d;
 }
 
+.fixed-assets-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .fixed-assets-placeholder h2 {
   font-size: 28px;
   color: #333;
-  margin-bottom: 12px;
+  margin: 0;
 }
 
 .fixed-assets-placeholder p {

@@ -22,7 +22,6 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -238,4 +237,52 @@
 
 .app-content {
   flex: 1;
+}
+
+/* Shared page header — back button | centered title | right actions */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.page-header .back-button {
+  position: absolute;
+  left: 0;
+}
+
+.page-header h2 {
+  color: #333;
+  margin: 0;
+  font-size: 24px;
+}
+
+.page-header-actions {
+  position: absolute;
+  right: 0;
+  display: flex;
+  gap: 8px;
+}
+
+/* Shared back button */
+.back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.back-button:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }

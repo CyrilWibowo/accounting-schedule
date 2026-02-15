@@ -9,7 +9,9 @@ import { exportPropertyLeasesToExcel } from './excel/tableExporter';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import AddOpeningBalanceForm from './AddOpeningBalanceForm';
 import './Dashboard.css';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
+import { View } from '../Layout/Sidebar';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
 const DEFAULT_PANEL_WIDTH = 520;
@@ -25,6 +27,7 @@ interface PropertyLeasesPageProps {
   onAddLease: () => void;
   onOpenReport: () => void;
   isEntitySelected: boolean;
+  onNavigate: (view: View) => void;
 }
 
 const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
@@ -35,7 +38,8 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   entityName,
   onAddLease,
   onOpenReport,
-  isEntitySelected
+  isEntitySelected,
+  onNavigate,
 }) => {
   const [hoveredLease, setHoveredLease] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -469,9 +473,10 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
           {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) && renderIncrementMethodsTooltip(propertyLeases.find(l => l.id === hoveredLease)!)}
 
           <div className="table-section">
-            <div className="entities-page-header">
+            <div className="page-header">
+              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home"><ArrowBackIcon fontSize="small" /></button>
               <h2>Property Leases ({filterLeases(propertyLeases, filter).length})</h2>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="page-header-actions">
                 <button className="entities-add-button" onClick={onAddLease} disabled={!isEntitySelected}>New Card</button>
                 <button className="entities-add-button" onClick={onOpenReport} disabled={!isEntitySelected} style={{ backgroundColor: '#007bff' }}>AASB16 Report</button>
               </div>
