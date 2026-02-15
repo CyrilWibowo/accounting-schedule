@@ -203,10 +203,20 @@ export const generateSummaryReport = (
   const closingDate = new Date(params.leaseLiabilityClosing);
   const openingYear = openingDate.getFullYear();
 
+  // Get effective expiry date (expiry + options years for property leases)
+  const getEffectiveExpiryDate = (lease: Lease): Date => {
+    const expiryDate = new Date(lease.expiryDate);
+    if (lease.type === 'Property') {
+      const options = parseInt((lease as PropertyLease).options) || 0;
+      expiryDate.setFullYear(expiryDate.getFullYear() + options);
+    }
+    return expiryDate;
+  };
+
   // Filter leases that are active at the opening date
   const isLeaseActiveAtOpeningDate = (lease: Lease): boolean => {
-    const expiryDate = new Date(lease.expiryDate);
-    const expiryYear = expiryDate.getFullYear();
+    const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+    const expiryYear = effectiveExpiryDate.getFullYear();
     return expiryYear >= openingYear;
   };
 

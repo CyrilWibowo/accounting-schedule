@@ -80,10 +80,20 @@ const Dashboard: React.FC<DashboardProps> = ({
     return 0;
   };
 
+  // Get effective expiry date (expiry + options years for property leases)
+  const getEffectiveExpiryDate = (lease: PropertyLease | MobileEquipmentLease): Date => {
+    const expiryDate = new Date(lease.expiryDate);
+    if (lease.type === 'Property') {
+      const options = parseInt((lease as PropertyLease).options) || 0;
+      expiryDate.setFullYear(expiryDate.getFullYear() + options);
+    }
+    return expiryDate;
+  };
+
   const isLeaseActive = (lease: PropertyLease | MobileEquipmentLease): boolean => {
     const currentYear = new Date().getFullYear();
-    const expiryDate = new Date(lease.expiryDate);
-    const expiryYear = expiryDate.getFullYear();
+    const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+    const expiryYear = effectiveExpiryDate.getFullYear();
     return expiryYear >= currentYear;
   };
 
@@ -108,23 +118,23 @@ const Dashboard: React.FC<DashboardProps> = ({
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const expiryDate = new Date(lease.expiryDate);
-    expiryDate.setHours(0, 0, 0, 0);
+    const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+    effectiveExpiryDate.setHours(0, 0, 0, 0);
 
-    return expiryDate < today;
+    return effectiveExpiryDate < today;
   };
 
   const isWithinThreeMonthsOfExpiry = (lease: PropertyLease | MobileEquipmentLease): boolean => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const expiryDate = new Date(lease.expiryDate);
-    expiryDate.setHours(0, 0, 0, 0);
+    const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+    effectiveExpiryDate.setHours(0, 0, 0, 0);
 
     const threeMonthsFromNow = new Date(today);
     threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
 
-    return expiryDate <= threeMonthsFromNow && expiryDate >= today;
+    return effectiveExpiryDate <= threeMonthsFromNow && effectiveExpiryDate >= today;
   };
 
   const renderIncrementMethodsTooltip = (lease: Lease) => {
@@ -194,7 +204,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <td>{lease ? lease.branch : ''}</td>
           <td>{lease ? formatDate(lease.commencementDate) : ''}</td>
           <td style={{ color: lease && isLeaseExpired(lease) ? '#dc3545' : '#212529' }}>
-            {lease ? formatDate(lease.expiryDate) : ''}
+            {lease ? formatDate(getEffectiveExpiryDate(lease).toISOString()) : ''}
           </td>
           <td>{lease ? `${lease.options} years` : ''}</td>
           <td
@@ -275,7 +285,7 @@ const Dashboard: React.FC<DashboardProps> = ({
           <td>{lease ? lease.vinSerialNo : ''}</td>
           <td>{lease ? formatDate(lease.deliveryDate) : ''}</td>
           <td style={{ color: lease && isLeaseExpired(lease) ? '#dc3545' : '#212529' }}>
-            {lease ? formatDate(lease.expiryDate) : ''}
+            {lease ? formatDate(getEffectiveExpiryDate(lease).toISOString()) : ''}
           </td>
           <td>{lease && `${leasePeriod} years`}</td>
           <td>{lease ? formatCurrency((parseFloat(lease.annualRent) / 12).toFixed(2)) : ''}</td>

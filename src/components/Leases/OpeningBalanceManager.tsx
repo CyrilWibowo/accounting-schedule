@@ -34,6 +34,16 @@ const normalizeDateString = (dateStr: string): string => {
   return date.toISOString().split('T')[0];
 };
 
+// Get effective expiry date (expiry + options years for property leases)
+const getEffectiveExpiryDate = (lease: PropertyLease | MobileEquipmentLease): Date => {
+  const expiryDate = new Date(lease.expiryDate);
+  if (lease.type === 'Property') {
+    const options = parseInt((lease as PropertyLease).options) || 0;
+    expiryDate.setFullYear(expiryDate.getFullYear() + options);
+  }
+  return expiryDate;
+};
+
 const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
   type,
   propertyLeases,
@@ -48,11 +58,11 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
     const allLeases: (PropertyLease | MobileEquipmentLease)[] = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
 
-    // Filter leases that are active at the opening date
+    // Filter leases that are active at the opening date (using effective expiry with options)
     const openingYear = openingDate ? new Date(openingDate).getFullYear() : new Date().getFullYear();
     const leases = allLeases.filter(lease => {
-      const expiryDate = new Date(lease.expiryDate);
-      const expiryYear = expiryDate.getFullYear();
+      const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+      const expiryYear = effectiveExpiryDate.getFullYear();
       return expiryYear >= openingYear;
     });
 
@@ -140,11 +150,11 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
     const allLeases: (PropertyLease | MobileEquipmentLease)[] = type === 'Property' ? propertyLeases : mobileEquipmentLeases;
     const normalizedOpeningDate = openingDate ? normalizeDateString(openingDate) : '';
 
-    // Filter leases that are active at the opening date
+    // Filter leases that are active at the opening date (using effective expiry with options)
     const openingYear = openingDate ? new Date(openingDate).getFullYear() : new Date().getFullYear();
     const isLeaseActive = (lease: PropertyLease | MobileEquipmentLease): boolean => {
-      const expiryDate = new Date(lease.expiryDate);
-      const expiryYear = expiryDate.getFullYear();
+      const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+      const expiryYear = effectiveExpiryDate.getFullYear();
       return expiryYear >= openingYear;
     };
 

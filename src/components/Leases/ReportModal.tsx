@@ -51,12 +51,22 @@ const ReportModal: React.FC<ReportModalProps> = ({
 
     const openingYear = new Date(params.leaseLiabilityOpening).getFullYear();
 
+    // Get effective expiry date (expiry + options years for property leases)
+    const getEffectiveExpiryDate = (lease: PropertyLease | MobileEquipmentLease): Date => {
+      const expiryDate = new Date(lease.expiryDate);
+      if (lease.type === 'Property') {
+        const options = parseInt((lease as PropertyLease).options) || 0;
+        expiryDate.setFullYear(expiryDate.getFullYear() + options);
+      }
+      return expiryDate;
+    };
+
     const checkLeasesForMissingBalances = (leases: (PropertyLease | MobileEquipmentLease)[]): string[] => {
       return leases
         .filter(lease => {
-          // Only check leases that are active at the opening date
-          const expiryDate = new Date(lease.expiryDate);
-          const expiryYear = expiryDate.getFullYear();
+          // Only check leases that are active at the opening date (using effective expiry with options)
+          const effectiveExpiryDate = getEffectiveExpiryDate(lease);
+          const expiryYear = effectiveExpiryDate.getFullYear();
           if (expiryYear < openingYear) return false;
 
           // Check if this active lease has a matching opening balance
