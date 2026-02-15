@@ -1,10 +1,10 @@
 import * as XLSX from 'xlsx';
 import { PropertyLease } from '../../../types/Lease';
-import { PaymentRow, calculateXNPV } from './excelHelper';
+import { PaymentRow, calculateXNPV, HEADER_ROW_COUNT, buildExcelHeaderRows } from './excelHelper';
 import { formatWorksheet } from './styleExcel';
 import { formatDate, formatCurrency2, normalizeDate } from '../../../utils/helper';
 
-export const generateLeasePayments = (lease: PropertyLease): XLSX.WorkSheet => {
+export const generateLeasePayments = (lease: PropertyLease, entityName: string, openingDate: string, closingDate: string): XLSX.WorkSheet => {
   const rows = generatePaymentRows(lease);
 
   // Calculate values for header
@@ -14,6 +14,7 @@ export const generateLeasePayments = (lease: PropertyLease): XLSX.WorkSheet => {
 
   // Create data array for worksheet with header section
   const data: any[][] = [
+    ...buildExcelHeaderRows(entityName, openingDate, closingDate),
     ['Property Address:', lease.propertyAddress],
     ['Commencement Date:', formatDate(lease.commencementDate)],
     ['Expiry Date:', formatDate(lease.expiryDate)],
@@ -41,7 +42,8 @@ export const generateLeasePayments = (lease: PropertyLease): XLSX.WorkSheet => {
 
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
-  formatWorksheet(worksheet, rows);
+  // 14 metadata rows + HEADER_ROW_COUNT header rows before payment data
+  formatWorksheet(worksheet, rows, 14 + HEADER_ROW_COUNT);
 
   return worksheet;
 };

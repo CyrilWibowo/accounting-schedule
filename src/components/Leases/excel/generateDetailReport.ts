@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { PropertyLease, MobileEquipmentLease, Lease } from '../../../types/Lease';
 import { ReportParams } from '../ReportModal';
+import { buildReportHeaderRows } from './excelHelper';
 import { generatePaymentRows } from './leasePaymentsSheetGenerator';
 import { generateMobileEquipmentPaymentRows } from './mobileEquipmentExcelGenerator';
 import {
@@ -190,7 +191,8 @@ const formatDateForFilename = (date: Date): string => {
 export const generateDetailReport = (
   propertyLeases: PropertyLease[],
   mobileEquipmentLeases: MobileEquipmentLease[],
-  params: ReportParams
+  params: ReportParams,
+  entityName: string
 ): void => {
   const workbook = XLSX.utils.book_new();
 
@@ -219,7 +221,7 @@ export const generateDetailReport = (
   const includedPropertyLeases = params.includedLeases === 'Property' || params.includedLeases === 'All'
     ? propertyLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
-  const includedMobileEquipmentLeases = params.includedLeases === 'Motor' || params.includedLeases === 'All'
+  const includedMobileEquipmentLeases = params.includedLeases === 'Mobile Equipment' || params.includedLeases === 'All'
     ? mobileEquipmentLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
 
@@ -236,7 +238,9 @@ export const generateDetailReport = (
   const closingDateStr = formatDateForHeader(closingDate);
 
   // Build the data array
-  const data: (string | number)[][] = [];
+  const data: (string | number)[][] = [
+    ...buildReportHeaderRows(entityName, 'Detail', params.includedLeases, params.leaseLiabilityOpening, params.leaseLiabilityClosing)
+  ];
 
   // Process each lease
   leaseBalanceSummaries.forEach((summary, leaseIndex) => {

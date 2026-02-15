@@ -8,6 +8,45 @@ export interface PaymentRow {
   note: string;
 }
 
+export const HEADER_ROW_COUNT = 5;
+
+const formatHeaderDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const d = String(date.getDate()).padStart(2, '0');
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+export const buildExcelHeaderRows = (entityName: string, openingDate: string, closingDate: string): any[][] => {
+  return [
+    [entityName, '', '', '', 'C&W Accounting'],
+    ['AASB16 Report'],
+    [`Period: ${formatHeaderDate(openingDate)} to ${formatHeaderDate(closingDate)}`],
+    [],
+    []
+  ];
+};
+
+export const REPORT_HEADER_ROW_COUNT = 6;
+
+export const buildReportHeaderRows = (
+  entityName: string,
+  reportType: 'Summary' | 'Detail',
+  includedLeases: string,
+  openingDate: string,
+  closingDate: string
+): any[][] => {
+  return [
+    [entityName, '', '', '', 'C&W Accounting'],
+    [`AASB16 Report ${reportType}`],
+    [`${includedLeases} Leases`],
+    [`Period: ${formatHeaderDate(openingDate)} to ${formatHeaderDate(closingDate)}`],
+    [],
+    []
+  ];
+};
+
 export const calculateXNPV = (lease: Lease, rows: PaymentRow[]): number => {
   const firstDate = rows[0].paymentDate;
   const rate = parseFloat(lease.borrowingRate) / 100;

@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { PropertyLease, MobileEquipmentLease, Lease } from '../../../types/Lease';
 import { ReportParams } from '../ReportModal';
+import { buildReportHeaderRows } from './excelHelper';
 import { generatePaymentRows } from './leasePaymentsSheetGenerator';
 import { generateMobileEquipmentPaymentRows } from './mobileEquipmentExcelGenerator';
 import {
@@ -195,7 +196,8 @@ const EXPENSE_ACCOUNT_CODES = ['60270', '60390', '60150', '60140'];
 export const generateSummaryReport = (
   propertyLeases: PropertyLease[],
   mobileEquipmentLeases: MobileEquipmentLease[],
-  params: ReportParams
+  params: ReportParams,
+  entityName: string
 ): void => {
   const workbook = XLSX.utils.book_new();
 
@@ -224,7 +226,7 @@ export const generateSummaryReport = (
   const includedPropertyLeases = params.includedLeases === 'Property' || params.includedLeases === 'All'
     ? propertyLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
-  const includedMobileEquipmentLeases = params.includedLeases === 'Motor' || params.includedLeases === 'All'
+  const includedMobileEquipmentLeases = params.includedLeases === 'Mobile Equipment' || params.includedLeases === 'All'
     ? mobileEquipmentLeases.filter(isLeaseActiveAtOpeningDate)
     : [];
 
@@ -306,9 +308,11 @@ export const generateSummaryReport = (
   });
 
   // Build the data array with only the final totals journal
-  const data: any[][] = [];
+  const data: any[][] = [
+    ...buildReportHeaderRows(entityName, 'Summary', params.includedLeases, params.leaseLiabilityOpening, params.leaseLiabilityClosing)
+  ];
 
-  // Add header row
+  // Add column header row
   data.push([
     '',
     '',

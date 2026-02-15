@@ -6,7 +6,8 @@ export const formatPVWorksheet = (
   assetRowCount: number,
   liabilityRowCount: number,
   journalRowCount: number,
-  balanceSummaryRowCount: number = 8
+  balanceSummaryRowCount: number = 8,
+  headerOffset: number = 0
 ) => {
   // Set column widths
   worksheet['!cols'] = [
@@ -39,12 +40,12 @@ export const formatPVWorksheet = (
   ];
 
   // Format Present Value in header (row 1, column B - cell B2)
-  const pvCell = XLSX.utils.encode_cell({ r: 1, c: 1 });
+  const pvCell = XLSX.utils.encode_cell({ r: 1 + headerOffset, c: 1 });
   if (worksheet[pvCell] && typeof worksheet[pvCell].v === 'number') {
     worksheet[pvCell].z = '#,##0.00';
   }
 
-  const dataStartRow = 9;
+  const dataStartRow = 9 + headerOffset;
 
   // Format dates in column A (Payment Date)
   for (let row = dataStartRow; row < dataStartRow + cashFlowRowCount; row++) {
@@ -88,7 +89,7 @@ export const formatPVWorksheet = (
   }
 
   // Format currency in summary tables (columns U and V)
-  const summaryCurrencyRows = [9, 10, 11, 13, 15, 16, 17]; // Rows with numeric values
+  const summaryCurrencyRows = [9, 10, 11, 13, 15, 16, 17].map(r => r + headerOffset); // Rows with numeric values
   summaryCurrencyRows.forEach(row => {
     const cellAddressU = XLSX.utils.encode_cell({ r: row, c: 20 }); // Column U
     if (worksheet[cellAddressU] && typeof worksheet[cellAddressU].v === 'number') {
@@ -101,14 +102,14 @@ export const formatPVWorksheet = (
   });
 
   // Format PV Interest Accretion value
-  const pvInterestCell = XLSX.utils.encode_cell({ r: 13, c: 19 }); // Column T, row with PV Interest
+  const pvInterestCell = XLSX.utils.encode_cell({ r: 13 + headerOffset, c: 19 }); // Column T, row with PV Interest
   if (worksheet[pvInterestCell] && typeof worksheet[pvInterestCell].v === 'number') {
     worksheet[pvInterestCell].z = '#,##0.00';
   }
 
   // Format currency in Lease Payments Due table
   // Starting from row 24 (row index 23) for data rows
-  const leasePaymentsDueStartRow = 24;
+  const leasePaymentsDueStartRow = 24 + headerOffset;
   for (let row = leasePaymentsDueStartRow; row < leasePaymentsDueStartRow + 7; row++) {
     // Columns U, V, W (Lease Payments, Interest, NPV)
     [20, 21, 22].forEach(col => {

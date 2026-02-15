@@ -1,21 +1,21 @@
 import * as XLSX from 'xlsx';
 import { MobileEquipmentLease } from '../../../types/Lease';
 import { XLSXGenerationParams } from '../ToXLSXModal';
-import { PaymentRow, calculateXNPV } from './excelHelper';
+import { PaymentRow, calculateXNPV, HEADER_ROW_COUNT, buildExcelHeaderRows } from './excelHelper';
 import { formatWorksheet } from './styleExcel';
 import { formatCurrency2, normalizeDate } from '../../../utils/helper';
 import { generatePVCalculation } from './PVCalculationSheetGenerator';
 
-export const generateExcelFromMobileEquipmentLeases = (lease: MobileEquipmentLease, params: XLSXGenerationParams) => {
+export const generateExcelFromMobileEquipmentLeases = (lease: MobileEquipmentLease, params: XLSXGenerationParams, entityName: string) => {
   const workbook = XLSX.utils.book_new();
 
-  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentLeasePayments(lease), "Lease Payments");
-  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentPVCalculation(lease, params), "PV Calculation");
+  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentLeasePayments(lease, entityName, params.leaseLiabilityOpening, params.leaseLiabilityClosing), "Lease Payments");
+  XLSX.utils.book_append_sheet(workbook, generateMobileEquipmentPVCalculation(lease, params, entityName), "PV Calculation");
 
   XLSX.writeFile(workbook, `${lease.description}_${lease.regoNo}.xlsx`);
 };
 
-export const generateMobileEquipmentLeasePayments = (lease: MobileEquipmentLease): XLSX.WorkSheet => {
+export const generateMobileEquipmentLeasePayments = (lease: MobileEquipmentLease, entityName: string, openingDate: string, closingDate: string): XLSX.WorkSheet => {
   const rows = generateMobileEquipmentPaymentRows(lease);
 
   // Calculate values for header
@@ -25,6 +25,7 @@ export const generateMobileEquipmentLeasePayments = (lease: MobileEquipmentLease
 
   // Create data array for worksheet with header section
   const data: any[][] = [
+    ...buildExcelHeaderRows(entityName, openingDate, closingDate),
     ['Description:', lease.description],
     ['VIN/Serial No.:', lease.vinSerialNo],
     ['Rego No.:', lease.regoNo],
@@ -51,7 +52,8 @@ export const generateMobileEquipmentLeasePayments = (lease: MobileEquipmentLease
 
   // Create worksheet
   const worksheet = XLSX.utils.aoa_to_sheet(data);
-  formatWorksheet(worksheet, rows);
+  // 13 metadata rows + HEADER_ROW_COUNT header rows before payment data
+  formatWorksheet(worksheet, rows, 13 + HEADER_ROW_COUNT);
 
   return worksheet;
 };
@@ -94,7 +96,7 @@ export const generateMobileEquipmentPaymentRows = (lease: MobileEquipmentLease):
   return rows;
 };
 
-export const generateMobileEquipmentPVCalculation = (lease: MobileEquipmentLease, params: XLSXGenerationParams): XLSX.WorkSheet => {
+export const generateMobileEquipmentPVCalculation = (lease: MobileEquipmentLease, params: XLSXGenerationParams, entityName: string): XLSX.WorkSheet => {
   // Convert MobileEquipmentLease to PropertyLease-like structure for reusing the PV calculation logic
   const tempLease = {
     ...lease,
@@ -108,7 +110,7 @@ export const generateMobileEquipmentPVCalculation = (lease: MobileEquipmentLease
   };
 
   // Generate the standard PV calculation worksheet
-  const worksheet = generatePVCalculation(tempLease, params, false);
+  const worksheet = generatePVCalculation(tempLease, params, false, entityName);
 
   return worksheet;
 };

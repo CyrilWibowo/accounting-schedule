@@ -164,6 +164,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
         onUpdateLease={handleUpdateLease}
         onDeleteLease={handleDeleteLease}
         onCopyLease={handleCopyLease}
+        entityName={selectedEntity?.name || ''}
       />
 
       {isModalOpen && selectedEntity && (
@@ -184,6 +185,7 @@ const LeaseDashboard: React.FC<LeaseDashboardProps> = ({ onBack }) => {
               await handleUpdateLease(lease);
             }
           }}
+          entityName={selectedEntity?.name || ''}
         />
       )}
     </div>

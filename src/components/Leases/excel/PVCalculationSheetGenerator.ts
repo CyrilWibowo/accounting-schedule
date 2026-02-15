@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { PropertyLease } from '../../../types/Lease';
 import { generatePaymentRows } from './leasePaymentsSheetGenerator';
 import { XLSXGenerationParams } from '../ToXLSXModal';
+import { HEADER_ROW_COUNT, buildExcelHeaderRows } from './excelHelper';
 import { formatDateToDate } from '../../../utils/helper';
 import {
   calculatePresentValue,
@@ -17,7 +18,7 @@ import {
 } from './pvCalculationHelpers';
 import { formatPVWorksheet } from './pvWorksheetFormatter';
 
-export const generatePVCalculation = (lease: PropertyLease | any, params: XLSXGenerationParams, isPropertyLease: boolean): XLSX.WorkSheet => {
+export const generatePVCalculation = (lease: PropertyLease | any, params: XLSXGenerationParams, isPropertyLease: boolean, entityName?: string): XLSX.WorkSheet => {
   // Extract vehicleType for mobile equipment leases
   const vehicleType = !isPropertyLease && 'vehicleType' in lease ? lease.vehicleType : undefined;
 
@@ -136,6 +137,7 @@ export const generatePVCalculation = (lease: PropertyLease | any, params: XLSXGe
 
   // Build the data array with header
   const data: any[][] = [
+    ...buildExcelHeaderRows(entityName || lease.entity, params.leaseLiabilityOpening, params.leaseLiabilityClosing),
     [lease.propertyAddress],
     [`Present Value at ${formattedFirstDate}:`, presentValue],
     ['Rate:', `${lease.borrowingRate}%`],
@@ -298,7 +300,7 @@ export const generatePVCalculation = (lease: PropertyLease | any, params: XLSXGe
   const worksheet = XLSX.utils.aoa_to_sheet(data);
 
   // Format the worksheet
-  formatPVWorksheet(worksheet, cashFlowRows.length, rightOfUseAssetRows.length, leaseLiabilityRows.length, journalRows.length, balanceSummaryRows.length);
+  formatPVWorksheet(worksheet, cashFlowRows.length, rightOfUseAssetRows.length, leaseLiabilityRows.length, journalRows.length, balanceSummaryRows.length, HEADER_ROW_COUNT);
 
   return worksheet;
 };

@@ -19,6 +19,7 @@ interface DashboardProps {
   onUpdateLease: (lease: Lease) => void;
   onDeleteLease: (leaseId: string) => void;
   onCopyLease: (lease: Lease) => void;
+  entityName: string;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
@@ -26,7 +27,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   mobileEquipmentLeases,
   onUpdateLease,
   onDeleteLease,
-  onCopyLease
+  onCopyLease,
+  entityName
 }) => {
   const [hoveredLease, setHoveredLease] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
@@ -108,9 +110,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   const handleGenerateExcel = (lease: PropertyLease | MobileEquipmentLease, params: XLSXGenerationParams) => {
     if (lease.type === 'Property') {
-      generateExcelFromLeases(lease as PropertyLease, params);
+      generateExcelFromLeases(lease as PropertyLease, params, entityName);
     } else {
-      generateExcelFromMobileEquipmentLeases(lease as MobileEquipmentLease, params);
+      generateExcelFromMobileEquipmentLeases(lease as MobileEquipmentLease, params, entityName);
     }
   };
 

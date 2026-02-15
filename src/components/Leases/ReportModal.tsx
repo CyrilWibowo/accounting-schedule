@@ -19,11 +19,12 @@ interface ReportModalProps {
   propertyLeases: PropertyLease[];
   mobileEquipmentLeases: MobileEquipmentLease[];
   onUpdateLeases: (leases: (PropertyLease | MobileEquipmentLease)[]) => void;
+  entityName: string;
 }
 
 export interface ReportParams {
   reportType: 'Summary' | 'Detail';
-  includedLeases: 'Property' | 'Motor' | 'All';
+  includedLeases: 'Property' | 'Mobile Equipment' | 'All';
   leaseLiabilityOpening: string;
   leaseLiabilityClosing: string;
 }
@@ -32,7 +33,8 @@ const ReportModal: React.FC<ReportModalProps> = ({
   onClose,
   propertyLeases,
   mobileEquipmentLeases,
-  onUpdateLeases
+  onUpdateLeases,
+  entityName
 }) => {
   const [params, setParams] = useState<ReportParams>({
     reportType: 'Summary',
@@ -84,7 +86,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
       property: (params.includedLeases === 'Property' || params.includedLeases === 'All')
         ? checkLeasesForMissingBalances(propertyLeases)
         : [],
-      motor: (params.includedLeases === 'Motor' || params.includedLeases === 'All')
+      motor: (params.includedLeases === 'Mobile Equipment' || params.includedLeases === 'All')
         ? checkLeasesForMissingBalances(mobileEquipmentLeases)
         : []
     };
@@ -123,9 +125,9 @@ const ReportModal: React.FC<ReportModalProps> = ({
   const handleGenerate = () => {
     if (validateForm()) {
       if (params.reportType === 'Summary') {
-        generateSummaryReport(propertyLeases, mobileEquipmentLeases, params);
+        generateSummaryReport(propertyLeases, mobileEquipmentLeases, params, entityName);
       } else if (params.reportType === 'Detail') {
-        generateDetailReport(propertyLeases, mobileEquipmentLeases, params);
+        generateDetailReport(propertyLeases, mobileEquipmentLeases, params, entityName);
       }
       onClose();
     }
@@ -162,7 +164,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
               onChange={(e) => handleInputChange('includedLeases', e.target.value)}
             >
               <option value="Property">Property</option>
-              <option value="Motor">Motor</option>
+              <option value="Mobile Equipment">Mobile Equipment</option>
               <option value="All">All</option>
             </select>
           </div>
@@ -199,7 +201,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
               Manage Property Opening Balance
             </button>
           )}
-          {(params.includedLeases === 'Motor' || params.includedLeases === 'All') && (
+          {(params.includedLeases === 'Mobile Equipment' || params.includedLeases === 'All') && (
             <button
               className="report-ob-button"
               onClick={() => setOpeningBalanceManagerType('Mobile Equipment')}
