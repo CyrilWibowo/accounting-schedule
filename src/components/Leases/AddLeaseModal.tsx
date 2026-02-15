@@ -71,6 +71,7 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
     if (lease) {
       calculateCommittedYears();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lease]);
 
   const calculateCommittedYears = () => {

@@ -1,0 +1,104 @@
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 56px);
+}
+
+.settings-page-container {
+  max-width: 700px;
+  padding: 30px 20px;
+}
+
+.settings-page h2 {
+  color: #333;
+  margin: 0 0 24px 0;
+  font-size: 24px;
+}
+
+.settings-section {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px 24px;
+}
+
+.settings-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+}
+
+.settings-field {
+  margin-bottom: 12px;
+}
+
+.settings-field label {
+  display: block;
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.settings-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-input-group input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #333;
+  background-color: #f8f9fa;
+}
+
+.settings-browse-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  background-color: white;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.settings-browse-button:hover {
+  background-color: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.settings-save-button {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.settings-save-button:hover:not(:disabled) {
+  background-color: #218838;
+}
+
+.settings-save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.settings-saved-text {
+  margin-left: 12px;
+  font-size: 14px;
+  color: #28a745;
+  font-weight: 500;
+}

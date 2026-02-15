@@ -1,0 +1,241 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app-header {
+  background-color: #1e2128;
+  padding: 0 30px;
+  border-bottom: 1px solid #30363d;
+  height: 56px;
+  box-sizing: border-box;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.app-header .entity-selector {
+  position: relative;
+}
+
+.app-header .entity-selector-button {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 26px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.app-header .entity-selector-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.app-header .entity-selector-button.no-entity {
+  color: #9ca3af;
+}
+
+.app-header .entity-dropdown-icon {
+  font-size: 28px !important;
+}
+
+.app-header .entity-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  min-width: 250px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1001;
+  margin-top: 8px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-header .entity-dropdown-empty {
+  padding: 16px;
+  color: #6b7280;
+  text-align: center;
+  font-size: 14px;
+}
+
+.app-header .entity-dropdown-item {
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 16px;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.app-header .entity-dropdown-item:hover {
+  background-color: #f3f4f6;
+}
+
+.app-header .entity-dropdown-item.selected {
+  background-color: #e5e7eb;
+  font-weight: 600;
+}
+
+.app-header .entity-dropdown-item:first-child {
+  border-radius: 8px 8px 0 0;
+}
+
+.app-header .entity-dropdown-item:last-child {
+  border-radius: 0 0 8px 8px;
+}
+
+.app-header .entity-dropdown-item:only-child {
+  border-radius: 8px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: absolute;
+  right: 30px;
+}
+
+.header-actions .add-card-button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions .add-card-button:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.header-actions .report-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-actions .report-button:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.header-actions .add-card-button:disabled,
+.header-actions .report-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.header-actions .new-entity-button {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-actions .new-entity-button:hover {
+  background-color: #3a3a3a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.header-actions .new-entity-button-green {
+  background-color: #28a745;
+}
+
+.header-actions .new-entity-button-green:hover {
+  background-color: #0d963f;
+}
+
+.header-actions .new-entity-button-blue {
+  background-color: #2563eb;
+}
+
+.header-actions .new-entity-button-blue:hover {
+  background-color: #1d4ed8;
+}
+
+.header-actions .new-entity-button-icon {
+  font-size: 20px !important;
+}
+
+.header-actions .settings-button {
+  background-color: #666;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+}
+
+.header-actions .settings-button:hover {
+  background-color: #414141;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.app-content {
+  flex: 1;
+}

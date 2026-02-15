@@ -1,6 +1,5 @@
 import { PaymentRow } from './excelHelper';
 import { normalizeDate } from '../../../utils/helper';
-import { Extension } from '@mui/icons-material';
 
 export interface CashFlowRow {
   paymentDate: Date;
@@ -374,8 +373,6 @@ export const generateJournalTable = (
 
   const normalizedOpening = normalizeDate(openingDate);
   const normalizedClosing = normalizeDate(closingDate);
-  const normalizedExpiry = normalizeDate(expiryDate);
-
   // DONE
   // if extension:
   // present value
@@ -575,7 +572,6 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   } = params;
 
   const normalizedClosing = normalizeDate(closingDate);
-  const normalizedExpiry = normalizeDate(expiryDate);
   const normalizedOpening = normalizeDate(openingDate);
 
   // Format date strings for headers
@@ -635,14 +631,6 @@ export const generateBalanceSummaryTable = (params: BalanceSummaryParams, isProp
   const closingYear = normalizedClosing.getFullYear();
   const nextPeriodStart = normalizeDate(new Date(closingYear + 1, 0, 1));
   const nextPeriodEnd = normalizeDate(new Date(closingYear + 1, 11, 31));
-  let paymentInterestNextYear = 0;
-  allPaymentRows.forEach((row, index) => {
-    const paymentDate = normalizeDate(new Date(row.paymentDate));
-    if (paymentDate >= nextPeriodStart && paymentDate <= nextPeriodEnd && leaseLiabilityRows[index]) {
-      paymentInterestNextYear += leaseLiabilityRows[index].payment + leaseLiabilityRows[index].interestExpense;
-    }
-  });
-
   // Sum of payment and interest expense from next year to the end of the lease
   // e.g., if closing is 31/12/2025, sum from 01/01/2026 to the end
   let paymentInterestNextYearToEnd = 0;

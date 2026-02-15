@@ -1,22 +1,15 @@
 // App.tsx
 import React, { useState } from 'react';
-import HomeScreen from './components/Homepage/HomeScreen';
-import LeaseDashboard from './components/Leases/LeaseDashboard';
+import AppLayout from './components/Layout/AppLayout';
+import { View } from './components/Layout/Sidebar';
 import './App.css';
-
-type View = 'home' | 'leases';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home');
 
   return (
     <div className="App">
-      {currentView === 'home' && (
-        <HomeScreen onNavigateToLeases={() => setCurrentView('leases')} />
-      )}
-      {currentView === 'leases' && (
-        <LeaseDashboard onBack={() => setCurrentView('home')} />
-      )}
+      <AppLayout currentView={currentView} onNavigate={setCurrentView} />
     </div>
   );
 }

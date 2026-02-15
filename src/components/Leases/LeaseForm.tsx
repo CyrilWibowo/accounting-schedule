@@ -45,6 +45,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
         (!lease.annualRent && monthlyRentInput)) {
       setMonthlyRentInput(calculatedMonthly);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lease.annualRent]);
 
   return (
