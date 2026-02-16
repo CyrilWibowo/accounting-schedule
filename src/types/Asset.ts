@@ -24,6 +24,7 @@ export interface CIPAsset {
   branch: AssetBranch;
   amount: string;
   completed: 'Y' | 'N';
+  completionDate: string;
 }
 
 export type AssetCategory = '' | 'Office Equipment' | 'Motor Vehicle' | 'Warehouse Equipment' | 'Manufacturing Equipment' | 'Equipment for Leased' | 'Software';

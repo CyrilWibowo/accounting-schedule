@@ -74,6 +74,7 @@ const createEmptyCIPAsset = (): CIPAsset => ({
   branch: '',
   amount: '',
   completed: 'N',
+  completionDate: '',
 });
 
 const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, onSaveCIPAsset }) => {

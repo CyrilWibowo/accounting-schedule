@@ -11,6 +11,7 @@ import AddAssetModal from './AddAssetModal';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
+import '../Leases/EditLeaseModal.css';
 import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
@@ -46,6 +47,8 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [assets, setAssets] = useState<Asset[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
+  const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   // Side panel edit state
@@ -159,7 +162,11 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setIsAddModalOpen(false);
   };
 
-  const handleDeleteSelected = async () => {
+  const handleBatchDelete = () => {
+    if (selectedAssets.size > 0) setShowBatchDeleteConfirm(true);
+  };
+
+  const handleConfirmBatchDelete = async () => {
     if (!selectedEntity) return;
     let currentAssets = assets;
     const idsToDelete = Array.from(selectedAssets);
@@ -168,6 +175,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     }
     setAssets(currentAssets);
     setSelectedAssets(new Set());
+    setShowBatchDeleteConfirm(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -203,11 +211,16 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setSelectedAssetId(null);
   };
 
-  const handleDeleteFromPanel = async () => {
+  const handleDeleteFromPanel = () => {
+    setShowPanelDeleteConfirm(true);
+  };
+
+  const handleConfirmPanelDelete = async () => {
     if (!selectedAssetId || !selectedEntity) return;
     const updatedAssets = await deleteEntityAsset(selectedEntity.id, selectedAssetId);
     setAssets(updatedAssets);
     setSelectedAssetId(null);
+    setShowPanelDeleteConfirm(false);
   };
 
   const filteredAssets = assets.filter(asset => {
@@ -400,7 +413,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                       <button className="action-btn action-copy" title="Copy">
                         <ContentCopyIcon fontSize="small" />
                       </button>
-                      <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
+                      <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
                         <DeleteIcon fontSize="small" />
                       </button>
                     </div>
@@ -492,6 +505,32 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           onSaveAsset={handleAddAsset}
           onSaveCIPAsset={handleAddCIPAsset}
         />
+      )}
+
+      {showBatchDeleteConfirm && (
+        <div className="confirm-overlay" onMouseDown={() => setShowBatchDeleteConfirm(false)}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete {selectedAssets.size} Asset{selectedAssets.size > 1 ? 's' : ''}?</h3>
+            <p className="confirm-text">Are you sure you want to delete {selectedAssets.size} selected asset{selectedAssets.size > 1 ? 's' : ''}? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => setShowBatchDeleteConfirm(false)}>Cancel</button>
+              <button className="confirm-delete-button" onClick={handleConfirmBatchDelete}>Delete {selectedAssets.size} Asset{selectedAssets.size > 1 ? 's' : ''}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPanelDeleteConfirm && editedAsset && (
+        <div className="confirm-overlay" onMouseDown={() => setShowPanelDeleteConfirm(false)}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete Asset?</h3>
+            <p className="confirm-text">Are you sure you want to delete "{editedAsset.description}"? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button>
+              <button className="confirm-delete-button" onClick={handleConfirmPanelDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import AddAssetModal from './AddAssetModal';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
+import '../Leases/EditLeaseModal.css';
 import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
@@ -42,6 +43,8 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [cipAssets, setCIPAssets] = useState<CIPAsset[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
+  const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   // Side panel edit state
@@ -148,7 +151,11 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setIsAddModalOpen(false);
   };
 
-  const handleDeleteSelected = async () => {
+  const handleBatchDelete = () => {
+    if (selectedAssets.size > 0) setShowBatchDeleteConfirm(true);
+  };
+
+  const handleConfirmBatchDelete = async () => {
     if (!selectedEntity) return;
     let current = cipAssets;
     const idsToDelete = Array.from(selectedAssets);
@@ -157,6 +164,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     }
     setCIPAssets(current);
     setSelectedAssets(new Set());
+    setShowBatchDeleteConfirm(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -175,6 +183,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     if (!editedAsset.branch) { newErrors.branch = true; isValid = false; }
     if (!editedAsset.amount.trim()) { newErrors.amount = true; isValid = false; }
     if (!editedAsset.date) { newErrors.date = true; isValid = false; }
+    if (editedAsset.completed === 'Y' && !editedAsset.completionDate) { newErrors.completionDate = true; isValid = false; }
 
     setErrors(newErrors);
     return isValid;
@@ -191,11 +200,16 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setSelectedAssetId(null);
   };
 
-  const handleDeleteFromPanel = async () => {
+  const handleDeleteFromPanel = () => {
+    setShowPanelDeleteConfirm(true);
+  };
+
+  const handleConfirmPanelDelete = async () => {
     if (!selectedAssetId || !selectedEntity) return;
     const updated = await deleteEntityCIPAsset(selectedEntity.id, selectedAssetId);
     setCIPAssets(updated);
     setSelectedAssetId(null);
+    setShowPanelDeleteConfirm(false);
   };
 
   const filteredAssets = cipAssets.filter(asset => {
@@ -317,6 +331,24 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                 <option value="Y">Y</option>
               </select>
             </div>
+
+            {editedAsset.completed === 'Y' && (
+              <>
+                <div className="form-group">
+                  <label>Completion Date *</label>
+                  {errors.completionDate && <span className="error-text">Required</span>}
+                  <input
+                    type="date"
+                    className={errors.completionDate ? 'error' : ''}
+                    value={editedAsset.completionDate}
+                    onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <button className="panel-btn transfer-btn" style={{ width: '100%' }} onClick={handleSave}>Transfer Completed Asset</button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -364,7 +396,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                   <>
                     <span className="selection-count">{selectedAssets.size} selected</span>
                     <div className="selection-actions">
-                      <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
+                      <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
                         <DeleteIcon fontSize="small" />
                       </button>
                     </div>
@@ -444,6 +476,32 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
           onSaveAsset={() => {}}
           onSaveCIPAsset={handleAddCIPAsset}
         />
+      )}
+
+      {showBatchDeleteConfirm && (
+        <div className="confirm-overlay" onMouseDown={() => setShowBatchDeleteConfirm(false)}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete {selectedAssets.size} CIP Asset{selectedAssets.size > 1 ? 's' : ''}?</h3>
+            <p className="confirm-text">Are you sure you want to delete {selectedAssets.size} selected CIP asset{selectedAssets.size > 1 ? 's' : ''}? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => setShowBatchDeleteConfirm(false)}>Cancel</button>
+              <button className="confirm-delete-button" onClick={handleConfirmBatchDelete}>Delete {selectedAssets.size} Asset{selectedAssets.size > 1 ? 's' : ''}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPanelDeleteConfirm && editedAsset && (
+        <div className="confirm-overlay" onMouseDown={() => setShowPanelDeleteConfirm(false)}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete CIP Asset?</h3>
+            <p className="confirm-text">Are you sure you want to delete "{editedAsset.description}"? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button>
+              <button className="confirm-delete-button" onClick={handleConfirmPanelDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

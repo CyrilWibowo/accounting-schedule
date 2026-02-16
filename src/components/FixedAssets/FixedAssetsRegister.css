@@ -193,3 +193,14 @@
   cursor: pointer;
   accent-color: #007bff;
 }
+
+.transfer-btn {
+  background-color: #28a745 !important;
+  color: white !important;
+  border-color: #28a745 !important;
+}
+
+.transfer-btn:hover {
+  background-color: #218838 !important;
+  border-color: #218838 !important;
+}
