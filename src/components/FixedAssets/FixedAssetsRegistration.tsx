@@ -162,7 +162,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setIsAddModalOpen(false);
   };
 
-  const handleBatchDelete = () => {
+  const handleDeleteSelected = () => {
     if (selectedAssets.size > 0) setShowBatchDeleteConfirm(true);
   };
 
@@ -413,7 +413,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                       <button className="action-btn action-copy" title="Copy">
                         <ContentCopyIcon fontSize="small" />
                       </button>
-                      <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
+                      <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
                         <DeleteIcon fontSize="small" />
                       </button>
                     </div>

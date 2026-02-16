@@ -58,6 +58,7 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   const [selectedLeases, setSelectedLeases] = useState<Set<string>>(new Set());
   const selectAllRef = useRef<HTMLInputElement>(null);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
+  const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -430,7 +431,7 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
           </div>
         </div>
         <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={() => { if (selectedLeaseId) { onDeleteLease(selectedLeaseId); setSelectedLeaseId(null); } }}>Delete</button>
+          <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
           <div className="lease-detail-actions-right"><button className="panel-btn" onClick={handleCancel}>Cancel</button><button className="panel-btn" onClick={handleSave}>Save Changes</button></div>
         </div>
       </div>
@@ -527,6 +528,15 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
                 <h3 className="confirm-title">Delete {selectedLeases.size} Leases?</h3>
                 <p className="confirm-text">Are you sure you want to delete {selectedLeases.size} selected lease{selectedLeases.size > 1 ? 's' : ''}? This action cannot be undone.</p>
                 <div className="confirm-actions"><button className="confirm-cancel-button" onClick={() => setShowBatchDeleteConfirm(false)}>Cancel</button><button className="confirm-delete-button" onClick={handleConfirmBatchDelete}>Delete {selectedLeases.size} Lease{selectedLeases.size > 1 ? 's' : ''}</button></div>
+              </div>
+            </div>
+          )}
+          {showPanelDeleteConfirm && editedLease && (
+            <div className="confirm-overlay" onMouseDown={() => setShowPanelDeleteConfirm(false)}>
+              <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+                <h3 className="confirm-title">Delete Lease?</h3>
+                <p className="confirm-text">Are you sure you want to delete "{editedLease.lessor}"? This action cannot be undone.</p>
+                <div className="confirm-actions"><button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button><button className="confirm-delete-button" onClick={() => { if (selectedLeaseId) { onDeleteLease(selectedLeaseId); setSelectedLeaseId(null); setShowPanelDeleteConfirm(false); } }}>Delete</button></div>
               </div>
             </div>
           )}
