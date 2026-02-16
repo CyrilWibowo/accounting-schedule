@@ -61,8 +61,8 @@ const navGroups: NavGroup[] = [
     items: [
       {
         icon: <AccountBalanceIcon />,
-        title: 'Fixed Assets Registration',
-        description: 'Fixed assets registration and tracking',
+        title: 'Fixed Assets Register',
+        description: 'Fixed assets register and tracking',
         view: 'fixed-assets-registration',
         color: GROUP_COLORS.fixedAssets,
       },

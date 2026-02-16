@@ -125,10 +125,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
             <div
               className={`sidebar-sub-item ${currentView === 'fixed-assets-registration' ? 'active' : ''}`}
               onClick={() => onNavigate('fixed-assets-registration')}
-              title="Registration"
+              title="Assets Register"
             >
               <AppRegistrationIcon className="sidebar-sub-icon" />
-              {!collapsed && <span className="sidebar-label">Registration</span>}
+              {!collapsed && <span className="sidebar-label">Assets Register</span>}
             </div>
             <div
               className={`sidebar-sub-item ${currentView === 'cip-schedule' ? 'active' : ''}`}

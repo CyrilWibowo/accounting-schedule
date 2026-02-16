@@ -1,5 +1,6 @@
 // utils/dataStorage.ts
 import { Lease } from '../types/Lease';
+import { Asset, CIPAsset } from '../types/Asset';
 import { Entity, AppState } from '../types/Entity';
 
 // Check if running in Electron
@@ -177,6 +178,8 @@ export const deleteEntity = async (entityId: string): Promise<boolean> => {
       const filtered = entities.filter(e => e.id !== entityId);
       localStorage.setItem('entities', JSON.stringify(filtered));
       localStorage.removeItem(`entity-leases-${entityId}`);
+      localStorage.removeItem(`entity-assets-${entityId}`);
+      localStorage.removeItem(`entity-cip-assets-${entityId}`);
       entitiesCache = filtered;
       return true;
     }
@@ -271,6 +274,152 @@ export const updateEntityLeasesCompanyCode = async (entityId: string, newCompany
     console.error('Error updating entity leases company code:', error);
     return false;
   }
+};
+
+// ============================================
+// Entity Asset functions
+// ============================================
+
+/**
+ * Load assets for a specific entity
+ */
+export const loadEntityAssets = async (entityId: string): Promise<Asset[]> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.loadEntityAssets(entityId);
+    } else {
+      const savedAssets = localStorage.getItem(`entity-assets-${entityId}`);
+      if (savedAssets) {
+        return JSON.parse(savedAssets);
+      }
+      return [];
+    }
+  } catch (error) {
+    console.error('Error loading entity assets:', error);
+    return [];
+  }
+};
+
+/**
+ * Save assets for a specific entity
+ */
+export const saveEntityAssets = async (entityId: string, assets: Asset[]): Promise<boolean> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.saveEntityAssets(entityId, assets);
+    } else {
+      localStorage.setItem(`entity-assets-${entityId}`, JSON.stringify(assets));
+      return true;
+    }
+  } catch (error) {
+    console.error('Error saving entity assets:', error);
+    return false;
+  }
+};
+
+/**
+ * Add an asset to a specific entity
+ */
+export const addEntityAsset = async (entityId: string, asset: Asset): Promise<Asset[]> => {
+  const assets = await loadEntityAssets(entityId);
+  const updatedAssets = [...assets, asset];
+  await saveEntityAssets(entityId, updatedAssets);
+  return updatedAssets;
+};
+
+/**
+ * Update an asset within a specific entity
+ */
+export const updateEntityAsset = async (entityId: string, updatedAsset: Asset): Promise<Asset[]> => {
+  const assets = await loadEntityAssets(entityId);
+  const updatedAssets = assets.map(asset =>
+    asset.id === updatedAsset.id ? updatedAsset : asset
+  );
+  await saveEntityAssets(entityId, updatedAssets);
+  return updatedAssets;
+};
+
+/**
+ * Delete an asset from a specific entity
+ */
+export const deleteEntityAsset = async (entityId: string, assetId: string): Promise<Asset[]> => {
+  const assets = await loadEntityAssets(entityId);
+  const updatedAssets = assets.filter(asset => asset.id !== assetId);
+  await saveEntityAssets(entityId, updatedAssets);
+  return updatedAssets;
+};
+
+// ============================================
+// Entity CIP Asset functions
+// ============================================
+
+/**
+ * Load CIP assets for a specific entity
+ */
+export const loadEntityCIPAssets = async (entityId: string): Promise<CIPAsset[]> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.loadEntityCIPAssets(entityId);
+    } else {
+      const saved = localStorage.getItem(`entity-cip-assets-${entityId}`);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      return [];
+    }
+  } catch (error) {
+    console.error('Error loading entity CIP assets:', error);
+    return [];
+  }
+};
+
+/**
+ * Save CIP assets for a specific entity
+ */
+export const saveEntityCIPAssets = async (entityId: string, assets: CIPAsset[]): Promise<boolean> => {
+  try {
+    if (isElectron()) {
+      return await window.electronAPI!.saveEntityCIPAssets(entityId, assets);
+    } else {
+      localStorage.setItem(`entity-cip-assets-${entityId}`, JSON.stringify(assets));
+      return true;
+    }
+  } catch (error) {
+    console.error('Error saving entity CIP assets:', error);
+    return false;
+  }
+};
+
+/**
+ * Add a CIP asset to a specific entity
+ */
+export const addEntityCIPAsset = async (entityId: string, asset: CIPAsset): Promise<CIPAsset[]> => {
+  const assets = await loadEntityCIPAssets(entityId);
+  const updatedAssets = [...assets, asset];
+  await saveEntityCIPAssets(entityId, updatedAssets);
+  return updatedAssets;
+};
+
+/**
+ * Update a CIP asset within a specific entity
+ */
+export const updateEntityCIPAsset = async (entityId: string, updatedAsset: CIPAsset): Promise<CIPAsset[]> => {
+  const assets = await loadEntityCIPAssets(entityId);
+  const updatedAssets = assets.map(asset =>
+    asset.id === updatedAsset.id ? updatedAsset : asset
+  );
+  await saveEntityCIPAssets(entityId, updatedAssets);
+  return updatedAssets;
+};
+
+/**
+ * Delete a CIP asset from a specific entity
+ */
+export const deleteEntityCIPAsset = async (entityId: string, assetId: string): Promise<CIPAsset[]> => {
+  const assets = await loadEntityCIPAssets(entityId);
+  const updatedAssets = assets.filter(asset => asset.id !== assetId);
+  await saveEntityCIPAssets(entityId, updatedAssets);
+  return updatedAssets;
 };
 
 // ============================================

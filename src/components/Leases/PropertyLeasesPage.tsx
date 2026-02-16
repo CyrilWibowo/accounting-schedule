@@ -478,7 +478,7 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
               <h2>Property Leases ({filterLeases(propertyLeases, filter).length})</h2>
               <div className="page-header-actions">
                 <button className="entities-add-button" onClick={onAddLease} disabled={!isEntitySelected}>New Card</button>
-                <button className="entities-add-button" onClick={onOpenReport} disabled={!isEntitySelected} style={{ backgroundColor: '#007bff' }}>AASB16 Report</button>
+                <button className="entities-add-button" onClick={onOpenReport} disabled={!isEntitySelected} style={{ backgroundColor: '#28a745' }}>AASB16 Report</button>
               </div>
             </div>
             <div className="selection-bar">

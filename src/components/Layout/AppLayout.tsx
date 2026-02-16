@@ -207,9 +207,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
           />
         );
       case 'fixed-assets-registration':
-        return <FixedAssetsRegistration onNavigate={onNavigate} />;
+        return <FixedAssetsRegistration onNavigate={onNavigate} selectedEntity={selectedEntity} />;
       case 'cip-schedule':
-        return <CIPSchedule onNavigate={onNavigate} />;
+        return <CIPSchedule onNavigate={onNavigate} selectedEntity={selectedEntity} />;
       case 'settings':
         return <SettingsPage onDataPathChanged={handleDataPathChanged} />;
       default:
