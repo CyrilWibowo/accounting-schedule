@@ -5,8 +5,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { Asset, CIPAsset, AssetCategory, AssetBranch } from '../../types/Asset';
-import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset, addEntityCIPAsset } from '../../utils/dataStorage';
+import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
+import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
@@ -156,12 +156,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setIsAddModalOpen(false);
   };
 
-  const handleAddCIPAsset = async (cipAsset: CIPAsset) => {
-    if (!selectedEntity) return;
-    await addEntityCIPAsset(selectedEntity.id, cipAsset);
-    setIsAddModalOpen(false);
-  };
-
   const handleDeleteSelected = () => {
     if (selectedAssets.size > 0) setShowBatchDeleteConfirm(true);
   };
@@ -246,8 +240,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
       <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
-          <div className="lease-detail-header">
-            <h3>Edit Asset</h3>
+          <div className="lease-detail-header" style={{ justifyContent: 'flex-end' }}>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
 
@@ -503,7 +496,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
         <AddAssetModal
           onClose={() => setIsAddModalOpen(false)}
           onSaveAsset={handleAddAsset}
-          onSaveCIPAsset={handleAddCIPAsset}
         />
       )}
 

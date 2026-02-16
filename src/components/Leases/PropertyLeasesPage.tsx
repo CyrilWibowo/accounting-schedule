@@ -372,7 +372,7 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
           <div className="lease-detail-header">
-            <button className="download-btn" onClick={() => { const lease = propertyLeases.find(l => l.id === selectedLeaseId); if (lease) setXlsxModalLease(lease); }}>AASB16</button>
+            <button className="entities-add-button" style={{ backgroundColor: '#28a745' }} onClick={() => { const lease = propertyLeases.find(l => l.id === selectedLeaseId); if (lease) setXlsxModalLease(lease); }}>AASB16</button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
           <div className="form-grid">

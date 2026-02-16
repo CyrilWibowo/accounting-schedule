@@ -13,6 +13,15 @@ export interface Asset {
   depreciationRate: string;
 }
 
+export interface CIPInvoice {
+  id: string;
+  description: string;
+  vendorName: string;
+  invoiceNo: string;
+  date: string;
+  amount: string;
+}
+
 export interface CIPAsset {
   id: string;
   assetType: 'CIP';
@@ -25,6 +34,8 @@ export interface CIPAsset {
   amount: string;
   completed: 'Y' | 'N';
   completionDate: string;
+  usefulLife: string;
+  invoices: CIPInvoice[];
 }
 
 export type AssetCategory = '' | 'Office Equipment' | 'Motor Vehicle' | 'Warehouse Equipment' | 'Manufacturing Equipment' | 'Equipment for Leased' | 'Software';

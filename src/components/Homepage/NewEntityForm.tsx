@@ -95,7 +95,7 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
     <div className="new-entity-overlay" onMouseDown={handleOverlayClick}>
       <div className="new-entity-modal">
         <div className="new-entity-header">
-          <h2>{isEditMode ? 'Edit Entity' : 'New Entity'}</h2>
+          <h2>New Entity</h2>
           <button className="new-entity-close" onClick={onClose}>
             &times;
           </button>

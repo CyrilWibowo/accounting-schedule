@@ -140,8 +140,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
       <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
-          <div className="lease-detail-header">
-            <span style={{ fontWeight: 600, fontSize: '16px' }}>Edit Entity</span>
+          <div className="lease-detail-header" style={{ justifyContent: 'flex-end' }}>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
           <div className="form-grid">

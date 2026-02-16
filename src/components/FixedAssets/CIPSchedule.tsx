@@ -2,11 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { CIPAsset, AssetCategory, AssetBranch } from '../../types/Asset';
+import { CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
 import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset } from '../../utils/dataStorage';
-import AddAssetModal from './AddAssetModal';
+import AddCIPModal from './AddCIPModal';
+import AddCIPInvoiceModal from './AddCIPInvoiceModal';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
@@ -23,14 +26,12 @@ interface CIPScheduleProps {
 
 const COLUMNS = [
   'CIP Code',
-  'Description',
+  'Asset Name',
   'Category',
   'Branch',
-  'Vendor Name',
-  'Invoice',
-  'Date',
-  'Amount',
   'Completed',
+  'Invoices',
+  'Total',
 ];
 
 const EMPTY_ROW_COUNT = 15;
@@ -45,6 +46,11 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [isAddInvoiceModalOpen, setIsAddInvoiceModalOpen] = useState(false);
+  const [editedInvoice, setEditedInvoice] = useState<CIPInvoice | null>(null);
+  const [invoiceErrors, setInvoiceErrors] = useState<{ [key: string]: boolean }>({});
+  const [showInvoiceDeleteConfirm, setShowInvoiceDeleteConfirm] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   // Side panel edit state
@@ -140,8 +146,20 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setSelectedAssets(newSet);
   };
 
+  const handleToggleExpand = (assetId: string) => {
+    const newSet = new Set(expandedRows);
+    if (newSet.has(assetId)) {
+      newSet.delete(assetId);
+    } else {
+      newSet.add(assetId);
+    }
+    setExpandedRows(newSet);
+  };
+
   const handleRowClick = (assetId: string) => {
     setSelectedAssetId(selectedAssetId === assetId ? null : assetId);
+    setEditedInvoice(null);
+    setInvoiceErrors({});
   };
 
   const handleAddCIPAsset = async (cipAsset: CIPAsset) => {
@@ -181,8 +199,6 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     if (!editedAsset.description.trim()) { newErrors.description = true; isValid = false; }
     if (!editedAsset.category) { newErrors.category = true; isValid = false; }
     if (!editedAsset.branch) { newErrors.branch = true; isValid = false; }
-    if (!editedAsset.amount.trim()) { newErrors.amount = true; isValid = false; }
-    if (!editedAsset.date) { newErrors.date = true; isValid = false; }
     if (editedAsset.completed === 'Y' && !editedAsset.completionDate) { newErrors.completionDate = true; isValid = false; }
 
     setErrors(newErrors);
@@ -196,8 +212,82 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setSelectedAssetId(null);
   };
 
+  const handleTransfer = async () => {
+    if (!editedAsset || !selectedEntity) return;
+    const newErrors: { [key: string]: boolean } = {};
+    let isValid = true;
+
+    if (!editedAsset.description.trim()) { newErrors.description = true; isValid = false; }
+    if (!editedAsset.category) { newErrors.category = true; isValid = false; }
+    if (!editedAsset.branch) { newErrors.branch = true; isValid = false; }
+    if (!editedAsset.completionDate) { newErrors.completionDate = true; isValid = false; }
+    if (!editedAsset.usefulLife?.trim()) { newErrors.usefulLife = true; isValid = false; }
+
+    setErrors(newErrors);
+    if (!isValid) return;
+
+    const updated = await updateEntityCIPAsset(selectedEntity.id, editedAsset);
+    setCIPAssets(updated);
+    setSelectedAssetId(null);
+  };
+
+  const handleAddInvoice = async (invoice: CIPInvoice) => {
+    if (!editedAsset || !selectedEntity) return;
+    const updatedAsset = { ...editedAsset, invoices: [...(editedAsset.invoices || []), invoice] };
+    const updated = await updateEntityCIPAsset(selectedEntity.id, updatedAsset);
+    setCIPAssets(updated);
+    setIsAddInvoiceModalOpen(false);
+  };
+
+  const handleInvoiceInputChange = (field: keyof CIPInvoice, value: string) => {
+    if (!editedInvoice) return;
+    setEditedInvoice({ ...editedInvoice, [field]: value });
+    if (invoiceErrors[field]) setInvoiceErrors({ ...invoiceErrors, [field]: false });
+  };
+
+  const validateInvoiceForm = (): boolean => {
+    if (!editedInvoice) return false;
+    const newErrors: { [key: string]: boolean } = {};
+    let isValid = true;
+    if (!editedInvoice.description.trim()) { newErrors.description = true; isValid = false; }
+    if (!editedInvoice.vendorName.trim()) { newErrors.vendorName = true; isValid = false; }
+    if (!editedInvoice.invoiceNo.trim()) { newErrors.invoiceNo = true; isValid = false; }
+    if (!editedInvoice.date) { newErrors.date = true; isValid = false; }
+    if (!editedInvoice.amount.trim()) { newErrors.amount = true; isValid = false; }
+    setInvoiceErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSaveInvoice = async () => {
+    if (!editedInvoice || !editedAsset || !selectedEntity || !validateInvoiceForm()) return;
+    const updatedInvoices = (editedAsset.invoices || []).map(inv => inv.id === editedInvoice.id ? editedInvoice : inv);
+    const updatedAsset = { ...editedAsset, invoices: updatedInvoices };
+    const updated = await updateEntityCIPAsset(selectedEntity.id, updatedAsset);
+    setCIPAssets(updated);
+    setEditedInvoice(null);
+    setInvoiceErrors({});
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!editedInvoice || !editedAsset || !selectedEntity) return;
+    const updatedInvoices = (editedAsset.invoices || []).filter(inv => inv.id !== editedInvoice.id);
+    const updatedAsset = { ...editedAsset, invoices: updatedInvoices };
+    const updated = await updateEntityCIPAsset(selectedEntity.id, updatedAsset);
+    setCIPAssets(updated);
+    setEditedInvoice(null);
+    setShowInvoiceDeleteConfirm(false);
+  };
+
+  const handleCancelInvoice = () => {
+    setEditedInvoice(null);
+    setInvoiceErrors({});
+    setSelectedAssetId(null);
+  };
+
   const handleCancel = () => {
     setSelectedAssetId(null);
+    setEditedInvoice(null);
+    setInvoiceErrors({});
   };
 
   const handleDeleteFromPanel = () => {
@@ -215,11 +305,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
   const filteredAssets = cipAssets.filter(asset => {
     if (search) {
       const term = search.toLowerCase();
-      return asset.description.toLowerCase().includes(term) ||
+      return asset.id.toLowerCase().includes(term) ||
+        asset.description.toLowerCase().includes(term) ||
         asset.category.toLowerCase().includes(term) ||
-        asset.branch.toLowerCase().includes(term) ||
-        asset.vendorName.toLowerCase().includes(term) ||
-        asset.invoice.toLowerCase().includes(term);
+        asset.branch.toLowerCase().includes(term);
     }
     return true;
   });
@@ -229,12 +318,90 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
   const renderDetailPanel = () => {
     if (!editedAsset || !selectedAssetId) return null;
 
+    if (editedInvoice) {
+      return (
+        <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
+          <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
+          <div className="side-panel-content">
+            <div className="lease-detail-header" style={{ justifyContent: 'flex-end' }}>
+              <button className="lease-detail-close" onClick={handleCancelInvoice}><CloseIcon /></button>
+            </div>
+
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Invoice ID</label>
+                <input type="text" className="readonly-input" value={editedInvoice.id} readOnly />
+              </div>
+              <div className="form-group">
+                <label>Description *</label>
+                {invoiceErrors.description && <span className="error-text">Required</span>}
+                <input
+                  type="text"
+                  className={invoiceErrors.description ? 'error' : ''}
+                  value={editedInvoice.description}
+                  onChange={(e) => handleInvoiceInputChange('description', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Vendor Name *</label>
+                {invoiceErrors.vendorName && <span className="error-text">Required</span>}
+                <input
+                  type="text"
+                  className={invoiceErrors.vendorName ? 'error' : ''}
+                  value={editedInvoice.vendorName}
+                  onChange={(e) => handleInvoiceInputChange('vendorName', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Invoice No. *</label>
+                {invoiceErrors.invoiceNo && <span className="error-text">Required</span>}
+                <input
+                  type="text"
+                  className={invoiceErrors.invoiceNo ? 'error' : ''}
+                  value={editedInvoice.invoiceNo}
+                  onChange={(e) => handleInvoiceInputChange('invoiceNo', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Invoice Date *</label>
+                {invoiceErrors.date && <span className="error-text">Required</span>}
+                <input
+                  type="date"
+                  className={invoiceErrors.date ? 'error' : ''}
+                  value={editedInvoice.date}
+                  onChange={(e) => handleInvoiceInputChange('date', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Amount *</label>
+                {invoiceErrors.amount && <span className="error-text">Required</span>}
+                <input
+                  type="number"
+                  className={invoiceErrors.amount ? 'error' : ''}
+                  value={editedInvoice.amount}
+                  onChange={(e) => handleInvoiceInputChange('amount', e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="lease-detail-actions">
+            <button className="panel-btn" onClick={() => setShowInvoiceDeleteConfirm(true)}>Delete</button>
+            <div className="lease-detail-actions-right">
+              <button className="panel-btn" onClick={handleCancelInvoice}>Cancel</button>
+              <button className="panel-btn" onClick={handleSaveInvoice}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
           <div className="lease-detail-header">
-            <h3>Edit CIP Asset</h3>
+            <button className="entities-add-button" onClick={() => setIsAddInvoiceModalOpen(true)}>Add Invoice</button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
 
@@ -245,7 +412,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
             </div>
 
             <div className="form-group">
-              <label>Description *</label>
+              <label>Asset Name *</label>
               {errors.description && <span className="error-text">Required</span>}
               <input
                 type="text"
@@ -269,35 +436,6 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
             </div>
 
             <div className="form-group">
-              <label>Vendor Name</label>
-              <input
-                type="text"
-                value={editedAsset.vendorName}
-                onChange={(e) => handleInputChange('vendorName', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Invoice</label>
-              <input
-                type="text"
-                value={editedAsset.invoice}
-                onChange={(e) => handleInputChange('invoice', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Date *</label>
-              {errors.date && <span className="error-text">Required</span>}
-              <input
-                type="date"
-                className={errors.date ? 'error' : ''}
-                value={editedAsset.date}
-                onChange={(e) => handleInputChange('date', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
               <label>Branch *</label>
               {errors.branch && <span className="error-text">Required</span>}
               <select
@@ -311,24 +449,13 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
             </div>
 
             <div className="form-group">
-              <label>Amount *</label>
-              {errors.amount && <span className="error-text">Required</span>}
-              <input
-                type="number"
-                className={errors.amount ? 'error' : ''}
-                value={editedAsset.amount}
-                onChange={(e) => handleInputChange('amount', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
               <label>Completed</label>
               <select
                 value={editedAsset.completed}
                 onChange={(e) => handleInputChange('completed', e.target.value)}
               >
-                <option value="N">N</option>
-                <option value="Y">Y</option>
+                <option value="N">No</option>
+                <option value="Y">Yes</option>
               </select>
             </div>
 
@@ -345,7 +472,17 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                   />
                 </div>
                 <div className="form-group">
-                  <button className="panel-btn transfer-btn" style={{ width: '100%' }} onClick={handleSave}>Transfer Completed Asset</button>
+                  <label>Useful Life (Years){errors.usefulLife ? ' *' : ''}</label>
+                  {errors.usefulLife && <span className="error-text">Required to transfer</span>}
+                  <input
+                    type="number"
+                    className={errors.usefulLife ? 'error' : ''}
+                    value={editedAsset.usefulLife}
+                    onChange={(e) => handleInputChange('usefulLife', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <button className="panel-btn transfer-btn" style={{ width: '100%' }} onClick={handleTransfer}>Transfer Completed Asset</button>
                 </div>
               </>
             )}
@@ -379,7 +516,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                   onClick={() => setIsAddModalOpen(true)}
                   disabled={!selectedEntity}
                 >
-                  New CIP Asset
+                  New CIP
                 </button>
               </div>
             </div>
@@ -417,42 +554,92 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                 <table className="asset-table">
                   <thead>
                     <tr>
-                      <th style={{ width: 40 }}></th>
+                      <th style={{ width: 28, padding: 0 }}></th>
+                      <th style={{ width: 32, padding: 0 }}></th>
                       {COLUMNS.map((col) => (
                         <th key={col}>{col}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAssets.map((asset) => (
-                      <tr
-                        key={asset.id}
-                        className={selectedAssetId === asset.id ? 'selected-row' : ''}
-                        onClick={() => handleRowClick(asset.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <td style={{ textAlign: 'center', padding: 8 }} onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            className="lease-checkbox"
-                            checked={selectedAssets.has(asset.id)}
-                            onChange={() => handleToggleAsset(asset.id)}
-                          />
-                        </td>
-                        <td>{asset.id}</td>
-                        <td>{asset.description}</td>
-                        <td>{asset.category}</td>
-                        <td>{asset.branch}</td>
-                        <td>{asset.vendorName}</td>
-                        <td>{asset.invoice}</td>
-                        <td>{asset.date ? new Date(asset.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
-                        <td>{asset.amount ? `$${Number(asset.amount).toLocaleString()}` : ''}</td>
-                        <td>{asset.completed}</td>
-                      </tr>
-                    ))}
+                    {filteredAssets.map((asset) => {
+                      const isExpanded = expandedRows.has(asset.id);
+                      const invoices = asset.invoices || [];
+                      return (
+                        <React.Fragment key={asset.id}>
+                          <tr
+                            className={selectedAssetId === asset.id && !editedInvoice ? 'selected-row' : ''}
+                            onClick={() => handleRowClick(asset.id)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td style={{ padding: 0 }} onClick={(e) => e.stopPropagation()}>
+                              <button
+                                className="expand-btn"
+                                onClick={() => handleToggleExpand(asset.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', width: '100%' }}
+                              >
+                                {isExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                              </button>
+                            </td>
+                            <td style={{ textAlign: 'center', padding: '4px 0' }} onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                className="lease-checkbox"
+                                checked={selectedAssets.has(asset.id)}
+                                onChange={() => handleToggleAsset(asset.id)}
+                              />
+                            </td>
+                            <td>{asset.id}</td>
+                            <td>{asset.description}</td>
+                            <td>{asset.category}</td>
+                            <td>{asset.branch}</td>
+                            <td>{asset.completed === 'Y' ? 'Yes' : 'No'}</td>
+                            <td>{invoices.length}</td>
+                            <td>{invoices.length > 0 ? `$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}` : ''}</td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="invoice-expand-row">
+                              <td colSpan={COLUMNS.length + 2} style={{ padding: 0 }}>
+                                <div className="cip-invoices-container">
+                                  {invoices.length === 0 ? (
+                                    <span className="cip-invoices-empty">No invoices</span>
+                                  ) : (
+                                    <table className="cip-invoices-table">
+                                      <thead>
+                                        <tr>
+                                          <th>ID</th>
+                                          <th>Description</th>
+                                          <th>Vendor</th>
+                                          <th>Invoice No.</th>
+                                          <th>Date</th>
+                                          <th>Amount</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {invoices.map(inv => (
+                                          <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
+                                            <td>{inv.id}</td>
+                                            <td>{inv.description}</td>
+                                            <td>{inv.vendorName}</td>
+                                            <td>{inv.invoiceNo}</td>
+                                            <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
+                                            <td>{inv.amount ? `$${Number(inv.amount).toLocaleString()}` : ''}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                     {Array.from({ length: emptyRowsNeeded }).map((_, i) => (
                       <tr key={`empty-${i}`}>
-                        <td style={{ textAlign: 'center', padding: 8 }}>
+                        <td style={{ padding: 0 }}></td>
+                        <td style={{ textAlign: 'center', padding: '4px 0' }}>
                           <input type="checkbox" className="lease-checkbox" disabled />
                         </td>
                         {COLUMNS.map((col) => (
@@ -471,10 +658,16 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
       {selectedAssetId && renderDetailPanel()}
 
       {isAddModalOpen && selectedEntity && (
-        <AddAssetModal
+        <AddCIPModal
           onClose={() => setIsAddModalOpen(false)}
-          onSaveAsset={() => {}}
           onSaveCIPAsset={handleAddCIPAsset}
+        />
+      )}
+
+      {isAddInvoiceModalOpen && selectedAssetId && (
+        <AddCIPInvoiceModal
+          onClose={() => setIsAddInvoiceModalOpen(false)}
+          onSave={handleAddInvoice}
         />
       )}
 
@@ -499,6 +692,19 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
             <div className="confirm-actions">
               <button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button>
               <button className="confirm-delete-button" onClick={handleConfirmPanelDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInvoiceDeleteConfirm && editedInvoice && (
+        <div className="confirm-overlay" onMouseDown={() => setShowInvoiceDeleteConfirm(false)}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Delete Invoice?</h3>
+            <p className="confirm-text">Are you sure you want to delete invoice "{editedInvoice.description}"? This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => setShowInvoiceDeleteConfirm(false)}>Cancel</button>
+              <button className="confirm-delete-button" onClick={handleDeleteInvoice}>Delete</button>
             </div>
           </div>
         </div>
