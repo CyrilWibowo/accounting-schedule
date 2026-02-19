@@ -4,12 +4,14 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { Entity } from '../../types/Entity';
 import { View } from '../Layout/Sidebar';
 import { saveEntity, updateEntityLeasesCompanyCode } from '../../utils/dataStorage';
+import Toast, { useToast } from '../shared/Toast';
 import '../Leases/Dashboard.css';
 import '../Leases/EditLeaseModal.css';
 import './EntitiesPage.css';
 
 interface EntitiesPageProps {
   entities: Entity[];
+  selectedEntity: Entity | null;
   onDelete: (entityId: string) => void;
   onAdd: () => void;
   onEntityUpdated: (entity: Entity) => void;
@@ -22,6 +24,7 @@ const MAX_PANEL_WIDTH = 700;
 
 const EntitiesPage: React.FC<EntitiesPageProps> = ({
   entities,
+  selectedEntity,
   onDelete,
   onAdd,
   onEntityUpdated,
@@ -36,6 +39,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const emptyRows = 10;
+  const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -116,6 +120,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
       }
       onEntityUpdated(editedEntity);
       setSelectedId(null);
+      showToast('Entity updated', 'edit');
     }
   };
 
@@ -130,6 +135,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
       onDelete(selectedId);
       setSelectedId(null);
       setShowDeleteConfirm(false);
+      showToast('Entity deleted', 'delete');
     }
   };
 
@@ -244,7 +250,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
                         onClick={() => entity && handleRowClick(entity.id)}
                         style={entity ? { cursor: 'pointer' } : undefined}
                       >
-                        <td>{entity ? entity.name : ''}</td>
+                        <td>{entity ? <>{entity.name}{selectedEntity?.id === entity.id && <span className="active-entity-badge">Active</span>}</> : ''}</td>
                         <td>{entity ? entity.companyCode : ''}</td>
                         <td>{entity ? entity.abnAcn : ''}</td>
                         <td>{entity ? entity.address : ''}</td>
@@ -273,6 +279,7 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
         </div>
       </div>
       {selectedId && renderDetailPanel()}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </div>
   );
 };

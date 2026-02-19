@@ -23,6 +23,7 @@ import PropertyLeasesPage from '../Leases/PropertyLeasesPage';
 import MobileEquipmentLeasesPage from '../Leases/MobileEquipmentLeasesPage';
 import FixedAssetsRegistration from '../FixedAssets/FixedAssetsRegistration';
 import CIPSchedule from '../FixedAssets/CIPSchedule';
+import Toast, { useToast } from '../shared/Toast';
 import './AppLayout.css';
 
 interface AppLayoutProps {
@@ -40,6 +41,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
   const [isAddLeaseModalOpen, setIsAddLeaseModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const init = async () => {
@@ -84,6 +86,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
       setSelectedEntity(entity);
     }
     setEditingEntity(null);
+    showToast('Entity created', 'success');
   };
 
   const handleEditEntity = (entity: Entity) => {
@@ -131,6 +134,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
     const updatedLeases = await addEntityLease(selectedEntity.id, newLease);
     setLeases(updatedLeases);
     setIsAddLeaseModalOpen(false);
+    showToast('Lease created', 'success');
   };
 
   const handleUpdateLease = async (updatedLease: Lease) => {
@@ -169,6 +173,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
         return (
           <EntitiesPage
             entities={entities}
+            selectedEntity={selectedEntity}
             onDelete={handleDeleteEntity}
             onAdd={() => {
               setEditingEntity(null);
@@ -275,6 +280,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
           entityCompanyCode={selectedEntity.companyCode}
         />
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
       {isReportModalOpen && (
         <ReportModal
           onClose={() => setIsReportModalOpen(false)}

@@ -30,7 +30,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentView, onNavigate }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [leasesExpanded, setLeasesExpanded] = useState(true);
-  const [fixedAssetsExpanded, setFixedAssetsExpanded] = useState(false);
+  const [fixedAssetsExpanded, setFixedAssetsExpanded] = useState(true);
 
   const isLeaseView = currentView === 'property-leases' || currentView === 'mobile-equipment-leases';
   const isFixedAssetView = currentView === 'fixed-assets-registration' || currentView === 'cip-schedule';

@@ -8,6 +8,7 @@ import { Entity } from '../../types/Entity';
 import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
 import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
+import Toast, { useToast } from '../shared/Toast';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
@@ -59,6 +60,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -154,6 +156,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     const updatedAssets = await addEntityAsset(selectedEntity.id, asset);
     setAssets(updatedAssets);
     setIsAddModalOpen(false);
+    showToast('Asset created', 'success');
   };
 
   const handleDeleteSelected = () => {
@@ -170,6 +173,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setAssets(currentAssets);
     setSelectedAssets(new Set());
     setShowBatchDeleteConfirm(false);
+    showToast('Asset(s) deleted', 'delete');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -199,6 +203,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     const updatedAssets = await updateEntityAsset(selectedEntity.id, editedAsset);
     setAssets(updatedAssets);
     setSelectedAssetId(null);
+    showToast('Changes saved', 'edit');
   };
 
   const handleCancel = () => {
@@ -215,6 +220,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setAssets(updatedAssets);
     setSelectedAssetId(null);
     setShowPanelDeleteConfirm(false);
+    showToast('Asset deleted', 'delete');
   };
 
   const filteredAssets = assets.filter(asset => {
@@ -467,7 +473,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                         <td>{asset.vendorName}</td>
                         <td>{asset.invoice}</td>
                         <td>{asset.usefulLife}</td>
-                        <td>{asset.depreciationRate ? `${asset.depreciationRate}%` : ''}</td>
+                        <td>{asset.depreciationRate ? `${Number(asset.depreciationRate).toFixed(2)}%` : ''}</td>
                         <td>{asset.tagNo}</td>
                         <td>{asset.serialNo}</td>
                       </tr>
@@ -524,6 +530,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           </div>
         </div>
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </div>
   );
 };

@@ -6,10 +6,11 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
-import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset } from '../../utils/dataStorage';
+import { Asset, CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
+import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset, addEntityAsset } from '../../utils/dataStorage';
 import AddCIPModal from './AddCIPModal';
 import AddCIPInvoiceModal from './AddCIPInvoiceModal';
+import Toast, { useToast } from '../shared/Toast';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
@@ -18,6 +19,21 @@ import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
 const BRANCHES: AssetBranch[] = ['CORP', 'PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'PARK'];
+
+const CATEGORY_CODE: Record<string, string> = {
+  'Office Equipment': 'O',
+  'Motor Vehicle': 'V',
+  'Warehouse Equipment': 'W',
+  'Manufacturing Equipment': 'M',
+  'Equipment for Leased': 'L',
+  'Software': 'S',
+};
+
+const generateAssetId = (branch: AssetBranch, category: AssetCategory): string => {
+  const catCode = CATEGORY_CODE[category] || 'X';
+  const rand = Math.floor(1000 + Math.random() * 9000).toString();
+  return `${branch}${catCode}${rand}`;
+};
 
 interface CIPScheduleProps {
   onNavigate: (view: View) => void;
@@ -61,6 +77,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -167,6 +184,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     const updated = await addEntityCIPAsset(selectedEntity.id, cipAsset);
     setCIPAssets(updated);
     setIsAddModalOpen(false);
+    showToast('CIP created', 'success');
   };
 
   const handleBatchDelete = () => {
@@ -183,6 +201,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setCIPAssets(current);
     setSelectedAssets(new Set());
     setShowBatchDeleteConfirm(false);
+    showToast('CIP asset(s) deleted', 'delete');
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -210,6 +229,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     const updated = await updateEntityCIPAsset(selectedEntity.id, editedAsset);
     setCIPAssets(updated);
     setSelectedAssetId(null);
+    showToast('Changes saved', 'edit');
   };
 
   const handleTransfer = async () => {
@@ -226,9 +246,32 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setErrors(newErrors);
     if (!isValid) return;
 
+    const invoices = editedAsset.invoices || [];
+    const totalCost = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+    const usefulLifeNum = Number(editedAsset.usefulLife) || 1;
+    const depRate = (1 / usefulLifeNum).toFixed(2);
+
+    const newAsset: Asset = {
+      id: generateAssetId(editedAsset.branch as AssetBranch, editedAsset.category as AssetCategory),
+      assetType: 'Regular',
+      description: editedAsset.description,
+      category: editedAsset.category,
+      branch: editedAsset.branch,
+      cost: totalCost.toString(),
+      vendorName: 'N/A',
+      invoice: 'N/A',
+      usefulLife: editedAsset.usefulLife,
+      depreciationRate: depRate,
+      tagNo: 'N/A',
+      serialNo: 'N/A',
+    };
+
+    await addEntityAsset(selectedEntity.id, newAsset);
+
     const updated = await updateEntityCIPAsset(selectedEntity.id, editedAsset);
     setCIPAssets(updated);
     setSelectedAssetId(null);
+    showToast('Asset transferred', 'success');
   };
 
   const handleAddInvoice = async (invoice: CIPInvoice) => {
@@ -237,6 +280,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     const updated = await updateEntityCIPAsset(selectedEntity.id, updatedAsset);
     setCIPAssets(updated);
     setIsAddInvoiceModalOpen(false);
+    showToast('Invoice added', 'success');
   };
 
   const handleInvoiceInputChange = (field: keyof CIPInvoice, value: string) => {
@@ -266,6 +310,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setCIPAssets(updated);
     setEditedInvoice(null);
     setInvoiceErrors({});
+    showToast('Changes saved', 'edit');
   };
 
   const handleDeleteInvoice = async () => {
@@ -276,6 +321,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setCIPAssets(updated);
     setEditedInvoice(null);
     setShowInvoiceDeleteConfirm(false);
+    showToast('Invoice deleted', 'delete');
   };
 
   const handleCancelInvoice = () => {
@@ -300,6 +346,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     setCIPAssets(updated);
     setSelectedAssetId(null);
     setShowPanelDeleteConfirm(false);
+    showToast('CIP asset deleted', 'delete');
   };
 
   const filteredAssets = cipAssets.filter(asset => {
@@ -709,6 +756,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
           </div>
         </div>
       )}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </div>
   );
 };

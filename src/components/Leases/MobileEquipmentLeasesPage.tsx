@@ -8,6 +8,7 @@ import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentE
 import { exportMobileEquipmentLeasesToExcel } from './excel/tableExporter';
 import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import AddOpeningBalanceForm from './AddOpeningBalanceForm';
+import Toast, { useToast } from '../shared/Toast';
 import './Dashboard.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
@@ -59,6 +60,7 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -220,7 +222,7 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
     return isValid;
   };
 
-  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setSelectedLeaseId(null); } };
+  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setSelectedLeaseId(null); showToast('Changes saved', 'edit'); } };
   const handleCancel = () => setSelectedLeaseId(null);
 
   const handleAddOpeningBalance = (ob: OpeningBalance) => {
@@ -254,6 +256,7 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
     for (const leaseId of Array.from(selectedLeases)) await onDeleteLease(leaseId);
     setSelectedLeases(new Set());
     setShowBatchDeleteConfirm(false);
+    showToast('Lease(s) deleted', 'delete');
   };
   const handleBatchExport = () => {
     if (selectedLeases.size === 0) return;
@@ -437,13 +440,14 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
               <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
                 <h3 className="confirm-title">Delete Lease?</h3>
                 <p className="confirm-text">Are you sure you want to delete "{editedLease.lessor}"? This action cannot be undone.</p>
-                <div className="confirm-actions"><button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button><button className="confirm-delete-button" onClick={() => { if (selectedLeaseId) { onDeleteLease(selectedLeaseId); setSelectedLeaseId(null); setShowPanelDeleteConfirm(false); } }}>Delete</button></div>
+                <div className="confirm-actions"><button className="confirm-cancel-button" onClick={() => setShowPanelDeleteConfirm(false)}>Cancel</button><button className="confirm-delete-button" onClick={() => { if (selectedLeaseId) { onDeleteLease(selectedLeaseId); setSelectedLeaseId(null); setShowPanelDeleteConfirm(false); showToast('Lease deleted', 'delete'); } }}>Delete</button></div>
               </div>
             </div>
           )}
         </div>
       </div>
       {selectedLeaseId && renderDetailPanel()}
+      {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </div>
   );
 };
