@@ -9,6 +9,7 @@ export interface Asset {
   cost: string;
   vendorName: string;
   invoice: string;
+  acquisitionDate: string;
   usefulLife: string;
   depreciationRate: string;
 }

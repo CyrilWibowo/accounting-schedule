@@ -34,11 +34,19 @@
   margin-left: 4px;
 }
 
-.assets-register-body .selection-actions {
+.assets-register-body .selection-bar-left {
   display: flex;
+  align-items: center;
   gap: 4px;
+}
+
+.assets-register-body .selection-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
 }
+
 
 .assets-register-body .action-btn {
   display: flex;
@@ -58,6 +66,10 @@
   background-color: rgba(0, 0, 0, 0.05);
 }
 
+.assets-register-body .action-copy {
+  margin-left: 8px;
+}
+
 .assets-register-body .action-copy:hover {
   color: #17a2b8;
   background-color: rgba(23, 162, 184, 0.1);
@@ -69,7 +81,6 @@
 }
 
 .assets-register-body .search-input {
-  margin-left: auto;
   padding: 6px 12px;
   border: 1px solid #d0d0d0;
   border-radius: 4px;
@@ -187,6 +198,15 @@
   color: #212529;
 }
 
+.asset-table th:nth-child(11),
+.asset-table th:nth-child(12),
+.asset-table th:nth-child(13),
+.asset-table td:nth-child(11),
+.asset-table td:nth-child(12),
+.asset-table td:nth-child(13) {
+  text-align: right;
+}
+
 .asset-table .lease-checkbox {
   width: 18px;
   height: 18px;
@@ -260,4 +280,104 @@
 .transfer-btn:hover {
   background-color: #218838 !important;
   border-color: #218838 !important;
+}
+
+/* Asset Upload Preview Modal */
+.asset-upload-modal {
+  background-color: white;
+  border-radius: 8px;
+  padding: 24px 28px;
+  width: 95vw;
+  max-width: 1200px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.asset-upload-header h2 {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  color: #333;
+}
+
+.asset-upload-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #666;
+}
+
+.asset-upload-table-wrapper {
+  overflow: auto;
+  flex: 1;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.asset-upload-table-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.asset-upload-table-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 8px;
+}
+
+.asset-upload-table-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 8px;
+}
+
+.asset-upload-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.asset-upload-preview-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #f8f9fa;
+}
+
+.asset-upload-preview-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.asset-upload-preview-table td {
+  padding: 9px 14px;
+  color: #212529;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.asset-upload-preview-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.asset-upload-preview-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.asset-upload-preview-table .row-num-col {
+  color: #999;
+  font-size: 12px;
+  width: 36px;
+  text-align: center;
+}
+
+.asset-upload-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
 }

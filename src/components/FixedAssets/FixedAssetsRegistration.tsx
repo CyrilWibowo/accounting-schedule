@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import * as XLSX from 'xlsx';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
@@ -8,6 +9,7 @@ import { Entity } from '../../types/Entity';
 import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
 import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
+import AssetUploadModal from './AssetUploadModal';
 import Toast, { useToast } from '../shared/Toast';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
@@ -17,6 +19,21 @@ import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
 const BRANCHES: AssetBranch[] = ['CORP', 'PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'PARK'];
+
+const CATEGORY_CODE: Record<string, string> = {
+  'Office Equipment': 'O',
+  'Motor Vehicle': 'V',
+  'Warehouse Equipment': 'W',
+  'Manufacturing Equipment': 'M',
+  'Equipment for Leased': 'L',
+  'Software': 'S',
+};
+
+const generateAssetId = (branch: AssetBranch, category: AssetCategory): string => {
+  const catCode = CATEGORY_CODE[category] || 'X';
+  const rand = Math.floor(1000 + Math.random() * 9000).toString();
+  return `${branch}${catCode}${rand}`;
+};
 
 interface FixedAssetsRegistrationProps {
   onNavigate: (view: View) => void;
@@ -28,13 +45,14 @@ const COLUMNS = [
   'Description',
   'Category',
   'Branch',
-  'Cost',
   'Vendor',
-  'Invoice',
+  'Invoice No.',
+  'Serial',
+  'Tag/Registration',
+  'Acquisition Date',
+  'Cost',
   'Useful Life (Yrs)',
   'Dep. Rate (%)',
-  'Tag No.',
-  'Serial No.',
 ];
 
 const EMPTY_ROW_COUNT = 15;
@@ -50,7 +68,9 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
+  const [uploadPreviewAssets, setUploadPreviewAssets] = useState<Asset[] | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Side panel edit state
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
@@ -223,6 +243,77 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     showToast('Asset deleted', 'delete');
   };
 
+  const handleUploadClick = () => {
+    if (uploadInputRef.current) {
+      uploadInputRef.current.value = '';
+      uploadInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const data = new Uint8Array(ev.target?.result as ArrayBuffer);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json<Record<string, string>>(sheet, {
+        defval: '',
+        raw: false,
+        dateNF: 'yyyy-mm-dd',
+      });
+
+      const parsed: Asset[] = rows.map((row) => {
+        const n: Record<string, string> = {};
+        Object.entries(row).forEach(([k, v]) => { n[k.toLowerCase().trim()] = String(v).trim(); });
+
+        const usefulLife = n['useful life'] || '';
+        const depRate = usefulLife && Number(usefulLife) > 0
+          ? ((1 / Number(usefulLife)) * 100).toFixed(2)
+          : '';
+
+        const branch = (n['branch'] || '') as AssetBranch;
+        const category = (n['category'] || '') as AssetCategory;
+        const assetId = n['asset id'] || n['asset_id'] || '';
+        const id = assetId || generateAssetId(branch, category);
+
+        return {
+          id,
+          assetType: 'Regular' as const,
+          description: n['description'] || '',
+          category,
+          branch,
+          vendorName: n['vendor'] || '',
+          invoice: n['invoice no'] || n['invoice no.'] || '',
+          serialNo: n['serial'] || '',
+          tagNo: n['tag/registration'] || n['tag'] || '',
+          acquisitionDate: n['acquisition date'] || '',
+          cost: (n['cost'] || '').replace(/[^0-9.-]/g, ''),
+          usefulLife,
+          depreciationRate: depRate,
+        };
+      }).filter(a => a.description);
+
+      if (parsed.length > 0) {
+        setUploadPreviewAssets(parsed);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!uploadPreviewAssets || !selectedEntity) return;
+    let currentAssets = assets;
+    for (const asset of uploadPreviewAssets) {
+      currentAssets = await addEntityAsset(selectedEntity.id, asset);
+    }
+    setAssets(currentAssets);
+    setUploadPreviewAssets(null);
+    showToast(`${uploadPreviewAssets.length} asset${uploadPreviewAssets.length !== 1 ? 's' : ''} imported`, 'success');
+  };
+
   const filteredAssets = assets.filter(asset => {
     if (search) {
       const term = search.toLowerCase();
@@ -268,24 +359,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Tag No.</label>
-              <input
-                type="text"
-                value={editedAsset.tagNo}
-                onChange={(e) => handleInputChange('tagNo', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Serial No.</label>
-              <input
-                type="text"
-                value={editedAsset.serialNo}
-                onChange={(e) => handleInputChange('serialNo', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
               <label>Category *</label>
               {errors.category && <span className="error-text">Required</span>}
               <select
@@ -312,18 +385,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Cost *</label>
-              {errors.cost && <span className="error-text">Required</span>}
-              <input
-                type="number"
-                className={errors.cost ? 'error' : ''}
-                value={editedAsset.cost}
-                onChange={(e) => handleInputChange('cost', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Vendor Name</label>
+              <label>Vendor</label>
               <input
                 type="text"
                 value={editedAsset.vendorName}
@@ -332,11 +394,49 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Invoice</label>
+              <label>Invoice No.</label>
               <input
                 type="text"
                 value={editedAsset.invoice}
                 onChange={(e) => handleInputChange('invoice', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Serial</label>
+              <input
+                type="text"
+                value={editedAsset.serialNo}
+                onChange={(e) => handleInputChange('serialNo', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Tag/Registration</label>
+              <input
+                type="text"
+                value={editedAsset.tagNo}
+                onChange={(e) => handleInputChange('tagNo', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Acquisition Date</label>
+              <input
+                type="date"
+                value={editedAsset.acquisitionDate}
+                onChange={(e) => handleInputChange('acquisitionDate', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Cost *</label>
+              {errors.cost && <span className="error-text">Required</span>}
+              <input
+                type="number"
+                className={errors.cost ? 'error' : ''}
+                value={editedAsset.cost}
+                onChange={(e) => handleInputChange('cost', e.target.value)}
               />
             </div>
 
@@ -352,7 +452,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Depreciation Rate (%) *</label>
+              <label>Dep. Rate (%)</label>
               {errors.depreciationRate && <span className="error-text">Required</span>}
               <input
                 type="number"
@@ -386,6 +486,21 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               </button>
               <h2>Fixed Assets Register ({assets.length})</h2>
               <div className="page-header-actions">
+                <input
+                  ref={uploadInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
+                <button
+                  className="entities-add-button"
+                  style={{ backgroundColor: '#6c757d', borderColor: '#6c757d' }}
+                  onClick={handleUploadClick}
+                  disabled={!selectedEntity}
+                >
+                  Upload Excel
+                </button>
                 <button
                   className="entities-add-button"
                   onClick={() => setIsAddModalOpen(true)}
@@ -399,43 +514,47 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             <div className="assets-register-body">
               {/* Selection / toolbar bar */}
               <div className="selection-bar">
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  className="select-all-checkbox"
-                  onChange={handleSelectAll}
-                />
-                {selectedAssets.size > 0 ? (
-                  <>
+                <div className="selection-bar-left">
+                  <input
+                    type="checkbox"
+                    ref={selectAllRef}
+                    className="select-all-checkbox"
+                    onChange={handleSelectAll}
+                  />
+                  {selectedAssets.size > 0 && (
+                    <button className="action-btn action-copy" title="Copy">
+                      <ContentCopyIcon fontSize="small" />
+                    </button>
+                  )}
+                  {selectedAssets.size > 0 && (
+                    <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
+                      <DeleteIcon fontSize="small" />
+                    </button>
+                  )}
+                  {selectedAssets.size > 0 ? (
                     <span className="selection-count">{selectedAssets.size} selected</span>
-                    <div className="selection-actions">
-                      <button className="action-btn action-copy" title="Copy">
-                        <ContentCopyIcon fontSize="small" />
-                      </button>
-                      <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
-                        <DeleteIcon fontSize="small" />
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <span className="selection-hint">Select items</span>
-                )}
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <select
-                  className="filter-dropdown"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Disposed')}
-                >
-                  <option value="All">All</option>
-                  <option value="Active">Active</option>
-                  <option value="Disposed">Disposed</option>
-                </select>
+                  ) : (
+                    <span className="selection-hint">Select items</span>
+                  )}
+                </div>
+                <div className="selection-bar-right">
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder="Search..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                  <select
+                    className="filter-dropdown"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Disposed')}
+                  >
+                    <option value="All">All</option>
+                    <option value="Active">Active</option>
+                    <option value="Disposed">Disposed</option>
+                  </select>
+                </div>
               </div>
 
               {/* Table */}
@@ -469,13 +588,14 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                         <td>{asset.description}</td>
                         <td>{asset.category}</td>
                         <td>{asset.branch}</td>
-                        <td>{asset.cost ? `$${Number(asset.cost).toLocaleString()}` : ''}</td>
                         <td>{asset.vendorName}</td>
                         <td>{asset.invoice}</td>
+                        <td>{asset.serialNo}</td>
+                        <td>{asset.tagNo}</td>
+                        <td>{asset.acquisitionDate}</td>
+                        <td>{asset.cost ? `$${Number(asset.cost.replace(/[^0-9.-]/g, '')).toLocaleString()}` : ''}</td>
                         <td>{asset.usefulLife}</td>
                         <td>{asset.depreciationRate ? `${Number(asset.depreciationRate).toFixed(2)}%` : ''}</td>
-                        <td>{asset.tagNo}</td>
-                        <td>{asset.serialNo}</td>
                       </tr>
                     ))}
                     {Array.from({ length: emptyRowsNeeded }).map((_, i) => (
@@ -530,6 +650,14 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           </div>
         </div>
       )}
+      {uploadPreviewAssets && (
+        <AssetUploadModal
+          assets={uploadPreviewAssets}
+          onConfirm={handleConfirmUpload}
+          onCancel={() => setUploadPreviewAssets(null)}
+        />
+      )}
+
       {toast && <Toast message={toast.message} type={toast.type} onClose={clearToast} />}
     </div>
   );

@@ -56,6 +56,7 @@ const createEmptyAsset = (): Asset => ({
   cost: '',
   vendorName: '',
   invoice: '',
+  acquisitionDate: '',
   usefulLife: '',
   depreciationRate: '',
 });
@@ -80,7 +81,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
     if (!asset.branch) { newErrors.branch = true; isValid = false; }
     if (!asset.cost.trim()) { newErrors.cost = true; isValid = false; }
     if (!asset.usefulLife.trim()) { newErrors.usefulLife = true; isValid = false; }
-    if (!asset.depreciationRate.trim()) { newErrors.depreciationRate = true; isValid = false; }
 
     setErrors(newErrors);
     return isValid;
@@ -88,7 +88,8 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
 
   const handleSubmit = () => {
     if (validateForm()) {
-      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category) };
+      const depRate = asset.usefulLife ? ((1 / Number(asset.usefulLife)) * 100).toFixed(2) : '';
+      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category), depreciationRate: depRate };
       onSaveAsset(assetWithId);
     }
   };
@@ -108,24 +109,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
                 className={errors.description ? 'error' : ''}
                 value={asset.description}
                 onChange={(e) => handleAssetInput('description', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Tag No.</label>
-              <input
-                type="text"
-                value={asset.tagNo}
-                onChange={(e) => handleAssetInput('tagNo', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Serial No.</label>
-              <input
-                type="text"
-                value={asset.serialNo}
-                onChange={(e) => handleAssetInput('serialNo', e.target.value)}
               />
             </div>
 
@@ -160,6 +143,51 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
             </div>
 
             <div className="form-group">
+              <label>Vendor</label>
+              <input
+                type="text"
+                value={asset.vendorName}
+                onChange={(e) => handleAssetInput('vendorName', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Invoice No.</label>
+              <input
+                type="text"
+                value={asset.invoice}
+                onChange={(e) => handleAssetInput('invoice', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Serial</label>
+              <input
+                type="text"
+                value={asset.serialNo}
+                onChange={(e) => handleAssetInput('serialNo', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Tag/Registration</label>
+              <input
+                type="text"
+                value={asset.tagNo}
+                onChange={(e) => handleAssetInput('tagNo', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Acquisition Date</label>
+              <input
+                type="date"
+                value={asset.acquisitionDate}
+                onChange={(e) => handleAssetInput('acquisitionDate', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
               <label>Cost *</label>
               {errors.cost && <span className="error-text">Required</span>}
               <input
@@ -171,24 +199,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
             </div>
 
             <div className="form-group">
-              <label>Vendor Name</label>
-              <input
-                type="text"
-                value={asset.vendorName}
-                onChange={(e) => handleAssetInput('vendorName', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Invoice</label>
-              <input
-                type="text"
-                value={asset.invoice}
-                onChange={(e) => handleAssetInput('invoice', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
               <label>Useful Life (Years) *</label>
               {errors.usefulLife && <span className="error-text">Required</span>}
               <input
@@ -196,17 +206,6 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
                 className={errors.usefulLife ? 'error' : ''}
                 value={asset.usefulLife}
                 onChange={(e) => handleAssetInput('usefulLife', e.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Depreciation Rate (%) *</label>
-              {errors.depreciationRate && <span className="error-text">Required</span>}
-              <input
-                type="number"
-                className={errors.depreciationRate ? 'error' : ''}
-                value={asset.depreciationRate}
-                onChange={(e) => handleAssetInput('depreciationRate', e.target.value)}
               />
             </div>
           </div>

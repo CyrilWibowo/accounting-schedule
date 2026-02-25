@@ -260,6 +260,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
       cost: totalCost.toString(),
       vendorName: 'N/A',
       invoice: 'N/A',
+      acquisitionDate: editedAsset.completionDate || '',
       usefulLife: editedAsset.usefulLife,
       depreciationRate: depRate,
       tagNo: 'N/A',
