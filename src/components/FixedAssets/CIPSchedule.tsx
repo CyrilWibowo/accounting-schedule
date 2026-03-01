@@ -577,15 +577,13 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                   className="select-all-checkbox"
                   onChange={handleSelectAll}
                 />
+                {selectedAssets.size > 0 && (
+                  <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
+                    <DeleteIcon fontSize="small" />
+                  </button>
+                )}
                 {selectedAssets.size > 0 ? (
-                  <>
-                    <span className="selection-count">{selectedAssets.size} selected</span>
-                    <div className="selection-actions">
-                      <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
-                        <DeleteIcon fontSize="small" />
-                      </button>
-                    </div>
-                  </>
+                  <span className="selection-count">{selectedAssets.size} selected</span>
                 ) : (
                   <span className="selection-hint">Select items</span>
                 )}

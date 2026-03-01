@@ -487,15 +487,15 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
             </div>
             <div className="selection-bar">
               <input type="checkbox" ref={selectAllRef} className="select-all-checkbox" checked={selectedLeases.size > 0 && selectedLeases.size === filterLeases(propertyLeases, filter).length} onChange={handleSelectAll} title="Select all" />
+              {selectedLeases.size > 0 && (
+                <div className="selection-actions">
+                  <button className="action-btn action-copy" onClick={handleBatchCopy} title="Copy"><ContentCopyIcon fontSize="small" /></button>
+                  <button className="action-btn action-export" onClick={handleBatchExport} title="Export"><FileDownloadIcon fontSize="small" /></button>
+                  <button className="action-btn action-delete" onClick={handleBatchDelete} title="Delete"><DeleteIcon fontSize="small" /></button>
+                </div>
+              )}
               {selectedLeases.size > 0 ? (
-                <>
-                  <span className="selection-count">{selectedLeases.size} selected</span>
-                  <div className="selection-actions">
-                    <button className="action-btn action-copy" onClick={handleBatchCopy} title="Copy"><ContentCopyIcon fontSize="small" /></button>
-                    <button className="action-btn action-export" onClick={handleBatchExport} title="Export"><FileDownloadIcon fontSize="small" /></button>
-                    <button className="action-btn action-delete" onClick={handleBatchDelete} title="Delete"><DeleteIcon fontSize="small" /></button>
-                  </div>
-                </>
+                <span className="selection-count">{selectedLeases.size} selected</span>
               ) : <span className="selection-hint">Select items</span>}
               <input type="text" className="search-input" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
               <select className="filter-dropdown" value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}><option value="All">All</option><option value="Active">Active</option><option value="Non-Active">Non-Active</option></select>

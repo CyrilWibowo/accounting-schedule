@@ -1216,21 +1216,21 @@ const Dashboard: React.FC<DashboardProps> = ({
             onChange={() => handleSelectAll(true)}
             title="Select all"
           />
+          {selectedPropertyLeases.size > 0 && (
+            <div className="selection-actions">
+              <button className="action-btn action-copy" onClick={() => handleBatchCopy(true)} title="Copy">
+                <ContentCopyIcon fontSize="small" />
+              </button>
+              <button className="action-btn action-export" onClick={() => handleBatchExport(true)} title="Export">
+                <FileDownloadIcon fontSize="small" />
+              </button>
+              <button className="action-btn action-delete" onClick={() => handleBatchDelete(true)} title="Delete">
+                <DeleteIcon fontSize="small" />
+              </button>
+            </div>
+          )}
           {selectedPropertyLeases.size > 0 ? (
-            <>
-              <span className="selection-count">{selectedPropertyLeases.size} selected</span>
-              <div className="selection-actions">
-                <button className="action-btn action-copy" onClick={() => handleBatchCopy(true)} title="Copy">
-                  <ContentCopyIcon fontSize="small" />
-                </button>
-                <button className="action-btn action-export" onClick={() => handleBatchExport(true)} title="Export">
-                  <FileDownloadIcon fontSize="small" />
-                </button>
-                <button className="action-btn action-delete" onClick={() => handleBatchDelete(true)} title="Delete">
-                  <DeleteIcon fontSize="small" />
-                </button>
-              </div>
-            </>
+            <span className="selection-count">{selectedPropertyLeases.size} selected</span>
           ) : (
             <span className="selection-hint">Select items</span>
           )}
@@ -1309,21 +1309,21 @@ const Dashboard: React.FC<DashboardProps> = ({
             onChange={() => handleSelectAll(false)}
             title="Select all"
           />
+          {selectedMobileLeases.size > 0 && (
+            <div className="selection-actions">
+              <button className="action-btn action-copy" onClick={() => handleBatchCopy(false)} title="Copy">
+                <ContentCopyIcon fontSize="small" />
+              </button>
+              <button className="action-btn action-export" onClick={() => handleBatchExport(false)} title="Export">
+                <FileDownloadIcon fontSize="small" />
+              </button>
+              <button className="action-btn action-delete" onClick={() => handleBatchDelete(false)} title="Delete">
+                <DeleteIcon fontSize="small" />
+              </button>
+            </div>
+          )}
           {selectedMobileLeases.size > 0 ? (
-            <>
-              <span className="selection-count">{selectedMobileLeases.size} selected</span>
-              <div className="selection-actions">
-                <button className="action-btn action-copy" onClick={() => handleBatchCopy(false)} title="Copy">
-                  <ContentCopyIcon fontSize="small" />
-                </button>
-                <button className="action-btn action-export" onClick={() => handleBatchExport(false)} title="Export">
-                  <FileDownloadIcon fontSize="small" />
-                </button>
-                <button className="action-btn action-delete" onClick={() => handleBatchDelete(false)} title="Delete">
-                  <DeleteIcon fontSize="small" />
-                </button>
-              </div>
-            </>
+            <span className="selection-count">{selectedMobileLeases.size} selected</span>
           ) : (
             <span className="selection-hint">Select items</span>
           )}
