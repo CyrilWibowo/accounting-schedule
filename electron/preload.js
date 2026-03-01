@@ -15,6 +15,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   loadEntityLeases: (entityId) => ipcRenderer.invoke('load-entity-leases', entityId),
   saveEntityLeases: (entityId, leases) => ipcRenderer.invoke('save-entity-leases', entityId, leases),
 
+  // Entity-specific asset operations
+  loadEntityAssets: (entityId) => ipcRenderer.invoke('load-entity-assets', entityId),
+  saveEntityAssets: (entityId, assets) => ipcRenderer.invoke('save-entity-assets', entityId, assets),
+
+  // Entity-specific CIP asset operations
+  loadEntityCIPAssets: (entityId) => ipcRenderer.invoke('load-entity-cip-assets', entityId),
+  saveEntityCIPAssets: (entityId, assets) => ipcRenderer.invoke('save-entity-cip-assets', entityId, assets),
+
   // App state operations
   loadAppState: () => ipcRenderer.invoke('load-app-state'),
   saveAppState: (appState) => ipcRenderer.invoke('save-app-state', appState),

@@ -151,6 +151,18 @@ ipcMain.handle('save-entity', async (event, entity) => {
       fs.writeFileSync(leasesPath, JSON.stringify([], null, 2), 'utf-8');
     }
 
+    // Initialize empty assets file if it doesn't exist
+    const assetsPath = path.join(entityDir, 'assets.json');
+    if (!fs.existsSync(assetsPath)) {
+      fs.writeFileSync(assetsPath, JSON.stringify([], null, 2), 'utf-8');
+    }
+
+    // Initialize empty CIP assets file if it doesn't exist
+    const cipAssetsPath = path.join(entityDir, 'cip-assets.json');
+    if (!fs.existsSync(cipAssetsPath)) {
+      fs.writeFileSync(cipAssetsPath, JSON.stringify([], null, 2), 'utf-8');
+    }
+
     return true;
   } catch (error) {
     console.error('Error saving entity:', error);
@@ -202,6 +214,74 @@ ipcMain.handle('save-entity-leases', async (event, entityId, leases) => {
     return true;
   } catch (error) {
     console.error('Error saving entity leases:', error);
+    return false;
+  }
+});
+
+// Entity asset IPC handlers
+ipcMain.handle('load-entity-assets', async (event, entityId) => {
+  try {
+    const assetsPath = path.join(getEntityDir(entityId), 'assets.json');
+
+    if (fs.existsSync(assetsPath)) {
+      const data = fs.readFileSync(assetsPath, 'utf-8');
+      return JSON.parse(data);
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error loading entity assets:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('save-entity-assets', async (event, entityId, assets) => {
+  try {
+    const entityDir = getEntityDir(entityId);
+
+    if (!fs.existsSync(entityDir)) {
+      fs.mkdirSync(entityDir, { recursive: true });
+    }
+
+    const assetsPath = path.join(entityDir, 'assets.json');
+    fs.writeFileSync(assetsPath, JSON.stringify(assets, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Error saving entity assets:', error);
+    return false;
+  }
+});
+
+// Entity CIP asset IPC handlers
+ipcMain.handle('load-entity-cip-assets', async (event, entityId) => {
+  try {
+    const cipPath = path.join(getEntityDir(entityId), 'cip-assets.json');
+
+    if (fs.existsSync(cipPath)) {
+      const data = fs.readFileSync(cipPath, 'utf-8');
+      return JSON.parse(data);
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error loading entity CIP assets:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('save-entity-cip-assets', async (event, entityId, assets) => {
+  try {
+    const entityDir = getEntityDir(entityId);
+
+    if (!fs.existsSync(entityDir)) {
+      fs.mkdirSync(entityDir, { recursive: true });
+    }
+
+    const cipPath = path.join(entityDir, 'cip-assets.json');
+    fs.writeFileSync(cipPath, JSON.stringify(assets, null, 2), 'utf-8');
+    return true;
+  } catch (error) {
+    console.error('Error saving entity CIP assets:', error);
     return false;
   }
 });
