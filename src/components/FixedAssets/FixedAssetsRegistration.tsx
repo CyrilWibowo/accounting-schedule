@@ -6,7 +6,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
+import { Asset, AssetCategory, AssetBranch, ClosingBalance } from '../../types/Asset';
 import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
 import AssetUploadModal from './AssetUploadModal';
@@ -15,6 +15,7 @@ import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
 import '../Leases/EditLeaseModal.css';
+import './AddAssetModal.css';
 import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
@@ -68,6 +69,9 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportDate, setReportDate] = useState('');
+  const [reportDateError, setReportDateError] = useState(false);
   const [uploadPreviewAssets, setUploadPreviewAssets] = useState<Asset[] | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -200,6 +204,23 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     if (!editedAsset) return;
     setEditedAsset({ ...editedAsset, [field]: value } as Asset);
     if (errors[field]) setErrors({ ...errors, [field]: false });
+  };
+
+  const handleAddClosingBalance = () => {
+    if (!editedAsset) return;
+    setEditedAsset({ ...editedAsset, closingBalances: [...(editedAsset.closingBalances || []), { date: '', value: '' }] });
+  };
+
+  const handleClosingBalanceChange = (index: number, field: keyof ClosingBalance, value: string) => {
+    if (!editedAsset) return;
+    const updated = [...(editedAsset.closingBalances || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditedAsset({ ...editedAsset, closingBalances: updated });
+  };
+
+  const handleRemoveClosingBalance = (index: number) => {
+    if (!editedAsset) return;
+    setEditedAsset({ ...editedAsset, closingBalances: (editedAsset.closingBalances || []).filter((_, i) => i !== index) });
   };
 
   const validateForm = (): boolean => {
@@ -462,6 +483,29 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               />
             </div>
           </div>
+
+          <div className="closing-balances-section">
+            <div className="closing-balances-header">
+              <span>Closing Balances</span>
+              <button type="button" className="add-closing-balance-btn" onClick={handleAddClosingBalance}>+ Add</button>
+            </div>
+            {(editedAsset.closingBalances || []).map((cb, i) => (
+              <div key={i} className="closing-balance-row">
+                <input
+                  type="date"
+                  value={cb.date}
+                  onChange={(e) => handleClosingBalanceChange(i, 'date', e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Value"
+                  value={cb.value}
+                  onChange={(e) => handleClosingBalanceChange(i, 'value', e.target.value)}
+                />
+                <button type="button" className="remove-closing-balance-btn" onClick={() => handleRemoveClosingBalance(i)}>×</button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="lease-detail-actions">
@@ -507,6 +551,14 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                   disabled={!selectedEntity}
                 >
                   New Asset
+                </button>
+                <button
+                  className="entities-add-button"
+                  style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+                  onClick={() => setShowReportModal(true)}
+                  disabled={!selectedEntity}
+                >
+                  Report
                 </button>
               </div>
             </div>
@@ -650,6 +702,31 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           </div>
         </div>
       )}
+      {showReportModal && (
+        <div className="confirm-overlay" onMouseDown={() => { setShowReportModal(false); setReportDate(''); setReportDateError(false); }}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Generate Report</h3>
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Report Date {reportDateError && <span className="error-text">Required</span>}</label>
+              <input
+                type="date"
+                className={reportDateError ? 'error' : ''}
+                value={reportDate}
+                onChange={(e) => { setReportDate(e.target.value); if (e.target.value) setReportDateError(false); }}
+              />
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => { setShowReportModal(false); setReportDate(''); setReportDateError(false); }}>Cancel</button>
+              <button
+                className="confirm-delete-button"
+                style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
+                onClick={() => { if (!reportDate) { setReportDateError(true); return; } }}
+              >Generate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {uploadPreviewAssets && (
         <AssetUploadModal
           assets={uploadPreviewAssets}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
+import { Asset, AssetCategory, AssetBranch, ClosingBalance } from '../../types/Asset';
 import '../Leases/AddLeaseModal.css';
 import '../Leases/LeaseForm.css';
 import './AddAssetModal.css';
@@ -59,11 +59,26 @@ const createEmptyAsset = (): Asset => ({
   acquisitionDate: '',
   usefulLife: '',
   depreciationRate: '',
+  closingBalances: [],
 });
 
 const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) => {
   const [asset, setAsset] = useState<Asset>(createEmptyAsset);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+
+  const handleAddClosingBalance = () => {
+    setAsset({ ...asset, closingBalances: [...(asset.closingBalances || []), { date: '', value: '' }] });
+  };
+
+  const handleClosingBalanceChange = (index: number, field: keyof ClosingBalance, value: string) => {
+    const updated = [...(asset.closingBalances || [])];
+    updated[index] = { ...updated[index], [field]: value };
+    setAsset({ ...asset, closingBalances: updated });
+  };
+
+  const handleRemoveClosingBalance = (index: number) => {
+    setAsset({ ...asset, closingBalances: (asset.closingBalances || []).filter((_, i) => i !== index) });
+  };
 
   const handleAssetInput = (field: keyof Asset, value: string) => {
     setAsset({ ...asset, [field]: value });
@@ -208,6 +223,29 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
                 onChange={(e) => handleAssetInput('usefulLife', e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="closing-balances-section">
+            <div className="closing-balances-header">
+              <span>Closing Balances</span>
+              <button type="button" className="add-closing-balance-btn" onClick={handleAddClosingBalance}>+ Add</button>
+            </div>
+            {(asset.closingBalances || []).map((cb, i) => (
+              <div key={i} className="closing-balance-row">
+                <input
+                  type="date"
+                  value={cb.date}
+                  onChange={(e) => handleClosingBalanceChange(i, 'date', e.target.value)}
+                />
+                <input
+                  type="number"
+                  placeholder="Value"
+                  value={cb.value}
+                  onChange={(e) => handleClosingBalanceChange(i, 'value', e.target.value)}
+                />
+                <button type="button" className="remove-closing-balance-btn" onClick={() => handleRemoveClosingBalance(i)}>×</button>
+              </div>
+            ))}
           </div>
 
           <div className="modal-actions">

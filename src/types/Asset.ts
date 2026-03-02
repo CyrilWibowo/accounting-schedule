@@ -1,3 +1,8 @@
+export interface ClosingBalance {
+  date: string;
+  value: string;
+}
+
 export interface Asset {
   id: string;
   assetType: 'Regular';
@@ -12,6 +17,7 @@ export interface Asset {
   acquisitionDate: string;
   usefulLife: string;
   depreciationRate: string;
+  closingBalances?: ClosingBalance[];
 }
 
 export interface CIPInvoice {

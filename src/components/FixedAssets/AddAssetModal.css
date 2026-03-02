@@ -5,10 +5,87 @@
   font-size: 20px;
 }
 
+.asset-form-modal .modal-actions {
+  margin-top: 12px;
+}
+
 .cip-placeholder {
   text-align: center;
   padding: 40px 20px;
   color: #888;
   font-size: 16px;
   font-style: italic;
+}
+
+/* Closing Balances */
+.closing-balances-section {
+  border-top: 1px solid #e0e0e0;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+.closing-balances-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.closing-balances-header span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.add-closing-balance-btn {
+  background: none;
+  border: 1px solid #007bff;
+  color: #007bff;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.add-closing-balance-btn:hover {
+  background-color: rgba(0, 123, 255, 0.08);
+}
+
+.closing-balance-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.closing-balance-row input[type="date"],
+.closing-balance-row input[type="number"] {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.closing-balance-row input:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.remove-closing-balance-btn {
+  background: none;
+  border: none;
+  color: #dc3545;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.remove-closing-balance-btn:hover {
+  opacity: 0.7;
 }
