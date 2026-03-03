@@ -6,9 +6,10 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { Asset, AssetCategory, AssetBranch, ClosingBalance } from '../../types/Asset';
+import { Asset, AssetCategory, AssetBranch, OpeningBalance } from '../../types/Asset';
 import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
+import { generateAssetsReport } from './excel/generateAssetsReport';
 import AssetUploadModal from './AssetUploadModal';
 import Toast, { useToast } from '../shared/Toast';
 import '../Homepage/EntitiesPage.css';
@@ -206,21 +207,21 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     if (errors[field]) setErrors({ ...errors, [field]: false });
   };
 
-  const handleAddClosingBalance = () => {
+  const handleAddOpeningBalance = () => {
     if (!editedAsset) return;
-    setEditedAsset({ ...editedAsset, closingBalances: [...(editedAsset.closingBalances || []), { date: '', value: '' }] });
+    setEditedAsset({ ...editedAsset, openingBalances: [...(editedAsset.openingBalances || []), { type: 'New', date: '', value: '' }] });
   };
 
-  const handleClosingBalanceChange = (index: number, field: keyof ClosingBalance, value: string) => {
+  const handleOpeningBalanceChange = (index: number, field: keyof OpeningBalance, value: string) => {
     if (!editedAsset) return;
-    const updated = [...(editedAsset.closingBalances || [])];
+    const updated = [...(editedAsset.openingBalances || [])];
     updated[index] = { ...updated[index], [field]: value };
-    setEditedAsset({ ...editedAsset, closingBalances: updated });
+    setEditedAsset({ ...editedAsset, openingBalances: updated });
   };
 
-  const handleRemoveClosingBalance = (index: number) => {
+  const handleRemoveOpeningBalance = (index: number) => {
     if (!editedAsset) return;
-    setEditedAsset({ ...editedAsset, closingBalances: (editedAsset.closingBalances || []).filter((_, i) => i !== index) });
+    setEditedAsset({ ...editedAsset, openingBalances: (editedAsset.openingBalances || []).filter((_, i) => i !== index) });
   };
 
   const validateForm = (): boolean => {
@@ -484,25 +485,35 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
           </div>
 
-          <div className="closing-balances-section">
-            <div className="closing-balances-header">
-              <span>Closing Balances</span>
-              <button type="button" className="add-closing-balance-btn" onClick={handleAddClosingBalance}>+ Add</button>
+          <div className="opening-balances-section">
+            <div className="opening-balances-header">
+              <span>Opening Balances</span>
+              <button type="button" className="add-opening-balance-btn" onClick={handleAddOpeningBalance}>+ Add</button>
             </div>
-            {(editedAsset.closingBalances || []).map((cb, i) => (
-              <div key={i} className="closing-balance-row">
+            {(editedAsset.openingBalances || []).map((cb, i) => (
+              <div key={i} className="opening-balance-row">
+                <select
+                  className="opening-balance-type"
+                  value={cb.type}
+                  onChange={(e) => handleOpeningBalanceChange(i, 'type', e.target.value)}
+                >
+                  <option value="New">New</option>
+                  <option value="Existing">Existing</option>
+                </select>
                 <input
                   type="date"
                   value={cb.date}
-                  onChange={(e) => handleClosingBalanceChange(i, 'date', e.target.value)}
+                  onChange={(e) => handleOpeningBalanceChange(i, 'date', e.target.value)}
                 />
-                <input
-                  type="number"
-                  placeholder="Value"
-                  value={cb.value}
-                  onChange={(e) => handleClosingBalanceChange(i, 'value', e.target.value)}
-                />
-                <button type="button" className="remove-closing-balance-btn" onClick={() => handleRemoveClosingBalance(i)}>×</button>
+                {cb.type === 'Existing' && (
+                  <input
+                    type="number"
+                    placeholder="Balance"
+                    value={cb.value}
+                    onChange={(e) => handleOpeningBalanceChange(i, 'value', e.target.value)}
+                  />
+                )}
+                <button type="button" className="remove-opening-balance-btn" onClick={() => handleRemoveOpeningBalance(i)}>×</button>
               </div>
             ))}
           </div>
@@ -720,7 +731,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <button
                 className="confirm-delete-button"
                 style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
-                onClick={() => { if (!reportDate) { setReportDateError(true); return; } }}
+                onClick={() => {
+                  if (!reportDate) { setReportDateError(true); return; }
+                  generateAssetsReport(assets, selectedEntity?.name ?? '', reportDate);
+                }}
               >Generate</button>
             </div>
           </div>

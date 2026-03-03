@@ -18,26 +18,26 @@
 }
 
 /* Closing Balances */
-.closing-balances-section {
+.opening-balances-section {
   border-top: 1px solid #e0e0e0;
   padding-top: 10px;
   padding-bottom: 4px;
 }
 
-.closing-balances-header {
+.opening-balances-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.closing-balances-header span {
+.opening-balances-header span {
   font-size: 13px;
   font-weight: 600;
   color: #495057;
 }
 
-.add-closing-balance-btn {
+.add-opening-balance-btn {
   background: none;
   border: 1px solid #007bff;
   color: #007bff;
@@ -48,34 +48,61 @@
   transition: background-color 0.15s;
 }
 
-.add-closing-balance-btn:hover {
+.add-opening-balance-btn:hover {
   background-color: rgba(0, 123, 255, 0.08);
 }
 
-.closing-balance-row {
+.opening-balance-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
   margin-bottom: 6px;
 }
 
-.closing-balance-row input[type="date"],
-.closing-balance-row input[type="number"] {
-  flex: 1;
-  padding: 6px 10px;
+.opening-balance-type {
+  padding: 6px 4px;
   border: 1px solid #d0d0d0;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 12px;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+  width: 76px;
+  cursor: pointer;
 }
 
-.closing-balance-row input:focus {
+.opening-balance-type:focus {
   border-color: #80bdff;
   box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
 }
 
-.remove-closing-balance-btn {
+.opening-balance-row input[type="date"] {
+  flex-shrink: 0;
+  width: 128px;
+  padding: 6px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.opening-balance-row input[type="number"] {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 6px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 12px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.opening-balance-row input:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.15rem rgba(0, 123, 255, 0.15);
+}
+
+.remove-opening-balance-btn {
   background: none;
   border: none;
   color: #dc3545;
@@ -86,6 +113,6 @@
   flex-shrink: 0;
 }
 
-.remove-closing-balance-btn:hover {
+.remove-opening-balance-btn:hover {
   opacity: 0.7;
 }

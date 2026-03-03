@@ -1,4 +1,5 @@
-export interface ClosingBalance {
+export interface OpeningBalance {
+  type: 'New' | 'Existing';
   date: string;
   value: string;
 }
@@ -17,7 +18,7 @@ export interface Asset {
   acquisitionDate: string;
   usefulLife: string;
   depreciationRate: string;
-  closingBalances?: ClosingBalance[];
+  openingBalances?: OpeningBalance[];
 }
 
 export interface CIPInvoice {
