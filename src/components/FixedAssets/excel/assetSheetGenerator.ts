@@ -35,7 +35,7 @@ export const generateCategorySheet = (
     'Historical Cost', 'Gain/Loss',
     'Cost', '', '', '', '',
     'Depreciation', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-    'WDV',
+    'WDV', '',
   ];
 
   // Row 5: column name row
@@ -52,29 +52,97 @@ export const generateCategorySheet = (
     'July', 'August', 'September', 'October', 'November', 'December',
     'Written-Back on Disposal',
     `Closing Balance 31 Dec ${year}`,
+    `As at 31 Dec ${prevYear}`,
     `As at 31 Dec ${year}`,
   ];
+
+  // Calculates monthly depreciation for each month of the year
+  // cost: full historical cost (used for monthly charge = cost * depRate / 12)
+  // startingWDV: WDV at 31 Dec prior year (for existing assets); for new assets, wdv begins at 0 and becomes cost at acquisition month
+  const calcMonthlyDep = (
+    cost: number,
+    depRate: number,
+    isNew: boolean,
+    acquisitionMonth: number, // 1–12
+    startingWDV?: number,
+  ): number[] => {
+    const monthlyCharge = (cost * depRate) / 12;
+    const deps: number[] = [];
+    let wdv = isNew ? 0 : (startingWDV ?? cost);
+    for (let m = 1; m <= 12; m++) {
+      if (isNew && m < acquisitionMonth) {
+        deps.push(0);
+      } else {
+        if (isNew && m === acquisitionMonth) wdv = cost;
+        const dep = Math.min(monthlyCharge, wdv);
+        deps.push(dep);
+        wdv -= dep;
+      }
+    }
+    return deps;
+  };
 
   // Rows 6+: asset data
   const dataRows: any[][] = assets.map(asset => {
     const cost = parseFloat(asset.cost) || 0;
+    const rawRate = parseFloat(asset.depreciationRate) || 0;
+    const depRate = rawRate > 1 ? rawRate / 100 : rawRate; // handle "20" vs "0.20"
 
     const matchingOB = (asset.openingBalances || []).find(ob => ob.date === prevYearDateStr);
 
-    let openingBalance = 0;
-    let addition = 0;
+    let costOB: number | string;
+    let addition: number | string;
+    let costClosing: number | string;
+    let depOB: number | string;
+    let wdvPrevYear: number | string;
+    let monthlyDeps: number[];
+    let currentPeriod: number | string;
+    let depClosing: number | string;
+    let wdvYear: number | string;
 
     if (matchingOB) {
-      if (matchingOB.type === 'Existing') {
-        openingBalance = parseFloat(matchingOB.value) || 0;
-        addition = 0;
-      } else {
-        openingBalance = 0;
-        addition = cost;
-      }
-    }
+      const isNew = matchingOB.type === 'New';
 
-    const closingBalance = openingBalance + addition;
+      if (!isNew) {
+        costOB = cost;
+        addition = 0;
+        depOB = parseFloat(matchingOB.value) || 0;
+      } else {
+        costOB = 0;
+        addition = cost;
+        depOB = 0;
+      }
+
+      costClosing = (costOB as number) + (addition as number);
+      wdvPrevYear = (costOB as number) - (depOB as number);
+
+      // For existing assets, WDV at start of year = cost - depOB; adjust the calc
+      let acquisitionMonth = 1;
+      if (isNew && asset.acquisitionDate) {
+        const parts = asset.acquisitionDate.split('-');
+        const acqYear = parseInt(parts[0], 10);
+        const acqMonth = parseInt(parts[1], 10);
+        // If acquired in a previous year, treat as fully existing from Jan
+        acquisitionMonth = acqYear >= year ? acqMonth : 1;
+      }
+
+      monthlyDeps = calcMonthlyDep(cost, depRate, isNew, acquisitionMonth, isNew ? undefined : (wdvPrevYear as number));
+
+      currentPeriod = monthlyDeps.reduce((sum, d) => sum + d, 0);
+      const writtenBack = 0; // no disposal data
+      depClosing = (depOB as number) + currentPeriod + writtenBack;
+      wdvYear = (costClosing as number) - (depClosing as number);
+    } else {
+      costOB = 'N/A';
+      addition = 'N/A';
+      costClosing = 'N/A';
+      depOB = 'N/A';
+      wdvPrevYear = 'N/A';
+      monthlyDeps = Array(12).fill('');
+      currentPeriod = 'N/A';
+      depClosing = 'N/A';
+      wdvYear = 'N/A';
+    }
 
     return [
       asset.id,
@@ -85,17 +153,18 @@ export const generateCategorySheet = (
       '',              // Transferred from Rimtec
       cost,            // Historical Cost
       '',              // Gain/Loss
-      openingBalance,
-      addition,
-      '',              // Disposal
-      '',              // Transfer Completed Assets
-      closingBalance,
-      '',              // Dep: Opening Balance
-      '',              // Dep: Current Period
-      '', '', '', '', '', '', '', '', '', '', '', '', // Jan–Dec
-      '',              // Dep: Written-Back on Disposal
-      '',              // Dep: Closing Balance
-      '',              // WDV: As at
+      costOB,          // Cost: Opening Balance
+      addition,        // Cost: Addition
+      '',              // Cost: Disposal
+      '',              // Cost: Transfer Completed Assets
+      costClosing,     // Cost: Closing Balance
+      depOB,           // Dep: Opening Balance
+      currentPeriod,   // Dep: Current Period
+      ...monthlyDeps,  // Jan–Dec
+      0,               // Dep: Written-Back on Disposal
+      depClosing,      // Dep: Closing Balance
+      wdvPrevYear,     // WDV: As at 31 Dec {prevYear}
+      wdvYear,         // WDV: As at 31 Dec {year}
     ];
   });
 
@@ -110,8 +179,8 @@ export const generateCategorySheet = (
     { s: { r: 4, c: 8 }, e: { r: 4, c: 12 } },
     // "Depreciation" spans cols 13–28 on row 4
     { s: { r: 4, c: 13 }, e: { r: 4, c: 28 } },
-    // "WDV" spans rows 4–5 on col 29
-    { s: { r: 4, c: 29 }, e: { r: 5, c: 29 } },
+    // "WDV" spans cols 29–30 on row 4
+    { s: { r: 4, c: 29 }, e: { r: 4, c: 30 } },
   ];
 
   // Column widths
@@ -136,12 +205,14 @@ export const generateCategorySheet = (
     { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, // Sep–Dec
     { wch: 26 }, // Written-Back
     { wch: 26 }, // Dep: Closing Balance
-    { wch: 18 }, // WDV
+    { wch: 18 }, // WDV: As at prevYear
+    { wch: 18 }, // WDV: As at year
   ];
 
   // Number format for numeric data cells
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-  const numericCols = [6, 8, 9, 12]; // Historical Cost, OB, Addition, Closing Balance
+  // Historical Cost, Cost OB/Addition/Closing, Dep OB, Current Period, Jan–Dec, Written-Back, Dep Closing, WDV prev/year
+  const numericCols = [6, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
   for (let r = 6; r <= range.e.r; r++) {
     for (const c of numericCols) {
       const addr = XLSX.utils.encode_cell({ r, c });
