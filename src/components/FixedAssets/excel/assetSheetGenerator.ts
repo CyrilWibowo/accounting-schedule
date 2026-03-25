@@ -10,23 +10,34 @@ const CATEGORY_LABEL: Record<string, string> = {
   'Software': 'SOFTWARE',
 };
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const SHORT_MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 export const generateCategorySheet = (
   assets: Asset[],
   category: string,
   entityName: string,
-  year: number
+  year: number,
+  month: number
 ): XLSX.WorkSheet => {
   const prevYear = year - 1;
   const prevYearDateStr = `${prevYear}-12-31`;
   const categoryLabel = CATEGORY_LABEL[category] || category.toUpperCase();
+  const monthName = MONTH_NAMES[month - 1];
+  const shortMonthName = SHORT_MONTH_NAMES[month - 1];
+  const lastDay = new Date(year, month, 0).getDate();
+  const asAtLabel = `${lastDay} ${shortMonthName} ${year}`;
 
   // Rows 0-3: title block
   const titleRows: any[][] = [
     [entityName],
     [`FIXED ASSETS REGISTER - ${categoryLabel}`],
-    [`AS AT 31 DECEMBER ${year}`],
+    [`AS AT ${shortMonthName.toUpperCase()} ${year}`],
     [],
   ];
+
+  // Months to show: January through the selected month
+  const activeMonths = MONTH_NAMES.slice(0, month);
 
   // Row 4: section header row
   const sectionHeaderRow: any[] = [
@@ -34,7 +45,7 @@ export const generateCategorySheet = (
     'Acquisition/Completion Date', 'Transferred from Rimtec',
     'Historical Cost', 'Gain/Loss',
     'Cost', '', '', '', '',
-    'Depreciation', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+    'Depreciation', ...Array(2 + activeMonths.length).fill(''),
     'WDV', '',
   ];
 
@@ -45,15 +56,14 @@ export const generateCategorySheet = (
     'Addition',
     'Disposal',
     'Transfer Completed Assets',
-    `Closing Balance 31 Dec ${year}`,
+    `Closing Balance As at ${asAtLabel}`,
     `Opening Balance 31 Dec ${prevYear}`,
     'Current Period',
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+    ...activeMonths,
     'Written-Back on Disposal',
-    `Closing Balance 31 Dec ${year}`,
+    `Closing Balance As at ${asAtLabel}`,
     `As at 31 Dec ${prevYear}`,
-    `As at 31 Dec ${year}`,
+    `As at ${asAtLabel}`,
   ];
 
   // Calculates monthly depreciation for each month of the year
@@ -69,7 +79,7 @@ export const generateCategorySheet = (
     const monthlyCharge = (cost * depRate) / 12;
     const deps: number[] = [];
     let wdv = isNew ? 0 : (startingWDV ?? cost);
-    for (let m = 1; m <= 12; m++) {
+    for (let m = 1; m <= month; m++) {
       if (isNew && m < acquisitionMonth) {
         deps.push(0);
       } else {
@@ -138,7 +148,7 @@ export const generateCategorySheet = (
       costClosing = 'N/A';
       depOB = 'N/A';
       wdvPrevYear = 'N/A';
-      monthlyDeps = Array(12).fill('');
+      monthlyDeps = Array(month).fill('');
       currentPeriod = 'N/A';
       depClosing = 'N/A';
       wdvYear = 'N/A';
@@ -160,16 +170,30 @@ export const generateCategorySheet = (
       costClosing,     // Cost: Closing Balance
       depOB,           // Dep: Opening Balance
       currentPeriod,   // Dep: Current Period
-      ...monthlyDeps,  // Jan–Dec
+      ...monthlyDeps,  // Jan–cutoff month
       0,               // Dep: Written-Back on Disposal
       depClosing,      // Dep: Closing Balance
       wdvPrevYear,     // WDV: As at 31 Dec {prevYear}
-      wdvYear,         // WDV: As at 31 Dec {year}
+      wdvYear,         // WDV: As at {asAtLabel}
     ];
   });
 
   const allRows = [...titleRows, sectionHeaderRow, columnHeaderRow, ...dataRows];
   const ws = XLSX.utils.aoa_to_sheet(allRows);
+
+  // Column index offsets based on dynamic month count
+  // Fixed cols: 0-7 (8 cols)
+  // Cost cols: 8-12 (5 cols)
+  // Dep OB: 13, Current Period: 14
+  // Month cols: 15 to 15+month-1
+  // Written-Back: 15+month
+  // Dep Closing: 15+month+1
+  // WDV prev: 15+month+2
+  // WDV curr: 15+month+3
+  const writtenBackCol = 15 + month;
+  const depClosingCol = 15 + month + 1;
+  const wdvPrevCol = 15 + month + 2;
+  const wdvCurrCol = 15 + month + 3;
 
   // Merges
   ws['!merges'] = [
@@ -177,13 +201,14 @@ export const generateCategorySheet = (
     ...Array.from({ length: 8 }, (_, c) => ({ s: { r: 4, c }, e: { r: 5, c } })),
     // "Cost" spans cols 8–12 on row 4
     { s: { r: 4, c: 8 }, e: { r: 4, c: 12 } },
-    // "Depreciation" spans cols 13–28 on row 4
-    { s: { r: 4, c: 13 }, e: { r: 4, c: 28 } },
-    // "WDV" spans cols 29–30 on row 4
-    { s: { r: 4, c: 29 }, e: { r: 4, c: 30 } },
+    // "Depreciation" spans from col 13 to depClosingCol on row 4
+    { s: { r: 4, c: 13 }, e: { r: 4, c: depClosingCol } },
+    // "WDV" spans wdvPrevCol to wdvCurrCol on row 4
+    { s: { r: 4, c: wdvPrevCol }, e: { r: 4, c: wdvCurrCol } },
   ];
 
   // Column widths
+  const monthColWidths = Array(month).fill({ wch: 11 });
   ws['!cols'] = [
     { wch: 12 }, // Asset ID
     { wch: 30 }, // Asset Name
@@ -200,19 +225,20 @@ export const generateCategorySheet = (
     { wch: 26 }, // Cost: Closing Balance
     { wch: 26 }, // Dep: OB
     { wch: 16 }, // Current Period
-    { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, // Jan–Apr
-    { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, // May–Aug
-    { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, // Sep–Dec
+    ...monthColWidths,
     { wch: 26 }, // Written-Back
     { wch: 26 }, // Dep: Closing Balance
     { wch: 18 }, // WDV: As at prevYear
-    { wch: 18 }, // WDV: As at year
+    { wch: 18 }, // WDV: As at current
   ];
 
   // Number format for numeric data cells
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-  // Historical Cost, Cost OB/Addition/Closing, Dep OB, Current Period, Jan–Dec, Written-Back, Dep Closing, WDV prev/year
-  const numericCols = [6, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+  const numericCols = [
+    6, 8, 9, 12, 13, 14,
+    ...Array.from({ length: month }, (_, i) => 15 + i),
+    writtenBackCol, depClosingCol, wdvPrevCol, wdvCurrCol,
+  ];
   for (let r = 6; r <= range.e.r; r++) {
     for (const c of numericCols) {
       const addr = XLSX.utils.encode_cell({ r, c });
