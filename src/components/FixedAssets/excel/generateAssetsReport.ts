@@ -11,13 +11,14 @@ const CATEGORIES: { key: string; sheetName: string }[] = [
   { key: 'Software',                sheetName: 'Software' },
 ];
 
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
 export const generateAssetsReport = (
   assets: Asset[],
   entityName: string,
-  reportDate: string
+  month: number,
+  year: number
 ): void => {
-  // Parse year safely without timezone drift
-  const year = parseInt(reportDate.split('-')[0], 10);
   const workbook = XLSX.utils.book_new();
 
   // Sheet 1: Reconciliation (blank)
@@ -29,12 +30,12 @@ export const generateAssetsReport = (
   // Sheets 3–8: one per asset category
   CATEGORIES.forEach(({ key, sheetName }) => {
     const categoryAssets = assets.filter(a => a.category === key);
-    const ws = generateCategorySheet(categoryAssets, key, entityName, year);
+    const ws = generateCategorySheet(categoryAssets, key, entityName, year, month);
     XLSX.utils.book_append_sheet(workbook, ws, sheetName);
   });
 
   // Sheet 9: CIP (blank)
   XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[]]), 'CIP');
 
-  XLSX.writeFile(workbook, `Fixed_Assets_Report_${year}.xlsx`);
+  XLSX.writeFile(workbook, `Fixed_Assets_Report_${MONTH_NAMES[month - 1]}_${year}.xlsx`);
 };
