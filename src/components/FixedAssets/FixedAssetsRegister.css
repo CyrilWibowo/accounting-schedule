@@ -271,6 +271,45 @@
   background-color: #d0e8fc;
 }
 
+.asset-table tbody tr.disposed-row td {
+  color: #aaa;
+}
+
+.asset-table tbody tr.disposed-row.selected-row td {
+  color: #888;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-active {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-disposed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.disposed-banner {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
 .transfer-btn {
   background-color: #28a745 !important;
   color: white !important;

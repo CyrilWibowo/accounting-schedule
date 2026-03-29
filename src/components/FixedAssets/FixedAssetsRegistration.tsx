@@ -55,6 +55,7 @@ const COLUMNS = [
   'Cost',
   'Useful Life (Yrs)',
   'Dep. Rate (%)',
+  'Status',
 ];
 
 const EMPTY_ROW_COUNT = 15;
@@ -70,9 +71,14 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
+  const [showDisposeModal, setShowDisposeModal] = useState(false);
+  const [disposeDate, setDisposeDate] = useState('');
+  const [disposeDateError, setDisposeDateError] = useState(false);
+  const [disposeProceed, setDisposeProceed] = useState('');
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportDate, setReportDate] = useState('');
-  const [reportDateError, setReportDateError] = useState(false);
+  const [reportMonth, setReportMonth] = useState(0);
+  const [reportYear, setReportYear] = useState(0);
+  const [reportError, setReportError] = useState(false);
   const [uploadPreviewAssets, setUploadPreviewAssets] = useState<Asset[] | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -265,6 +271,27 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     showToast('Asset deleted', 'delete');
   };
 
+  const handleConfirmDispose = async () => {
+    if (!disposeDate) { setDisposeDateError(true); return; }
+    if (!editedAsset || !selectedEntity) return;
+    const disposed = { ...editedAsset, disposed: true, disposalDate: disposeDate, proceed: disposeProceed };
+    const updatedAssets = await updateEntityAsset(selectedEntity.id, disposed);
+    setAssets(updatedAssets);
+    setSelectedAssetId(null);
+    setShowDisposeModal(false);
+    setDisposeDate('');
+    setDisposeProceed('');
+    showToast('Asset disposed', 'delete');
+  };
+
+  const handleRevertDisposal = async () => {
+    if (!editedAsset || !selectedEntity) return;
+    const reverted = { ...editedAsset, disposed: false, disposalDate: undefined, proceed: undefined };
+    const updatedAssets = await updateEntityAsset(selectedEntity.id, reverted);
+    setAssets(updatedAssets);
+    showToast('Disposal reverted', 'edit');
+  };
+
   const handleUploadClick = () => {
     if (uploadInputRef.current) {
       uploadInputRef.current.value = '';
@@ -337,6 +364,8 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   };
 
   const filteredAssets = assets.filter(asset => {
+    if (filter === 'Active' && asset.disposed) return false;
+    if (filter === 'Disposed' && !asset.disposed) return false;
     if (search) {
       const term = search.toLowerCase();
       const matches = asset.description.toLowerCase().includes(term) ||
@@ -359,7 +388,24 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
       <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
-          <div className="lease-detail-header" style={{ justifyContent: 'flex-end' }}>
+          <div className="lease-detail-header" style={{ justifyContent: 'space-between' }}>
+            {!editedAsset.disposed ? (
+              <button
+                className="panel-btn"
+                style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14', color: 'white' }}
+                onClick={() => setShowDisposeModal(true)}
+              >
+                Dispose
+              </button>
+            ) : (
+              <button
+                className="panel-btn"
+                style={{ backgroundColor: '#6c757d', borderColor: '#6c757d', color: 'white' }}
+                onClick={handleRevertDisposal}
+              >
+                Revert Disposal
+              </button>
+            )}
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
 
@@ -450,6 +496,28 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                 onChange={(e) => handleInputChange('acquisitionDate', e.target.value)}
               />
             </div>
+
+            {editedAsset.disposed && (
+              <div className="form-group">
+                <label>Disposal Date</label>
+                <input
+                  type="date"
+                  value={editedAsset.disposalDate || ''}
+                  onChange={(e) => handleInputChange('disposalDate', e.target.value)}
+                />
+              </div>
+            )}
+
+            {editedAsset.disposed && (
+              <div className="form-group">
+                <label>Proceed</label>
+                <input
+                  type="number"
+                  value={editedAsset.proceed || ''}
+                  onChange={(e) => handleInputChange('proceed', e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label>Cost *</label>
@@ -635,7 +703,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                     {filteredAssets.map((asset) => (
                       <tr
                         key={asset.id}
-                        className={selectedAssetId === asset.id ? 'selected-row' : ''}
+                        className={`${selectedAssetId === asset.id ? 'selected-row' : ''}${asset.disposed ? ' disposed-row' : ''}`}
                         onClick={() => handleRowClick(asset.id)}
                         style={{ cursor: 'pointer' }}
                       >
@@ -659,6 +727,12 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                         <td>{asset.cost ? `$${Number(asset.cost.replace(/[^0-9.-]/g, '')).toLocaleString()}` : ''}</td>
                         <td>{asset.usefulLife}</td>
                         <td>{asset.depreciationRate ? `${Number(asset.depreciationRate).toFixed(2)}%` : ''}</td>
+                        <td>
+                          {asset.disposed
+                            ? <span className="status-badge status-disposed">Disposed</span>
+                            : <span className="status-badge status-active">Active</span>
+                          }
+                        </td>
                       </tr>
                     ))}
                     {Array.from({ length: emptyRowsNeeded }).map((_, i) => (
@@ -713,27 +787,79 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           </div>
         </div>
       )}
-      {showReportModal && (
-        <div className="confirm-overlay" onMouseDown={() => { setShowReportModal(false); setReportDate(''); setReportDateError(false); }}>
+      {showDisposeModal && (
+        <div className="confirm-overlay" onMouseDown={() => { setShowDisposeModal(false); setDisposeDate(''); setDisposeDateError(false); setDisposeProceed(''); }}>
           <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
-            <h3 className="confirm-title">Generate Report</h3>
-            <div className="form-group" style={{ marginBottom: 16 }}>
-              <label>Report Date {reportDateError && <span className="error-text">Required</span>}</label>
+            <h3 className="confirm-title">Dispose Asset</h3>
+            <p className="confirm-text">This will mark the asset as disposed.</p>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label>Disposal Date * {disposeDateError && <span className="error-text">Required</span>}</label>
               <input
                 type="date"
-                className={reportDateError ? 'error' : ''}
-                value={reportDate}
-                onChange={(e) => { setReportDate(e.target.value); if (e.target.value) setReportDateError(false); }}
+                className={disposeDateError ? 'error' : ''}
+                value={disposeDate}
+                onChange={(e) => { setDisposeDate(e.target.value); if (e.target.value) setDisposeDateError(false); }}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Proceed</label>
+              <input
+                type="number"
+                placeholder="0.00"
+                value={disposeProceed}
+                onChange={(e) => setDisposeProceed(e.target.value)}
               />
             </div>
             <div className="confirm-actions">
-              <button className="confirm-cancel-button" onClick={() => { setShowReportModal(false); setReportDate(''); setReportDateError(false); }}>Cancel</button>
+              <button className="confirm-cancel-button" onClick={() => { setShowDisposeModal(false); setDisposeDate(''); setDisposeDateError(false); setDisposeProceed(''); }}>Cancel</button>
+              <button
+                className="confirm-delete-button"
+                style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14' }}
+                onClick={handleConfirmDispose}
+              >Dispose</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReportModal && (
+        <div className="confirm-overlay" onMouseDown={() => { setShowReportModal(false); setReportMonth(0); setReportYear(0); setReportError(false); }}>
+          <div className="confirm-dialog" onMouseDown={(e) => e.stopPropagation()}>
+            <h3 className="confirm-title">Generate Report</h3>
+            <div className="form-group" style={{ marginBottom: 12 }}>
+              <label>Month {reportError && reportMonth === 0 && <span className="error-text">Required</span>}</label>
+              <select
+                className={reportError && reportMonth === 0 ? 'error' : ''}
+                value={reportMonth}
+                onChange={(e) => { setReportMonth(parseInt(e.target.value, 10)); setReportError(false); }}
+              >
+                <option value={0}>Select month...</option>
+                {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m, i) => (
+                  <option key={m} value={i + 1}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group" style={{ marginBottom: 16 }}>
+              <label>Year {reportError && reportYear === 0 && <span className="error-text">Required</span>}</label>
+              <select
+                className={reportError && reportYear === 0 ? 'error' : ''}
+                value={reportYear}
+                onChange={(e) => { setReportYear(parseInt(e.target.value, 10)); setReportError(false); }}
+              >
+                <option value={0}>Select year...</option>
+                {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div className="confirm-actions">
+              <button className="confirm-cancel-button" onClick={() => { setShowReportModal(false); setReportMonth(0); setReportYear(0); setReportError(false); }}>Cancel</button>
               <button
                 className="confirm-delete-button"
                 style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
                 onClick={() => {
-                  if (!reportDate) { setReportDateError(true); return; }
-                  generateAssetsReport(assets, selectedEntity?.name ?? '', reportDate);
+                  if (!reportMonth || !reportYear) { setReportError(true); return; }
+                  generateAssetsReport(assets, selectedEntity?.name ?? '', reportMonth, reportYear);
                 }}
               >Generate</button>
             </div>

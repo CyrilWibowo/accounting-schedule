@@ -27,6 +27,7 @@ export const generateCategorySheet = (
   const shortMonthName = SHORT_MONTH_NAMES[month - 1];
   const lastDay = new Date(year, month, 0).getDate();
   const asAtLabel = `${lastDay} ${shortMonthName} ${year}`;
+  const reportDateStr = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
   // Rows 0-3: title block
   const titleRows: any[][] = [
@@ -43,7 +44,10 @@ export const generateCategorySheet = (
   const sectionHeaderRow: any[] = [
     'Asset ID', 'Asset Name', 'Asset Category', 'Location',
     'Acquisition/Completion Date', 'Transferred from Rimtec',
-    'Historical Cost', 'Gain/Loss',
+    'Historical Cost',
+    'Method of Depreciation', 'Useful Life', 'Depreciation Rate',
+    'Assets Disposal', 'Date of Disposal/Write Off', 'Proceed',
+    'Gain/Loss',
     'Cost', '', '', '', '',
     'Depreciation', ...Array(2 + activeMonths.length).fill(''),
     'WDV', '',
@@ -51,7 +55,7 @@ export const generateCategorySheet = (
 
   // Row 5: column name row
   const columnHeaderRow: any[] = [
-    '', '', '', '', '', '', '', '',
+    '', '', '', '', '', '', '', '', '', '', '', '', '', '',
     `Opening Balance 31 Dec ${prevYear}`,
     'Addition',
     'Disposal',
@@ -97,6 +101,12 @@ export const generateCategorySheet = (
     const cost = parseFloat(asset.cost) || 0;
     const rawRate = parseFloat(asset.depreciationRate) || 0;
     const depRate = rawRate > 1 ? rawRate / 100 : rawRate; // handle "20" vs "0.20"
+
+    // Disposal fields: only show if asset is disposed AND disposal date is on or before last day of report month
+    const disposalVisible = !!(asset.disposed && asset.disposalDate && asset.disposalDate <= reportDateStr);
+    const assetsDisposal = disposalVisible ? 'Y' : '';
+    const dateOfDisposal = disposalVisible ? (asset.disposalDate || '') : '';
+    const proceedValue = disposalVisible ? (asset.proceed || '') : '';
 
     const matchingOB = (asset.openingBalances || []).find(ob => ob.date === prevYearDateStr);
 
@@ -162,6 +172,12 @@ export const generateCategorySheet = (
       asset.acquisitionDate,
       '',              // Transferred from Rimtec
       cost,            // Historical Cost
+      'SL',            // Method of Depreciation
+      asset.usefulLife,       // Useful Life
+      asset.depreciationRate, // Depreciation Rate
+      assetsDisposal,         // Assets Disposal
+      dateOfDisposal,         // Date of Disposal/Write Off
+      proceedValue,           // Proceed
       '',              // Gain/Loss
       costOB,          // Cost: Opening Balance
       addition,        // Cost: Addition
@@ -182,27 +198,27 @@ export const generateCategorySheet = (
   const ws = XLSX.utils.aoa_to_sheet(allRows);
 
   // Column index offsets based on dynamic month count
-  // Fixed cols: 0-7 (8 cols)
-  // Cost cols: 8-12 (5 cols)
-  // Dep OB: 13, Current Period: 14
-  // Month cols: 15 to 15+month-1
-  // Written-Back: 15+month
-  // Dep Closing: 15+month+1
-  // WDV prev: 15+month+2
-  // WDV curr: 15+month+3
-  const writtenBackCol = 15 + month;
-  const depClosingCol = 15 + month + 1;
-  const wdvPrevCol = 15 + month + 2;
-  const wdvCurrCol = 15 + month + 3;
+  // Fixed cols: 0-13 (14 cols: 0-5 base, 6 Historical Cost, 7-12 new cols, 13 Gain/Loss)
+  // Cost cols: 14-18 (5 cols)
+  // Dep OB: 19, Current Period: 20
+  // Month cols: 21 to 21+month-1
+  // Written-Back: 21+month
+  // Dep Closing: 21+month+1
+  // WDV prev: 21+month+2
+  // WDV curr: 21+month+3
+  const writtenBackCol = 21 + month;
+  const depClosingCol = 21 + month + 1;
+  const wdvPrevCol = 21 + month + 2;
+  const wdvCurrCol = 21 + month + 3;
 
   // Merges
   ws['!merges'] = [
-    // Vertical merges for the 8 fixed columns (rows 4–5)
-    ...Array.from({ length: 8 }, (_, c) => ({ s: { r: 4, c }, e: { r: 5, c } })),
-    // "Cost" spans cols 8–12 on row 4
-    { s: { r: 4, c: 8 }, e: { r: 4, c: 12 } },
-    // "Depreciation" spans from col 13 to depClosingCol on row 4
-    { s: { r: 4, c: 13 }, e: { r: 4, c: depClosingCol } },
+    // Vertical merges for the 14 fixed columns (rows 4–5)
+    ...Array.from({ length: 14 }, (_, c) => ({ s: { r: 4, c }, e: { r: 5, c } })),
+    // "Cost" spans cols 14–18 on row 4
+    { s: { r: 4, c: 14 }, e: { r: 4, c: 18 } },
+    // "Depreciation" spans from col 19 to depClosingCol on row 4
+    { s: { r: 4, c: 19 }, e: { r: 4, c: depClosingCol } },
     // "WDV" spans wdvPrevCol to wdvCurrCol on row 4
     { s: { r: 4, c: wdvPrevCol }, e: { r: 4, c: wdvCurrCol } },
   ];
@@ -217,6 +233,12 @@ export const generateCategorySheet = (
     { wch: 22 }, // Acquisition Date
     { wch: 22 }, // Transferred from Rimtec
     { wch: 16 }, // Historical Cost
+    { wch: 22 }, // Method of Depreciation
+    { wch: 12 }, // Useful Life
+    { wch: 18 }, // Depreciation Rate
+    { wch: 16 }, // Assets Disposal
+    { wch: 24 }, // Date of Disposal/Write Off
+    { wch: 14 }, // Proceed
     { wch: 12 }, // Gain/Loss
     { wch: 26 }, // Cost: OB
     { wch: 14 }, // Addition
@@ -235,8 +257,8 @@ export const generateCategorySheet = (
   // Number format for numeric data cells
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   const numericCols = [
-    6, 8, 9, 12, 13, 14,
-    ...Array.from({ length: month }, (_, i) => 15 + i),
+    6, 14, 15, 18, 19, 20,
+    ...Array.from({ length: month }, (_, i) => 21 + i),
     writtenBackCol, depClosingCol, wdvPrevCol, wdvCurrCol,
   ];
   for (let r = 6; r <= range.e.r; r++) {
