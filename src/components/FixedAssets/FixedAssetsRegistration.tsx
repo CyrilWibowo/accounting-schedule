@@ -860,6 +860,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                 onClick={() => {
                   if (!reportMonth || !reportYear) { setReportError(true); return; }
                   generateAssetsReport(assets, selectedEntity?.name ?? '', reportMonth, reportYear);
+                  setShowReportModal(false); setReportMonth(0); setReportYear(0); setReportError(false);
                 }}
               >Generate</button>
             </div>
