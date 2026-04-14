@@ -19,6 +19,10 @@ export interface Asset {
   usefulLife: string;
   depreciationRate: string;
   openingBalances?: OpeningBalance[];
+  disposed?: boolean;
+  disposalDate?: string;
+  proceed?: string;
+  sourceCIPId?: string;
 }
 
 export interface CIPInvoice {
@@ -44,6 +48,7 @@ export interface CIPAsset {
   completionDate: string;
   usefulLife: string;
   invoices: CIPInvoice[];
+  transferredAssetId?: string;
 }
 
 export type AssetCategory = '' | 'Office Equipment' | 'Motor Vehicle' | 'Warehouse Equipment' | 'Manufacturing Equipment' | 'Equipment for Leased' | 'Software';
