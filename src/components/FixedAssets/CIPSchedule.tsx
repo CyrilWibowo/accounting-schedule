@@ -7,7 +7,7 @@ import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
 import { Asset, CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
-import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset, addEntityAsset } from '../../utils/dataStorage';
+import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset, addEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddCIPModal from './AddCIPModal';
 import AddCIPInvoiceModal from './AddCIPInvoiceModal';
 import Toast, { useToast } from '../shared/Toast';
@@ -38,6 +38,8 @@ const generateAssetId = (branch: AssetBranch, category: AssetCategory): string =
 interface CIPScheduleProps {
   onNavigate: (view: View) => void;
   selectedEntity: Entity | null;
+  jumpToCIPId?: string | null;
+  onJumpHandled?: () => void;
 }
 
 const COLUMNS = [
@@ -46,7 +48,7 @@ const COLUMNS = [
   'Category',
   'Branch',
   'Completed',
-  'Invoices',
+  'Completion Date',
   'Total',
 ];
 
@@ -55,7 +57,7 @@ const DEFAULT_PANEL_WIDTH = 420;
 const MIN_PANEL_WIDTH = 320;
 const MAX_PANEL_WIDTH = 700;
 
-const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity }) => {
+const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, jumpToCIPId, onJumpHandled }) => {
   const [search, setSearch] = useState('');
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [cipAssets, setCIPAssets] = useState<CIPAsset[]>([]);
@@ -119,6 +121,17 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
       setCIPAssets([]);
     }
   }, [selectedEntity]);
+
+  useEffect(() => {
+    if (jumpToCIPId && cipAssets.length > 0) {
+      const asset = cipAssets.find(a => a.id === jumpToCIPId);
+      if (asset) {
+        setSelectedAssetId(jumpToCIPId);
+        setExpandedRows(new Set([jumpToCIPId]));
+        onJumpHandled?.();
+      }
+    }
+  }, [jumpToCIPId, cipAssets]);
 
   useEffect(() => {
     if (selectedAssetId) {
@@ -218,7 +231,6 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     if (!editedAsset.description.trim()) { newErrors.description = true; isValid = false; }
     if (!editedAsset.category) { newErrors.category = true; isValid = false; }
     if (!editedAsset.branch) { newErrors.branch = true; isValid = false; }
-    if (editedAsset.completed === 'Y' && !editedAsset.completionDate) { newErrors.completionDate = true; isValid = false; }
 
     setErrors(newErrors);
     return isValid;
@@ -250,29 +262,44 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
     const totalCost = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
     const usefulLifeNum = Number(editedAsset.usefulLife) || 1;
     const depRate = (1 / usefulLifeNum).toFixed(2);
+    const newAssetId = generateAssetId(editedAsset.branch as AssetBranch, editedAsset.category as AssetCategory);
 
     const newAsset: Asset = {
-      id: generateAssetId(editedAsset.branch as AssetBranch, editedAsset.category as AssetCategory),
+      id: newAssetId,
       assetType: 'Regular',
       description: editedAsset.description,
       category: editedAsset.category,
       branch: editedAsset.branch,
       cost: totalCost.toString(),
-      vendorName: 'N/A',
+      vendorName: 'CIP COMPLETED ASSET',
       invoice: 'N/A',
       acquisitionDate: editedAsset.completionDate || '',
       usefulLife: editedAsset.usefulLife,
       depreciationRate: depRate,
       tagNo: 'N/A',
       serialNo: 'N/A',
+      sourceCIPId: editedAsset.id,
     };
 
     await addEntityAsset(selectedEntity.id, newAsset);
 
-    const updated = await updateEntityCIPAsset(selectedEntity.id, editedAsset);
+    const transferredCIP = { ...editedAsset, completed: 'Y' as const, transferredAssetId: newAssetId };
+    const updated = await updateEntityCIPAsset(selectedEntity.id, transferredCIP);
     setCIPAssets(updated);
     setSelectedAssetId(null);
     showToast('Asset transferred', 'success');
+  };
+
+  const handleRevert = async () => {
+    if (!editedAsset || !selectedEntity) return;
+    if (editedAsset.transferredAssetId) {
+      await deleteEntityAsset(selectedEntity.id, editedAsset.transferredAssetId);
+    }
+    const revertedCIP = { ...editedAsset, completed: 'N' as const, completionDate: '', usefulLife: '', transferredAssetId: undefined };
+    const updated = await updateEntityCIPAsset(selectedEntity.id, revertedCIP);
+    setCIPAssets(updated);
+    setEditedAsset(revertedCIP);
+    showToast('Completion reverted', 'delete');
   };
 
   const handleAddInvoice = async (invoice: CIPInvoice) => {
@@ -496,44 +523,54 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
               </select>
             </div>
 
-            <div className="form-group">
-              <label>Completed</label>
-              <select
-                value={editedAsset.completed}
-                onChange={(e) => handleInputChange('completed', e.target.value)}
-              >
-                <option value="N">No</option>
-                <option value="Y">Yes</option>
-              </select>
-            </div>
-
-            {editedAsset.completed === 'Y' && (
-              <>
-                <div className="form-group">
-                  <label>Completion Date *</label>
-                  {errors.completionDate && <span className="error-text">Required</span>}
-                  <input
-                    type="date"
-                    className={errors.completionDate ? 'error' : ''}
-                    value={editedAsset.completionDate}
-                    onChange={(e) => handleInputChange('completionDate', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Useful Life (Years){errors.usefulLife ? ' *' : ''}</label>
-                  {errors.usefulLife && <span className="error-text">Required to transfer</span>}
-                  <input
-                    type="number"
-                    className={errors.usefulLife ? 'error' : ''}
-                    value={editedAsset.usefulLife}
-                    onChange={(e) => handleInputChange('usefulLife', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <button className="panel-btn transfer-btn" style={{ width: '100%' }} onClick={handleTransfer}>Transfer Completed Asset</button>
-                </div>
-              </>
+            {editedAsset.transferredAssetId && (
+              <div className="form-group">
+                <label>Linked Asset ID</label>
+                <input type="text" className="readonly-input" value={editedAsset.transferredAssetId} readOnly />
+              </div>
             )}
+          </div>
+
+          <div className="cip-completion-section">
+            <div className="cip-completion-divider" />
+            <div className="cip-completion-title">Transfer to Fixed Assets</div>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>Useful Life (Years){errors.usefulLife ? ' *' : ''}</label>
+                {errors.usefulLife && <span className="error-text">Required to transfer</span>}
+                <input
+                  type="number"
+                  className={errors.usefulLife ? 'error' : ''}
+                  value={editedAsset.usefulLife || ''}
+                  disabled={!!editedAsset.transferredAssetId}
+                  onChange={(e) => handleInputChange('usefulLife', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Completion Date{errors.completionDate ? ' *' : ''}</label>
+                {errors.completionDate && <span className="error-text">Required to transfer</span>}
+                <input
+                  type="date"
+                  className={errors.completionDate ? 'error' : ''}
+                  value={editedAsset.completionDate || ''}
+                  disabled={!!editedAsset.transferredAssetId}
+                  onChange={(e) => handleInputChange('completionDate', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                {editedAsset.transferredAssetId ? (
+                  <button className="panel-btn revert-btn" style={{ width: '100%' }} onClick={handleRevert}>Revert Completion</button>
+                ) : (
+                  <button
+                    className="panel-btn transfer-btn"
+                    style={{ width: '100%' }}
+                    onClick={handleTransfer}
+                  >
+                    Transfer Completed Asset
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -640,7 +677,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                             <td>{asset.category}</td>
                             <td>{asset.branch}</td>
                             <td>{asset.completed === 'Y' ? 'Yes' : 'No'}</td>
-                            <td>{invoices.length}</td>
+                            <td>{asset.completed === 'Y' && asset.completionDate ? new Date(asset.completionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</td>
                             <td>{invoices.length > 0 ? `$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}` : ''}</td>
                           </tr>
                           {isExpanded && (
@@ -653,10 +690,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                                     <table className="cip-invoices-table">
                                       <thead>
                                         <tr>
-                                          <th>ID</th>
+                                          <th>Invoice No.</th>
+                                          <th>Asset Name</th>
                                           <th>Description</th>
                                           <th>Vendor</th>
-                                          <th>Invoice No.</th>
                                           <th>Date</th>
                                           <th>Amount</th>
                                         </tr>
@@ -664,10 +701,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity })
                                       <tbody>
                                         {invoices.map(inv => (
                                           <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
-                                            <td>{inv.id}</td>
+                                            <td>{inv.invoiceNo}</td>
+                                            <td>{asset.description}</td>
                                             <td>{inv.description}</td>
                                             <td>{inv.vendorName}</td>
-                                            <td>{inv.invoiceNo}</td>
                                             <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
                                             <td>{inv.amount ? `$${Number(inv.amount).toLocaleString()}` : ''}</td>
                                           </tr>
