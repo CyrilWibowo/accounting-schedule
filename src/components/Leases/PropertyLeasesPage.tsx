@@ -3,6 +3,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Lease, PropertyLease, OpeningBalance, Branch } from '../../types/Lease';
 import { generateExcelFromLeases } from './excel/excelGenerator';
 import { exportPropertyLeasesToExcel } from './excel/tableExporter';
@@ -51,6 +55,9 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   const [editCommittedYears, setEditCommittedYears] = useState(0);
   const [monthlyRentInput, setMonthlyRentInput] = useState('');
   const [showAddOpeningBalance, setShowAddOpeningBalance] = useState(false);
+  const [obExpanded, setObExpanded] = useState(false);
+  const [incExpanded, setIncExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [xlsxModalLease, setXlsxModalLease] = useState<PropertyLease | null>(null);
   const emptyRows = 10;
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
@@ -105,6 +112,9 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
         setEditedLease({ ...lease });
         setMonthlyRentInput(lease.annualRent ? (parseFloat(lease.annualRent) / 12).toFixed(2) : '');
         setErrors({});
+        setObExpanded(false);
+        setIncExpanded(false);
+        setIsEditing(false);
       } else {
         setSelectedLeaseId(null);
         setEditedLease(null);
@@ -112,6 +122,8 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
     } else {
       setEditedLease(null);
       setErrors({});
+      setObExpanded(false);
+      setIsEditing(false);
     }
   }, [selectedLeaseId, propertyLeases]);
 
@@ -294,8 +306,14 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
     return isValid;
   };
 
-  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setSelectedLeaseId(null); showToast('Changes saved', 'edit'); } };
+  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setIsEditing(false); showToast('Changes saved', 'edit'); } };
   const handleCancel = () => setSelectedLeaseId(null);
+  const handleCancelEdit = () => {
+    const original = propertyLeases.find(l => l.id === selectedLeaseId);
+    if (original) { setEditedLease({ ...original }); setMonthlyRentInput(original.annualRent ? (parseFloat(original.annualRent) / 12).toFixed(2) : ''); }
+    setErrors({});
+    setIsEditing(false);
+  };
 
   const handleAddOpeningBalance = (ob: OpeningBalance) => {
     if (!editedLease) return;
@@ -375,67 +393,114 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
           <div className="lease-detail-header">
-            <button className="entities-add-button" style={{ backgroundColor: '#28a745' }} onClick={() => { const lease = propertyLeases.find(l => l.id === selectedLeaseId); if (lease) setXlsxModalLease(lease); }}>AASB16</button>
+            <button className="lease-detail-edit-toggle" title={isEditing ? 'Switch to view mode' : 'Edit'} onClick={() => { setIsEditing(e => !e); setErrors({}); }}>
+              {isEditing ? <VisibilityIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+              <span>{isEditing ? 'View' : 'Edit'}</span>
+            </button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
           <div className="form-grid">
             <div className="form-group"><label className="form-label">Entity</label><input type="text" className="form-input readonly-input" value={editedLease.entity} readOnly disabled /></div>
-            <div className="form-group"><label className="form-label">Lessor *</label>{errors.lessor && <span className="error-text">This field is required</span>}<input type="text" className={errors.lessor ? 'form-input-error' : 'form-input'} value={editedLease.lessor} onChange={(e) => handleInputChange('lessor', e.target.value)} placeholder="Enter lessor" /></div>
-            <div className="form-group"><label className="form-label">Property Address *</label>{errors.propertyAddress && <span className="error-text">This field is required</span>}<input type="text" className={errors.propertyAddress ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} placeholder="Enter property address" /></div>
-            <div className="form-group"><label className="form-label">Branch *</label>{errors.branch && <span className="error-text">This field is required</span>}<select className={errors.branch ? 'form-input-error' : 'form-input'} value={editedLease.branch} onChange={(e) => handleInputChange('branch', e.target.value)}><option value="">Select branch...</option>{BRANCH_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
-            <div className="form-group"><label className="form-label">Commencement Date *</label>{errors.commencementDate && <span className="error-text">This field is required</span>}<input type="date" className={errors.commencementDate ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).commencementDate} onChange={(e) => handleInputChange('commencementDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Expiry Date *</label>{errors.expiryDate && <span className="error-text">This field is required</span>}<input type="date" className={errors.expiryDate ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).expiryDate} onChange={(e) => handleInputChange('expiryDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Options (Years) *</label>{errors.options && <span className="error-text">This field is required</span>}<input type="number" className={errors.options ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).options} onChange={(e) => handleInputChange('options', e.target.value)} placeholder="0" min="0" /></div>
-            <div className="form-group"><label className="form-label">Monthly Rent (exc. GST) *</label>{errors.annualRent && <span className="error-text">This field is required</span>}<input type="number" className={errors.annualRent ? 'form-input-error' : 'form-input'} value={monthlyRentInput} onChange={(e) => { setMonthlyRentInput(e.target.value); handleInputChange('annualRent', e.target.value ? (parseFloat(e.target.value) * 12).toString() : ''); }} onBlur={() => { if (monthlyRentInput) setMonthlyRentInput(parseFloat(monthlyRentInput).toFixed(2)); }} placeholder="0.00" step="0.01" /></div>
-            <div className="form-group"><label className="form-label">RBA CPI Rate (%) *</label>{errors.rbaCpiRate && <span className="error-text">This field is required</span>}<input type="number" className={errors.rbaCpiRate ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).rbaCpiRate} onChange={(e) => handleInputChange('rbaCpiRate', e.target.value)} placeholder="0.00" step="0.01" /></div>
-            <div className="form-group"><label className="form-label">Borrowing Rate (%) *</label>{errors.borrowingRate && <span className="error-text">This field is required</span>}<input type="number" className={errors.borrowingRate ? 'form-input-error' : 'form-input'} value={editedLease.borrowingRate} onChange={(e) => handleInputChange('borrowingRate', e.target.value)} placeholder="0.00" step="0.01" /></div>
-            <div className="form-group"><label className="form-label">Fixed Increment Rate (%) *</label>{errors.fixedIncrementRate && <span className="error-text">This field is required</span>}<input type="number" className={errors.fixedIncrementRate ? 'form-input-error' : 'form-input'} value={(editedLease as PropertyLease).fixedIncrementRate} onChange={(e) => handleInputChange('fixedIncrementRate', e.target.value)} placeholder="0.00" step="0.01" /></div>
+            <div className="form-group"><label className="form-label">Lessor{isEditing ? ' *' : ''}</label>{errors.lessor && <span className="error-text">This field is required</span>}<input type="text" className={!isEditing ? 'form-input readonly-input' : errors.lessor ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={editedLease.lessor} onChange={(e) => handleInputChange('lessor', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Property Address{isEditing ? ' *' : ''}</label>{errors.propertyAddress && <span className="error-text">This field is required</span>}<input type="text" className={!isEditing ? 'form-input readonly-input' : errors.propertyAddress ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={(editedLease as PropertyLease).propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Branch{isEditing ? ' *' : ''}</label>{errors.branch && <span className="error-text">This field is required</span>}{isEditing ? <select className={errors.branch ? 'form-input-error' : 'form-input'} value={editedLease.branch} onChange={(e) => handleInputChange('branch', e.target.value)}><option value="">Select branch...</option>{BRANCH_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}</select> : <input type="text" className="form-input readonly-input" value={editedLease.branch} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Commencement Date{isEditing ? ' *' : ''}</label>{errors.commencementDate && <span className="error-text">This field is required</span>}<input type={isEditing ? 'date' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.commencementDate ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={isEditing ? (editedLease as PropertyLease).commencementDate : ((editedLease as PropertyLease).commencementDate ? new Date((editedLease as PropertyLease).commencementDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')} onChange={(e) => handleInputChange('commencementDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Expiry Date{isEditing ? ' *' : ''}</label>{errors.expiryDate && <span className="error-text">This field is required</span>}<input type={isEditing ? 'date' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.expiryDate ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={isEditing ? (editedLease as PropertyLease).expiryDate : ((editedLease as PropertyLease).expiryDate ? new Date((editedLease as PropertyLease).expiryDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')} onChange={(e) => handleInputChange('expiryDate', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Options (Years){isEditing ? ' *' : ''}</label>{errors.options && <span className="error-text">This field is required</span>}<input type={isEditing ? 'number' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.options ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={(editedLease as PropertyLease).options} onChange={(e) => handleInputChange('options', e.target.value)} min="0" /></div>
+            <div className="form-group"><label className="form-label">Monthly Rent (exc. GST){isEditing ? ' *' : ''}</label>{errors.annualRent && <span className="error-text">This field is required</span>}<input type={isEditing ? 'number' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.annualRent ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={isEditing ? monthlyRentInput : (monthlyRentInput ? `$${parseFloat(monthlyRentInput).toLocaleString('en-AU', { minimumFractionDigits: 2 })}` : '')} onChange={(e) => { setMonthlyRentInput(e.target.value); handleInputChange('annualRent', e.target.value ? (parseFloat(e.target.value) * 12).toString() : ''); }} onBlur={() => { if (monthlyRentInput) setMonthlyRentInput(parseFloat(monthlyRentInput).toFixed(2)); }} step="0.01" /></div>
+            <div className="form-group"><label className="form-label">RBA CPI Rate (%){isEditing ? ' *' : ''}</label>{errors.rbaCpiRate && <span className="error-text">This field is required</span>}<input type={isEditing ? 'number' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.rbaCpiRate ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={(editedLease as PropertyLease).rbaCpiRate} onChange={(e) => handleInputChange('rbaCpiRate', e.target.value)} step="0.01" /></div>
+            <div className="form-group"><label className="form-label">Borrowing Rate (%){isEditing ? ' *' : ''}</label>{errors.borrowingRate && <span className="error-text">This field is required</span>}<input type={isEditing ? 'number' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.borrowingRate ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={editedLease.borrowingRate} onChange={(e) => handleInputChange('borrowingRate', e.target.value)} step="0.01" /></div>
+            <div className="form-group"><label className="form-label">Fixed Increment Rate (%){isEditing ? ' *' : ''}</label>{errors.fixedIncrementRate && <span className="error-text">This field is required</span>}<input type={isEditing ? 'number' : 'text'} className={!isEditing ? 'form-input readonly-input' : errors.fixedIncrementRate ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={(editedLease as PropertyLease).fixedIncrementRate} onChange={(e) => handleInputChange('fixedIncrementRate', e.target.value)} step="0.01" /></div>
           </div>
 
           {editCommittedYears >= 1 && (
-            <div className="increment-compact-section">
-              <label className="form-label">Increment Methods</label>
-              <div className="increment-compact-list">
-                {Array.from({ length: editCommittedYears }, (_, i) => i + 1).map(year => (
-                  <div key={year} className="increment-compact-row">
-                    <span className="increment-compact-label">Yr {year}</span>
-                    <select value={editedLease.incrementMethods[year] || ''} onChange={(e) => handleIncrementMethodChange(year, e.target.value)} className={errors[`incrementMethod_${year}`] ? 'form-input-error increment-compact-select' : 'form-input increment-compact-select'}>
-                      <option value="">Select...</option><option value="Fixed">Fix Rate</option><option value="Market">Market</option><option value="CPI">CPI</option><option value="None">None</option>
-                    </select>
-                    {editedLease.incrementMethods[year] === 'Market' && (
-                      <input type="number" className={errors[`overrideAmount_${year}`] ? 'form-input-error increment-compact-input' : 'form-input increment-compact-input'} value={editedLease.overrideAmounts[year] || ''} onChange={(e) => handleOverrideAmountChange(year, e.target.value)} placeholder="Override $" step="0.01" />
-                    )}
-                  </div>
-                ))}
+            <div className="asset-ob-section">
+              <div className="asset-ob-header">
+                <button className="ob-toggle-btn" onClick={() => setIncExpanded(e => !e)}>
+                  {incExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                  <span className="asset-ob-title">Increment Methods</span>
+                </button>
               </div>
+              {incExpanded && (
+                <div className="increment-compact-list">
+                  {Array.from({ length: editCommittedYears }, (_, i) => i + 1).map(year => (
+                    <div key={year} className="increment-compact-row">
+                      <span className="increment-compact-label">Yr {year}</span>
+                      {isEditing ? (
+                        <>
+                          <select value={editedLease.incrementMethods[year] || ''} onChange={(e) => handleIncrementMethodChange(year, e.target.value)} className={errors[`incrementMethod_${year}`] ? 'form-input-error increment-compact-select' : 'form-input increment-compact-select'}>
+                            <option value="">Select...</option><option value="Fixed">Fix Rate</option><option value="Market">Market</option><option value="CPI">CPI</option><option value="None">None</option>
+                          </select>
+                          {editedLease.incrementMethods[year] === 'Market' && (
+                            <input type="number" className={errors[`overrideAmount_${year}`] ? 'form-input-error increment-compact-input' : 'form-input increment-compact-input'} value={editedLease.overrideAmounts[year] || ''} onChange={(e) => handleOverrideAmountChange(year, e.target.value)} placeholder="Override $" step="0.01" />
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <input type="text" className="form-input readonly-input increment-compact-select" readOnly value={editedLease.incrementMethods[year] || '—'} />
+                          {editedLease.incrementMethods[year] === 'Market' && (
+                            <input type="text" className="form-input readonly-input increment-compact-input" readOnly value={editedLease.overrideAmounts[year] ? `$${editedLease.overrideAmounts[year]}` : ''} />
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          <div className="opening-balance-inline">
-            <div className="opening-balance-inline-header"><h4>Opening Balances</h4><button className="add-opening-balance-button" onClick={() => setShowAddOpeningBalance(true)}>Add</button></div>
-            {sortedBalances.length === 0 ? <div className="ob-empty">No opening balances added yet.</div> : (
-              <div className="ob-card-list">
-                {sortedBalances.map(ob => (
-                  <div key={ob.id} className="ob-card">
-                    <div className="ob-card-header"><span className="ob-card-date">{obFormatDate(ob.openingDate)}</span><div className="ob-card-header-right"><span className="ob-card-badge">{ob.isNewLeaseExtension ? 'New / Extension' : 'Existing'}</span><button className="opening-balance-delete-button" onClick={() => handleDeleteOpeningBalance(ob.id)} title="Delete"><DeleteIcon fontSize="small" /></button></div></div>
-                    <div className="ob-card-grid">
-                      <div className="ob-card-field"><span className="ob-card-label">Right to Use Assets</span><span className="ob-card-value">{obFormatCurrency(ob.rightToUseAssets)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Acc. Depr ROU Assets</span><span className="ob-card-value">{obFormatCurrency(ob.accDeprRightToUseAssets)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Liability - Current</span><span className="ob-card-value">{obFormatCurrency(ob.leaseLiabilityCurrent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Liability - Non-Current</span><span className="ob-card-value">{obFormatCurrency(ob.leaseLiabilityNonCurrent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Depreciation Expense</span><span className="ob-card-value">{obFormatCurrency(ob.depreciationExpense)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Interest Expense Rent</span><span className="ob-card-value">{obFormatCurrency(ob.interestExpenseRent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Rent Expense</span><span className="ob-card-value">{obFormatCurrency(ob.rentExpense)}</span></div>
-                    </div>
-                  </div>
-                ))}
+          <div className="asset-ob-section">
+            <div className="asset-ob-header">
+              <button className="ob-toggle-btn" onClick={() => setObExpanded(e => !e)}>
+                {obExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                <span className="asset-ob-title">Opening Balances{sortedBalances.length > 0 ? ` (${sortedBalances.length})` : ''}</span>
+              </button>
+              {obExpanded && isEditing && <button className="asset-ob-add-btn" onClick={() => setShowAddOpeningBalance(true)}>+ Add</button>}
+            </div>
+            {obExpanded && sortedBalances.length === 0 && <p className="asset-ob-empty">No opening balances added yet.</p>}
+            {obExpanded && sortedBalances.map(ob => (
+              <div key={ob.id} className="asset-ob-card">
+                <div className="asset-ob-card-header">
+                  <span className={`asset-ob-type-badge ${ob.isNewLeaseExtension ? 'asset-ob-type-new' : 'asset-ob-type-existing'}`}>
+                    {ob.isNewLeaseExtension ? 'New / Extension' : 'Existing'}
+                  </span>
+                  {isEditing && <button className="asset-ob-delete-btn" onClick={() => handleDeleteOpeningBalance(ob.id)} title="Delete">×</button>}
+                </div>
+                <div className="asset-ob-card-body">
+                  <div className="asset-ob-field"><label>Date</label><input type="text" className="readonly-input" value={obFormatDate(ob.openingDate)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Right to Use Assets</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.rightToUseAssets)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Acc. Depr ROU Assets</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.accDeprRightToUseAssets)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Liability - Current</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.leaseLiabilityCurrent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Liability - Non-Current</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.leaseLiabilityNonCurrent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Depreciation Expense</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.depreciationExpense)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Interest Expense Rent</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.interestExpenseRent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Rent Expense</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.rentExpense)} readOnly /></div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
-        <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
-          <div className="lease-detail-actions-right"><button className="panel-btn" onClick={handleCancel}>Cancel</button><button className="panel-btn" onClick={handleSave}>Save Changes</button></div>
+        {isEditing && (
+          <div className="lease-detail-actions">
+            <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
+            <div className="lease-detail-actions-right">
+              <button className="panel-btn" onClick={handleCancelEdit}>Cancel</button>
+              <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+            </div>
+          </div>
+        )}
+        <div className="lease-detail-actions" style={{ borderTop: isEditing ? 'none' : '1px solid #dee2e6' }}>
+          <button
+            className="entities-add-button"
+            style={{ backgroundColor: '#28a745', width: '100%' }}
+            onClick={() => {
+              const lease = propertyLeases.find(l => l.id === selectedLeaseId);
+              if (lease) setXlsxModalLease(lease);
+            }}
+          >
+            AASB16
+          </button>
         </div>
       </div>
     );

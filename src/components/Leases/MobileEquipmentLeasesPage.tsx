@@ -3,6 +3,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { Lease, MobileEquipmentLease, OpeningBalance, Branch } from '../../types/Lease';
 import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentExcelGenerator';
 import { exportMobileEquipmentLeasesToExcel } from './excel/tableExporter';
@@ -48,6 +52,8 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [monthlyRentInput, setMonthlyRentInput] = useState('');
   const [showAddOpeningBalance, setShowAddOpeningBalance] = useState(false);
+  const [obExpanded, setObExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [xlsxModalLease, setXlsxModalLease] = useState<MobileEquipmentLease | null>(null);
   const emptyRows = 10;
   const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
@@ -102,6 +108,8 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
         setEditedLease({ ...lease });
         setMonthlyRentInput(lease.annualRent ? (parseFloat(lease.annualRent) / 12).toFixed(2) : '');
         setErrors({});
+        setObExpanded(false);
+        setIsEditing(false);
       } else {
         setSelectedLeaseId(null);
         setEditedLease(null);
@@ -109,6 +117,8 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
     } else {
       setEditedLease(null);
       setErrors({});
+      setObExpanded(false);
+      setIsEditing(false);
     }
   }, [selectedLeaseId, mobileEquipmentLeases]);
 
@@ -222,8 +232,14 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
     return isValid;
   };
 
-  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setSelectedLeaseId(null); showToast('Changes saved', 'edit'); } };
+  const handleSave = () => { if (editedLease && validateForm()) { onUpdateLease(editedLease); setIsEditing(false); showToast('Changes saved', 'edit'); } };
   const handleCancel = () => setSelectedLeaseId(null);
+  const handleCancelEdit = () => {
+    const original = mobileEquipmentLeases.find(l => l.id === selectedLeaseId);
+    if (original) { setEditedLease({ ...original }); setMonthlyRentInput(original.annualRent ? (parseFloat(original.annualRent) / 12).toFixed(2) : ''); }
+    setErrors({});
+    setIsEditing(false);
+  };
 
   const handleAddOpeningBalance = (ob: OpeningBalance) => {
     if (!editedLease) return;
@@ -290,49 +306,78 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
           <div className="lease-detail-header">
-            <button className="entities-add-button" style={{ backgroundColor: '#28a745' }} onClick={() => { const lease = mobileEquipmentLeases.find(l => l.id === selectedLeaseId); if (lease) setXlsxModalLease(lease); }}>AASB16</button>
+            <button className="lease-detail-edit-toggle" title={isEditing ? 'Switch to view mode' : 'Edit'} onClick={() => { setIsEditing(e => !e); setErrors({}); }}>
+              {isEditing ? <VisibilityIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+              <span>{isEditing ? 'View' : 'Edit'}</span>
+            </button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
           <div className="form-grid">
             <div className="form-group"><label className="form-label">Entity</label><input type="text" className="form-input readonly-input" value={editedLease.entity} readOnly disabled /></div>
-            <div className="form-group"><label className="form-label">Lessor *</label>{errors.lessor && <span className="error-text">This field is required</span>}<input type="text" className={errors.lessor ? 'form-input-error' : 'form-input'} value={editedLease.lessor} onChange={(e) => handleInputChange('lessor', e.target.value)} placeholder="Enter lessor" /></div>
-            <div className="form-group"><label className="form-label">Description *</label>{errors.description && <span className="error-text">This field is required</span>}<input type="text" className={errors.description ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).description} onChange={(e) => handleInputChange('description', e.target.value)} placeholder="Enter description" /></div>
-            <div className="form-group"><label className="form-label">Branch *</label>{errors.branch && <span className="error-text">This field is required</span>}<select className={errors.branch ? 'form-input-error' : 'form-input'} value={editedLease.branch} onChange={(e) => handleInputChange('branch', e.target.value)}><option value="">Select branch...</option>{BRANCH_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}</select></div>
-            <div className="form-group"><label className="form-label">Type *</label>{errors.vehicleType && <span className="error-text">This field is required</span>}<select className={errors.vehicleType ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).vehicleType} onChange={(e) => handleInputChange('vehicleType', e.target.value)}><option value="">Select vehicle type...</option><option value="Ute">Ute</option><option value="Wagon">Wagon</option><option value="Forklift">Forklift</option><option value="Other">Other</option></select></div>
-            <div className="form-group"><label className="form-label">Engine Number *</label>{errors.engineNumber && <span className="error-text">This field is required</span>}<input type="text" className={errors.engineNumber ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).engineNumber} onChange={(e) => handleInputChange('engineNumber', e.target.value)} placeholder="Enter Engine Number" /></div>
-            <div className="form-group"><label className="form-label">VIN/Serial No. *</label>{errors.vinSerialNo && <span className="error-text">This field is required</span>}<input type="text" className={errors.vinSerialNo ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).vinSerialNo} onChange={(e) => handleInputChange('vinSerialNo', e.target.value)} placeholder="Enter VIN/Serial No." /></div>
-            <div className="form-group"><label className="form-label">Rego/Equipment No. *</label>{errors.regoNo && <span className="error-text">This field is required</span>}<input type="text" className={errors.regoNo ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).regoNo} onChange={(e) => handleInputChange('regoNo', e.target.value)} placeholder="Enter Rego No." /></div>
-            <div className="form-group"><label className="form-label">Delivery Date *</label>{errors.deliveryDate && <span className="error-text">This field is required</span>}<input type="date" className={errors.deliveryDate ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).deliveryDate} onChange={(e) => handleInputChange('deliveryDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Expiry Date *</label>{errors.expiryDate && <span className="error-text">This field is required</span>}<input type="date" className={errors.expiryDate ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).expiryDate} onChange={(e) => handleInputChange('expiryDate', e.target.value)} /></div>
-            <div className="form-group"><label className="form-label">Monthly Rent (exc. GST) *</label>{errors.annualRent && <span className="error-text">This field is required</span>}<input type="number" className={errors.annualRent ? 'form-input-error' : 'form-input'} value={monthlyRentInput} onChange={(e) => { setMonthlyRentInput(e.target.value); handleInputChange('annualRent', e.target.value ? (parseFloat(e.target.value) * 12).toString() : ''); }} onBlur={() => { if (monthlyRentInput) setMonthlyRentInput(parseFloat(monthlyRentInput).toFixed(2)); }} placeholder="0.00" step="0.01" /></div>
-            <div className="form-group"><label className="form-label">Borrowing Rate (%) *</label>{errors.borrowingRate && <span className="error-text">This field is required</span>}<input type="number" className={errors.borrowingRate ? 'form-input-error' : 'form-input'} value={editedLease.borrowingRate} onChange={(e) => handleInputChange('borrowingRate', e.target.value)} placeholder="0.00" step="0.01" /></div>
+            <div className="form-group"><label className="form-label">Lessor *</label>{errors.lessor && <span className="error-text">This field is required</span>}{isEditing ? <input type="text" className={errors.lessor ? 'form-input-error' : 'form-input'} value={editedLease.lessor} onChange={(e) => handleInputChange('lessor', e.target.value)} placeholder="Enter lessor" /> : <input type="text" className="form-input readonly-input" value={editedLease.lessor} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Description *</label>{errors.description && <span className="error-text">This field is required</span>}{isEditing ? <input type="text" className={errors.description ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).description} onChange={(e) => handleInputChange('description', e.target.value)} placeholder="Enter description" /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).description} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Branch *</label>{errors.branch && <span className="error-text">This field is required</span>}{isEditing ? <select className={errors.branch ? 'form-input-error' : 'form-input'} value={editedLease.branch} onChange={(e) => handleInputChange('branch', e.target.value)}><option value="">Select branch...</option>{BRANCH_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}</select> : <input type="text" className="form-input readonly-input" value={editedLease.branch} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Type *</label>{errors.vehicleType && <span className="error-text">This field is required</span>}{isEditing ? <select className={errors.vehicleType ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).vehicleType} onChange={(e) => handleInputChange('vehicleType', e.target.value)}><option value="">Select vehicle type...</option><option value="Ute">Ute</option><option value="Wagon">Wagon</option><option value="Forklift">Forklift</option><option value="Other">Other</option></select> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).vehicleType} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Engine Number *</label>{errors.engineNumber && <span className="error-text">This field is required</span>}{isEditing ? <input type="text" className={errors.engineNumber ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).engineNumber} onChange={(e) => handleInputChange('engineNumber', e.target.value)} placeholder="Enter Engine Number" /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).engineNumber} readOnly />}</div>
+            <div className="form-group"><label className="form-label">VIN/Serial No. *</label>{errors.vinSerialNo && <span className="error-text">This field is required</span>}{isEditing ? <input type="text" className={errors.vinSerialNo ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).vinSerialNo} onChange={(e) => handleInputChange('vinSerialNo', e.target.value)} placeholder="Enter VIN/Serial No." /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).vinSerialNo} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Rego/Equipment No. *</label>{errors.regoNo && <span className="error-text">This field is required</span>}{isEditing ? <input type="text" className={errors.regoNo ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).regoNo} onChange={(e) => handleInputChange('regoNo', e.target.value)} placeholder="Enter Rego No." /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).regoNo} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Delivery Date *</label>{errors.deliveryDate && <span className="error-text">This field is required</span>}{isEditing ? <input type="date" className={errors.deliveryDate ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).deliveryDate} onChange={(e) => handleInputChange('deliveryDate', e.target.value)} /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).deliveryDate ? formatDate((editedLease as MobileEquipmentLease).deliveryDate) : ''} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Expiry Date *</label>{errors.expiryDate && <span className="error-text">This field is required</span>}{isEditing ? <input type="date" className={errors.expiryDate ? 'form-input-error' : 'form-input'} value={(editedLease as MobileEquipmentLease).expiryDate} onChange={(e) => handleInputChange('expiryDate', e.target.value)} /> : <input type="text" className="form-input readonly-input" value={(editedLease as MobileEquipmentLease).expiryDate ? formatDate((editedLease as MobileEquipmentLease).expiryDate) : ''} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Monthly Rent (exc. GST) *</label>{errors.annualRent && <span className="error-text">This field is required</span>}{isEditing ? <input type="number" className={errors.annualRent ? 'form-input-error' : 'form-input'} value={monthlyRentInput} onChange={(e) => { setMonthlyRentInput(e.target.value); handleInputChange('annualRent', e.target.value ? (parseFloat(e.target.value) * 12).toString() : ''); }} onBlur={() => { if (monthlyRentInput) setMonthlyRentInput(parseFloat(monthlyRentInput).toFixed(2)); }} placeholder="0.00" step="0.01" /> : <input type="text" className="form-input readonly-input" value={monthlyRentInput ? formatCurrency(parseFloat(monthlyRentInput).toFixed(2)) : ''} readOnly />}</div>
+            <div className="form-group"><label className="form-label">Borrowing Rate (%) *</label>{errors.borrowingRate && <span className="error-text">This field is required</span>}{isEditing ? <input type="number" className={errors.borrowingRate ? 'form-input-error' : 'form-input'} value={editedLease.borrowingRate} onChange={(e) => handleInputChange('borrowingRate', e.target.value)} placeholder="0.00" step="0.01" /> : <input type="text" className="form-input readonly-input" value={editedLease.borrowingRate ? `${parseFloat(editedLease.borrowingRate).toFixed(2)}%` : ''} readOnly />}</div>
           </div>
 
-          <div className="opening-balance-inline">
-            <div className="opening-balance-inline-header"><h4>Opening Balances</h4><button className="add-opening-balance-button" onClick={() => setShowAddOpeningBalance(true)}>Add</button></div>
-            {sortedBalances.length === 0 ? <div className="ob-empty">No opening balances added yet.</div> : (
-              <div className="ob-card-list">
-                {sortedBalances.map(ob => (
-                  <div key={ob.id} className="ob-card">
-                    <div className="ob-card-header"><span className="ob-card-date">{obFormatDate(ob.openingDate)}</span><div className="ob-card-header-right"><span className="ob-card-badge">{ob.isNewLeaseExtension ? 'New / Extension' : 'Existing'}</span><button className="opening-balance-delete-button" onClick={() => handleDeleteOpeningBalance(ob.id)} title="Delete"><DeleteIcon fontSize="small" /></button></div></div>
-                    <div className="ob-card-grid">
-                      <div className="ob-card-field"><span className="ob-card-label">Right to Use Assets</span><span className="ob-card-value">{obFormatCurrency(ob.rightToUseAssets)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Acc. Depr ROU Assets</span><span className="ob-card-value">{obFormatCurrency(ob.accDeprRightToUseAssets)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Liability - Current</span><span className="ob-card-value">{obFormatCurrency(ob.leaseLiabilityCurrent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Liability - Non-Current</span><span className="ob-card-value">{obFormatCurrency(ob.leaseLiabilityNonCurrent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Depreciation Expense</span><span className="ob-card-value">{obFormatCurrency(ob.depreciationExpense)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Interest Expense Rent</span><span className="ob-card-value">{obFormatCurrency(ob.interestExpenseRent)}</span></div>
-                      <div className="ob-card-field"><span className="ob-card-label">Rent Expense</span><span className="ob-card-value">{obFormatCurrency(ob.rentExpense)}</span></div>
-                    </div>
-                  </div>
-                ))}
+          <div className="asset-ob-section">
+            <div className="asset-ob-header">
+              <button className="ob-toggle-btn" onClick={() => setObExpanded(e => !e)}>
+                {obExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                <span className="asset-ob-title">Opening Balances{sortedBalances.length > 0 ? ` (${sortedBalances.length})` : ''}</span>
+              </button>
+              {obExpanded && isEditing && <button className="asset-ob-add-btn" onClick={() => setShowAddOpeningBalance(true)}>+ Add</button>}
+            </div>
+            {obExpanded && sortedBalances.length === 0 && <p className="asset-ob-empty">No opening balances added yet.</p>}
+            {obExpanded && sortedBalances.map(ob => (
+              <div key={ob.id} className="asset-ob-card">
+                <div className="asset-ob-card-header">
+                  <span className={`asset-ob-type-badge ${ob.isNewLeaseExtension ? 'asset-ob-type-new' : 'asset-ob-type-existing'}`}>
+                    {ob.isNewLeaseExtension ? 'New / Extension' : 'Existing'}
+                  </span>
+                  {isEditing && <button className="asset-ob-delete-btn" onClick={() => handleDeleteOpeningBalance(ob.id)} title="Delete">×</button>}
+                </div>
+                <div className="asset-ob-card-body">
+                  <div className="asset-ob-field"><label>Date</label><input type="text" className="readonly-input" value={obFormatDate(ob.openingDate)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Right to Use Assets</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.rightToUseAssets)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Acc. Depr ROU Assets</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.accDeprRightToUseAssets)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Liability - Current</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.leaseLiabilityCurrent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Liability - Non-Current</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.leaseLiabilityNonCurrent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Depreciation Expense</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.depreciationExpense)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Interest Expense Rent</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.interestExpenseRent)} readOnly /></div>
+                  <div className="asset-ob-field"><label>Rent Expense</label><input type="text" className="readonly-input" value={obFormatCurrency(ob.rentExpense)} readOnly /></div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
-        <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
-          <div className="lease-detail-actions-right"><button className="panel-btn" onClick={handleCancel}>Cancel</button><button className="panel-btn" onClick={handleSave}>Save Changes</button></div>
+        {isEditing && (
+          <div className="lease-detail-actions">
+            <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
+            <div className="lease-detail-actions-right">
+              <button className="panel-btn" onClick={handleCancelEdit}>Cancel</button>
+              <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+            </div>
+          </div>
+        )}
+        <div className="lease-detail-actions" style={{ borderTop: isEditing ? 'none' : '1px solid #dee2e6' }}>
+          <button
+            className="entities-add-button"
+            style={{ backgroundColor: '#28a745', width: '100%' }}
+            onClick={() => {
+              const lease = mobileEquipmentLeases.find(l => l.id === selectedLeaseId);
+              if (lease) setXlsxModalLease(lease);
+            }}
+          >
+            AASB16
+          </button>
         </div>
       </div>
     );
