@@ -40,6 +40,12 @@ export const generateCategorySheet = (
   // Months to show: January through the selected month
   const activeMonths = MONTH_NAMES.slice(0, month);
 
+  // Column index offsets (depend only on month count)
+  const writtenBackCol = 21 + month;
+  const depClosingCol = 21 + month + 1;
+  const wdvPrevCol = 21 + month + 2;
+  const wdvCurrCol = 21 + month + 3;
+
   // Row 4: section header row
   const sectionHeaderRow: any[] = [
     'Asset ID', 'Asset Name', 'Asset Category', 'Location',
@@ -79,12 +85,15 @@ export const generateCategorySheet = (
     isNew: boolean,
     acquisitionMonth: number, // 1–12
     startingWDV?: number,
+    disposalMonth?: number,   // 1–12; depreciation is 0 from this month onwards
   ): number[] => {
     const monthlyCharge = (cost * depRate) / 12;
     const deps: number[] = [];
     let wdv = isNew ? 0 : (startingWDV ?? cost);
     for (let m = 1; m <= month; m++) {
-      if (isNew && m < acquisitionMonth) {
+      if (disposalMonth !== undefined && m >= disposalMonth) {
+        deps.push(0);
+      } else if (isNew && m < acquisitionMonth) {
         deps.push(0);
       } else {
         if (isNew && m === acquisitionMonth) wdv = cost;
@@ -112,13 +121,16 @@ export const generateCategorySheet = (
 
     let costOB: number | string;
     let addition: number | string;
+    let costDisposal: number | string;
     let costClosing: number | string;
     let depOB: number | string;
     let wdvPrevYear: number | string;
     let monthlyDeps: number[];
     let currentPeriod: number | string;
+    let writtenBack: number | string;
     let depClosing: number | string;
     let wdvYear: number | string;
+    let gainLoss: number | string;
 
     if (matchingOB) {
       const isNew = matchingOB.type === 'New';
@@ -133,7 +145,8 @@ export const generateCategorySheet = (
         depOB = 0;
       }
 
-      costClosing = (costOB as number) + (addition as number);
+      costDisposal = disposalVisible ? -(costOB as number) : 0;
+      costClosing = (costOB as number) + (addition as number) + (costDisposal as number);
       wdvPrevYear = (costOB as number) - (depOB as number);
 
       // For existing assets, WDV at start of year = cost - depOB; adjust the calc
@@ -146,22 +159,36 @@ export const generateCategorySheet = (
         acquisitionMonth = acqYear >= year ? acqMonth : 1;
       }
 
-      monthlyDeps = calcMonthlyDep(cost, depRate, isNew, acquisitionMonth, isNew ? undefined : (wdvPrevYear as number));
+      const disposalMonth = disposalVisible && asset.disposalDate
+        ? parseInt(asset.disposalDate.split('-')[1], 10)
+        : undefined;
+
+      monthlyDeps = calcMonthlyDep(cost, depRate, isNew, acquisitionMonth, isNew ? undefined : (wdvPrevYear as number), disposalMonth);
 
       currentPeriod = monthlyDeps.reduce((sum, d) => sum + d, 0);
-      const writtenBack = 0; // no disposal data
+      writtenBack = disposalVisible ? -((depOB as number) + (currentPeriod as number)) : 0;
       depClosing = (depOB as number) + currentPeriod + writtenBack;
       wdvYear = (costClosing as number) - (depClosing as number);
+
+      if (disposalVisible) {
+        const proceed = parseFloat(asset.proceed || '0');
+        gainLoss = proceed - (-(costDisposal as number) + (writtenBack as number));
+      } else {
+        gainLoss = '';
+      }
     } else {
       costOB = 'N/A';
       addition = 'N/A';
+      costDisposal = 'N/A';
       costClosing = 'N/A';
       depOB = 'N/A';
       wdvPrevYear = 'N/A';
       monthlyDeps = Array(month).fill('');
       currentPeriod = 'N/A';
+      writtenBack = 'N/A';
       depClosing = 'N/A';
       wdvYear = 'N/A';
+      gainLoss = 'N/A';
     }
 
     return [
@@ -178,38 +205,46 @@ export const generateCategorySheet = (
       assetsDisposal,         // Assets Disposal
       dateOfDisposal,         // Date of Disposal/Write Off
       proceedValue,           // Proceed
-      '',              // Gain/Loss
+      gainLoss,        // Gain/Loss
       costOB,          // Cost: Opening Balance
       addition,        // Cost: Addition
-      '',              // Cost: Disposal
+      costDisposal,    // Cost: Disposal
       '',              // Cost: Transfer Completed Assets
       costClosing,     // Cost: Closing Balance
       depOB,           // Dep: Opening Balance
       currentPeriod,   // Dep: Current Period
       ...monthlyDeps,  // Jan–cutoff month
-      0,               // Dep: Written-Back on Disposal
+      writtenBack,     // Dep: Written-Back on Disposal
       depClosing,      // Dep: Closing Balance
       wdvPrevYear,     // WDV: As at 31 Dec {prevYear}
       wdvYear,         // WDV: As at {asAtLabel}
     ];
   });
 
-  const allRows = [...titleRows, sectionHeaderRow, columnHeaderRow, ...dataRows];
-  const ws = XLSX.utils.aoa_to_sheet(allRows);
+  // Total row: sum numeric values across all data rows for each totalled column
+  const totalledCols = [
+    6, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    ...Array.from({ length: month }, (_, i) => 21 + i),
+    writtenBackCol, depClosingCol, wdvPrevCol, wdvCurrCol,
+  ];
+  const totalRow: any[] = Array(wdvCurrCol + 1).fill('');
+  totalRow[0] = 'Total';
+  for (const c of totalledCols) {
+    let sum = 0;
+    for (const row of dataRows) {
+      const val = row[c];
+      if (typeof val === 'number') {
+        sum += val;
+      } else if (typeof val === 'string' && val !== '' && val !== 'N/A') {
+        const n = parseFloat(val);
+        if (!isNaN(n)) sum += n;
+      }
+    }
+    totalRow[c] = sum;
+  }
 
-  // Column index offsets based on dynamic month count
-  // Fixed cols: 0-13 (14 cols: 0-5 base, 6 Historical Cost, 7-12 new cols, 13 Gain/Loss)
-  // Cost cols: 14-18 (5 cols)
-  // Dep OB: 19, Current Period: 20
-  // Month cols: 21 to 21+month-1
-  // Written-Back: 21+month
-  // Dep Closing: 21+month+1
-  // WDV prev: 21+month+2
-  // WDV curr: 21+month+3
-  const writtenBackCol = 21 + month;
-  const depClosingCol = 21 + month + 1;
-  const wdvPrevCol = 21 + month + 2;
-  const wdvCurrCol = 21 + month + 3;
+  const allRows = [...titleRows, sectionHeaderRow, columnHeaderRow, ...dataRows, [], totalRow];
+  const ws = XLSX.utils.aoa_to_sheet(allRows);
 
   // Merges
   ws['!merges'] = [
@@ -257,7 +292,7 @@ export const generateCategorySheet = (
   // Number format for numeric data cells
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
   const numericCols = [
-    6, 14, 15, 18, 19, 20,
+    6, 13, 14, 15, 16, 18, 19, 20,
     ...Array.from({ length: month }, (_, i) => 21 + i),
     writtenBackCol, depClosingCol, wdvPrevCol, wdvCurrCol,
   ];

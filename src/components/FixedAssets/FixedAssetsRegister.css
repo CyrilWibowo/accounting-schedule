@@ -310,6 +310,17 @@
   text-align: center;
 }
 
+.revert-btn {
+  background-color: #dc3545 !important;
+  color: white !important;
+  border-color: #dc3545 !important;
+}
+
+.revert-btn:hover {
+  background-color: #c82333 !important;
+  border-color: #c82333 !important;
+}
+
 .transfer-btn {
   background-color: #28a745 !important;
   color: white !important;
@@ -319,6 +330,183 @@
 .transfer-btn:hover {
   background-color: #218838 !important;
   border-color: #218838 !important;
+}
+
+.asset-ob-section {
+  padding-top: 20px;
+  border-top: 2px solid #dee2e6;
+  margin-top: 20px;
+}
+
+.asset-ob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ob-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+}
+
+.ob-toggle-btn:hover {
+  opacity: 0.7;
+}
+
+.asset-ob-title {
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #888;
+}
+
+.asset-ob-add-btn {
+  background: none;
+  border: 1px solid #007bff;
+  color: #007bff;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.asset-ob-add-btn:hover {
+  background: #007bff;
+  color: white;
+}
+
+.asset-ob-empty {
+  font-size: 13px;
+  color: #6c757d;
+  font-style: italic;
+  margin: 0 0 8px;
+  text-align: center;
+  padding: 24px 16px;
+}
+
+.asset-ob-card {
+  background: #f9f9f9;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.asset-ob-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.asset-ob-type-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.asset-ob-type-new {
+  background: #d4edda;
+  color: #155724;
+}
+
+.asset-ob-type-existing {
+  background: #cce5ff;
+  color: #004085;
+}
+
+.asset-ob-type-select {
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.asset-ob-delete-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.asset-ob-delete-btn:hover {
+  color: #dc3545;
+}
+
+.asset-ob-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.asset-ob-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.asset-ob-field label {
+  font-size: 13px;
+  color: #333;
+  font-weight: 600;
+}
+
+.asset-ob-field input {
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cip-source-link {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.cip-source-link:hover {
+  color: #0056b3;
+}
+
+.cip-completion-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 2px solid #dee2e6;
+}
+
+.cip-completion-divider {
+  display: none;
+}
+
+.cip-completion-title {
+  font-size: 15px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: #888;
+  padding: 0 0 8px 0;
 }
 
 /* Asset Upload Preview Modal */

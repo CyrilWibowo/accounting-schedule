@@ -4,9 +4,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { Asset, AssetCategory, AssetBranch, OpeningBalance } from '../../types/Asset';
+import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
 import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
 import { generateAssetsReport } from './excel/generateAssetsReport';
@@ -40,6 +44,7 @@ const generateAssetId = (branch: AssetBranch, category: AssetCategory): string =
 interface FixedAssetsRegistrationProps {
   onNavigate: (view: View) => void;
   selectedEntity: Entity | null;
+  onNavigateToCIP?: (cipId: string) => void;
 }
 
 const COLUMNS = [
@@ -63,7 +68,7 @@ const DEFAULT_PANEL_WIDTH = 420;
 const MIN_PANEL_WIDTH = 320;
 const MAX_PANEL_WIDTH = 700;
 
-const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity }) => {
+const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity, onNavigateToCIP }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'All' | 'Active' | 'Disposed'>('All');
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
@@ -87,6 +92,8 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [editedAsset, setEditedAsset] = useState<Asset | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [obExpanded, setObExpanded] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const isResizing = useRef(false);
@@ -140,13 +147,19 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
       if (asset) {
         setEditedAsset({ ...asset });
         setErrors({});
+        setIsEditing(false);
+        setObExpanded(false);
       } else {
         setSelectedAssetId(null);
         setEditedAsset(null);
+        setIsEditing(false);
+        setObExpanded(false);
       }
     } else {
       setEditedAsset(null);
       setErrors({});
+      setIsEditing(false);
+      setObExpanded(false);
     }
   }, [selectedAssetId, assets]);
 
@@ -213,22 +226,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     if (errors[field]) setErrors({ ...errors, [field]: false });
   };
 
-  const handleAddOpeningBalance = () => {
-    if (!editedAsset) return;
-    setEditedAsset({ ...editedAsset, openingBalances: [...(editedAsset.openingBalances || []), { type: 'New', date: '', value: '' }] });
-  };
-
-  const handleOpeningBalanceChange = (index: number, field: keyof OpeningBalance, value: string) => {
-    if (!editedAsset) return;
-    const updated = [...(editedAsset.openingBalances || [])];
-    updated[index] = { ...updated[index], [field]: value };
-    setEditedAsset({ ...editedAsset, openingBalances: updated });
-  };
-
-  const handleRemoveOpeningBalance = (index: number) => {
-    if (!editedAsset) return;
-    setEditedAsset({ ...editedAsset, openingBalances: (editedAsset.openingBalances || []).filter((_, i) => i !== index) });
-  };
 
   const validateForm = (): boolean => {
     if (!editedAsset) return false;
@@ -250,7 +247,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     if (!editedAsset || !selectedEntity || !validateForm()) return;
     const updatedAssets = await updateEntityAsset(selectedEntity.id, editedAsset);
     setAssets(updatedAssets);
-    setSelectedAssetId(null);
+    setIsEditing(false);
     showToast('Changes saved', 'edit');
   };
 
@@ -389,23 +386,14 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
           <div className="lease-detail-header" style={{ justifyContent: 'space-between' }}>
-            {!editedAsset.disposed ? (
-              <button
-                className="panel-btn"
-                style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14', color: 'white' }}
-                onClick={() => setShowDisposeModal(true)}
-              >
-                Dispose
-              </button>
-            ) : (
-              <button
-                className="panel-btn"
-                style={{ backgroundColor: '#6c757d', borderColor: '#6c757d', color: 'white' }}
-                onClick={handleRevertDisposal}
-              >
-                Revert Disposal
-              </button>
-            )}
+            <button
+              className="lease-detail-edit-toggle"
+              title={isEditing ? 'Switch to view mode' : 'Edit'}
+              onClick={() => { setIsEditing(e => !e); setErrors({}); }}
+            >
+              {isEditing ? <VisibilityIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+              <span>{isEditing ? 'View' : 'Edit'}</span>
+            </button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
 
@@ -416,55 +404,76 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Description *</label>
+              <label>Description{isEditing ? ' *' : ''}</label>
               {errors.description && <span className="error-text">Required</span>}
               <input
                 type="text"
-                className={errors.description ? 'error' : ''}
+                className={!isEditing ? 'readonly-input' : errors.description ? 'error' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label>Category *</label>
+              <label>Category{isEditing ? ' *' : ''}</label>
               {errors.category && <span className="error-text">Required</span>}
-              <select
-                className={errors.category ? 'error' : ''}
-                value={editedAsset.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-              >
-                <option value="">Select Category</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {isEditing ? (
+                <select
+                  className={errors.category ? 'error' : ''}
+                  value={editedAsset.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                >
+                  <option value="">Select Category</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <input type="text" className="readonly-input" value={editedAsset.category} readOnly />
+              )}
             </div>
 
             <div className="form-group">
-              <label>Branch *</label>
+              <label>Branch{isEditing ? ' *' : ''}</label>
               {errors.branch && <span className="error-text">Required</span>}
-              <select
-                className={errors.branch ? 'error' : ''}
-                value={editedAsset.branch}
-                onChange={(e) => handleInputChange('branch', e.target.value)}
-              >
-                <option value="">Select Branch</option>
-                {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              {isEditing ? (
+                <select
+                  className={errors.branch ? 'error' : ''}
+                  value={editedAsset.branch}
+                  onChange={(e) => handleInputChange('branch', e.target.value)}
+                >
+                  <option value="">Select Branch</option>
+                  {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              ) : (
+                <input type="text" className="readonly-input" value={editedAsset.branch} readOnly />
+              )}
             </div>
 
             <div className="form-group">
               <label>Vendor</label>
               <input
                 type="text"
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.vendorName}
                 onChange={(e) => handleInputChange('vendorName', e.target.value)}
               />
+              {editedAsset.sourceCIPId && onNavigateToCIP && (
+                <button
+                  className="cip-source-link"
+                  onClick={() => onNavigateToCIP(editedAsset.sourceCIPId!)}
+                >
+                  View Source CIP ({editedAsset.sourceCIPId})
+                </button>
+              )}
             </div>
 
             <div className="form-group">
               <label>Invoice No.</label>
               <input
                 type="text"
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.invoice}
                 onChange={(e) => handleInputChange('invoice', e.target.value)}
               />
@@ -474,6 +483,8 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <label>Serial</label>
               <input
                 type="text"
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.serialNo}
                 onChange={(e) => handleInputChange('serialNo', e.target.value)}
               />
@@ -483,6 +494,8 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <label>Tag/Registration</label>
               <input
                 type="text"
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.tagNo}
                 onChange={(e) => handleInputChange('tagNo', e.target.value)}
               />
@@ -491,8 +504,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             <div className="form-group">
               <label>Acquisition Date</label>
               <input
-                type="date"
-                value={editedAsset.acquisitionDate}
+                type={isEditing ? 'date' : 'text'}
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
+                value={isEditing ? editedAsset.acquisitionDate : (editedAsset.acquisitionDate ? new Date(editedAsset.acquisitionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')}
                 onChange={(e) => handleInputChange('acquisitionDate', e.target.value)}
               />
             </div>
@@ -501,8 +516,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <div className="form-group">
                 <label>Disposal Date</label>
                 <input
-                  type="date"
-                  value={editedAsset.disposalDate || ''}
+                  type={isEditing ? 'date' : 'text'}
+                  className={!isEditing ? 'readonly-input' : ''}
+                  readOnly={!isEditing}
+                  value={isEditing ? (editedAsset.disposalDate || '') : (editedAsset.disposalDate ? new Date(editedAsset.disposalDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')}
                   onChange={(e) => handleInputChange('disposalDate', e.target.value)}
                 />
               </div>
@@ -512,7 +529,9 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <div className="form-group">
                 <label>Proceed</label>
                 <input
-                  type="number"
+                  type={isEditing ? 'number' : 'text'}
+                  className={!isEditing ? 'readonly-input' : ''}
+                  readOnly={!isEditing}
                   value={editedAsset.proceed || ''}
                   onChange={(e) => handleInputChange('proceed', e.target.value)}
                 />
@@ -520,22 +539,24 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             )}
 
             <div className="form-group">
-              <label>Cost *</label>
+              <label>Cost{isEditing ? ' *' : ''}</label>
               {errors.cost && <span className="error-text">Required</span>}
               <input
-                type="number"
-                className={errors.cost ? 'error' : ''}
-                value={editedAsset.cost}
+                type={isEditing ? 'number' : 'text'}
+                className={!isEditing ? 'readonly-input' : errors.cost ? 'error' : ''}
+                readOnly={!isEditing}
+                value={isEditing ? editedAsset.cost : (editedAsset.cost ? `$${Number(editedAsset.cost).toLocaleString()}` : '')}
                 onChange={(e) => handleInputChange('cost', e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label>Useful Life (Years) *</label>
+              <label>Useful Life (Years){isEditing ? ' *' : ''}</label>
               {errors.usefulLife && <span className="error-text">Required</span>}
               <input
-                type="number"
-                className={errors.usefulLife ? 'error' : ''}
+                type={isEditing ? 'number' : 'text'}
+                className={!isEditing ? 'readonly-input' : errors.usefulLife ? 'error' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.usefulLife}
                 onChange={(e) => handleInputChange('usefulLife', e.target.value)}
               />
@@ -545,53 +566,122 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <label>Dep. Rate (%)</label>
               {errors.depreciationRate && <span className="error-text">Required</span>}
               <input
-                type="number"
-                className={errors.depreciationRate ? 'error' : ''}
+                type={isEditing ? 'number' : 'text'}
+                className={!isEditing ? 'readonly-input' : errors.depreciationRate ? 'error' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.depreciationRate}
                 onChange={(e) => handleInputChange('depreciationRate', e.target.value)}
               />
             </div>
           </div>
 
-          <div className="opening-balances-section">
-            <div className="opening-balances-header">
-              <span>Opening Balances</span>
-              <button type="button" className="add-opening-balance-btn" onClick={handleAddOpeningBalance}>+ Add</button>
+          <div className="asset-ob-section">
+            <div className="asset-ob-header">
+              <button className="ob-toggle-btn" onClick={() => setObExpanded(e => !e)}>
+                {obExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                <span className="asset-ob-title">Opening Balances{(editedAsset.openingBalances?.length ?? 0) > 0 ? ` (${editedAsset.openingBalances!.length})` : ''}</span>
+              </button>
+              {obExpanded && isEditing && (
+                <button className="asset-ob-add-btn" onClick={() => setEditedAsset({ ...editedAsset, openingBalances: [...(editedAsset.openingBalances || []), { type: 'New', date: '', value: '' }] })}>+ Add</button>
+              )}
             </div>
-            {(editedAsset.openingBalances || []).map((cb, i) => (
-              <div key={i} className="opening-balance-row">
-                <select
-                  className="opening-balance-type"
-                  value={cb.type}
-                  onChange={(e) => handleOpeningBalanceChange(i, 'type', e.target.value)}
-                >
-                  <option value="New">New</option>
-                  <option value="Existing">Existing</option>
-                </select>
-                <input
-                  type="date"
-                  value={cb.date}
-                  onChange={(e) => handleOpeningBalanceChange(i, 'date', e.target.value)}
-                />
-                {cb.type === 'Existing' && (
-                  <input
-                    type="number"
-                    placeholder="Balance"
-                    value={cb.value}
-                    onChange={(e) => handleOpeningBalanceChange(i, 'value', e.target.value)}
-                  />
-                )}
-                <button type="button" className="remove-opening-balance-btn" onClick={() => handleRemoveOpeningBalance(i)}>×</button>
+            {obExpanded && (editedAsset.openingBalances || []).length === 0 && (
+              <p className="asset-ob-empty">No opening balances</p>
+            )}
+            {obExpanded && (editedAsset.openingBalances || []).map((ob, i) => (
+              <div key={i} className="asset-ob-card">
+                <div className="asset-ob-card-header">
+                  {isEditing ? (
+                    <select
+                      className="asset-ob-type-select"
+                      value={ob.type}
+                      onChange={(e) => {
+                        const updated = [...(editedAsset.openingBalances || [])];
+                        updated[i] = { ...updated[i], type: e.target.value as 'New' | 'Existing' };
+                        setEditedAsset({ ...editedAsset, openingBalances: updated });
+                      }}
+                    >
+                      <option value="New">New</option>
+                      <option value="Existing">Existing</option>
+                    </select>
+                  ) : (
+                    <span className={`asset-ob-type-badge asset-ob-type-${ob.type.toLowerCase()}`}>{ob.type}</span>
+                  )}
+                  {isEditing && (
+                    <button className="asset-ob-delete-btn" onClick={() => setEditedAsset({ ...editedAsset, openingBalances: (editedAsset.openingBalances || []).filter((_, idx) => idx !== i) })}>×</button>
+                  )}
+                </div>
+                <div className="asset-ob-card-body">
+                  <div className="asset-ob-field">
+                    <label>Date</label>
+                    <input
+                      type={isEditing ? 'date' : 'text'}
+                      className={!isEditing ? 'readonly-input' : ''}
+                      readOnly={!isEditing}
+                      value={isEditing ? ob.date : (ob.date ? new Date(ob.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')}
+                      onChange={(e) => {
+                        const updated = [...(editedAsset.openingBalances || [])];
+                        updated[i] = { ...updated[i], date: e.target.value };
+                        setEditedAsset({ ...editedAsset, openingBalances: updated });
+                      }}
+                    />
+                  </div>
+                  {ob.type === 'Existing' && (
+                    <div className="asset-ob-field">
+                      <label>Balance</label>
+                      <input
+                        type={isEditing ? 'number' : 'text'}
+                        className={!isEditing ? 'readonly-input' : ''}
+                        readOnly={!isEditing}
+                        placeholder="0"
+                        value={isEditing ? ob.value : (ob.value ? `$${Number(ob.value).toLocaleString()}` : '')}
+                        onChange={(e) => {
+                          const updated = [...(editedAsset.openingBalances || [])];
+                          updated[i] = { ...updated[i], value: e.target.value };
+                          setEditedAsset({ ...editedAsset, openingBalances: updated });
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
-          <div className="lease-detail-actions-right">
-            <button className="panel-btn" onClick={handleCancel}>Cancel</button>
-            <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+        <div className="lease-detail-actions" style={{ flexDirection: 'column', gap: 8 }}>
+          {isEditing && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
+              <div className="lease-detail-actions-right">
+                <button className="panel-btn" onClick={() => {
+                  const original = assets.find(a => a.id === selectedAssetId);
+                  if (original) setEditedAsset({ ...original });
+                  setErrors({});
+                  setIsEditing(false);
+                }}>Cancel</button>
+                <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+              </div>
+            </div>
+          )}
+          <div style={{ borderTop: isEditing ? '1px solid #e0e0e0' : undefined, paddingTop: isEditing ? 8 : 0, width: '100%' }}>
+            {!editedAsset.disposed ? (
+              <button
+                className="panel-btn"
+                style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14', color: 'white', width: '100%' }}
+                onClick={() => setShowDisposeModal(true)}
+              >
+                Dispose Asset
+              </button>
+            ) : (
+              <button
+                className="panel-btn"
+                style={{ backgroundColor: '#6c757d', borderColor: '#6c757d', color: 'white', width: '100%' }}
+                onClick={handleRevertDisposal}
+              >
+                Revert Disposal
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -755,7 +845,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
 
       {selectedAssetId && renderDetailPanel()}
 
-      {isAddModalOpen && selectedEntity && (
+{isAddModalOpen && selectedEntity && (
         <AddAssetModal
           onClose={() => setIsAddModalOpen(false)}
           onSaveAsset={handleAddAsset}
