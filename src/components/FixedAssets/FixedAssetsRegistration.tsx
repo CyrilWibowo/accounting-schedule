@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -64,9 +66,9 @@ const COLUMNS = [
 ];
 
 const EMPTY_ROW_COUNT = 15;
-const DEFAULT_PANEL_WIDTH = 420;
-const MIN_PANEL_WIDTH = 320;
-const MAX_PANEL_WIDTH = 700;
+const DEFAULT_PANEL_WIDTH = 480;
+const MIN_PANEL_WIDTH = 340;
+const MAX_PANEL_WIDTH = 900;
 
 const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity, onNavigateToCIP }) => {
   const [search, setSearch] = useState('');
@@ -95,7 +97,19 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [isEditing, setIsEditing] = useState(false);
   const [obExpanded, setObExpanded] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(99);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
+  const selectDropdownRef = useRef<HTMLDivElement>(null);
+  const checkboxColRef = useRef<HTMLTableCellElement>(null);
+  const [checkboxColWidth, setCheckboxColWidth] = useState(40);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('sidePanelWidth');
+    if (saved) { const n = parseInt(saved, 10); if (!isNaN(n)) return Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, n)); }
+    return DEFAULT_PANEL_WIDTH;
+  });
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
@@ -103,6 +117,21 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
     if (header) setHeaderHeight(header.offsetHeight);
+    if (stickyHeaderRef.current) setStickyHeaderHeight(stickyHeaderRef.current.offsetHeight);
+    if (checkboxColRef.current) setCheckboxColWidth(checkboxColRef.current.offsetWidth);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+      if (selectDropdownRef.current && !selectDropdownRef.current.contains(e.target as Node)) {
+        setIsSelectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
@@ -115,8 +144,9 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)));
+      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
+      setPanelWidth(newWidth);
+      localStorage.setItem('sidePanelWidth', String(newWidth));
     };
     const handleMouseUp = () => {
       if (isResizing.current) {
@@ -180,6 +210,15 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
       setSelectedAssets(new Set(assets.map(a => a.id)));
     }
   }, [assets, selectedAssets.size]);
+
+  const handleSelectByStatus = (status: 'all' | 'active' | 'disposed') => {
+    let ids: string[];
+    if (status === 'all') ids = filteredAssets.map(a => a.id);
+    else if (status === 'active') ids = filteredAssets.filter(a => !a.disposed).map(a => a.id);
+    else ids = filteredAssets.filter(a => a.disposed).map(a => a.id);
+    setSelectedAssets(new Set(ids));
+    setIsSelectDropdownOpen(false);
+  };
 
   const handleToggleAsset = (assetId: string) => {
     const newSet = new Set(selectedAssets);
@@ -398,6 +437,27 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
           </div>
 
           <div className="form-grid">
+            <div className="form-group">
+              {!editedAsset.disposed ? (
+                <button
+                  className="panel-btn"
+                  style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14', color: 'white', width: '100%' }}
+                  onClick={() => setShowDisposeModal(true)}
+                  disabled={!isEditing}
+                >
+                  Dispose Asset
+                </button>
+              ) : (
+                <button
+                  className="panel-btn"
+                  style={{ backgroundColor: '#6c757d', borderColor: '#6c757d', color: 'white', width: '100%' }}
+                  onClick={handleRevertDisposal}
+                  disabled={!isEditing}
+                >
+                  Revert Disposal
+                </button>
+              )}
+            </div>
             <div className="form-group">
               <label>Asset ID</label>
               <input type="text" className="readonly-input" value={editedAsset.id} readOnly />
@@ -664,126 +724,98 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               </div>
             </div>
           )}
-          <div style={{ borderTop: isEditing ? '1px solid #e0e0e0' : undefined, paddingTop: isEditing ? 8 : 0, width: '100%' }}>
-            {!editedAsset.disposed ? (
-              <button
-                className="panel-btn"
-                style={{ backgroundColor: '#fd7e14', borderColor: '#fd7e14', color: 'white', width: '100%' }}
-                onClick={() => setShowDisposeModal(true)}
-              >
-                Dispose Asset
-              </button>
-            ) : (
-              <button
-                className="panel-btn"
-                style={{ backgroundColor: '#6c757d', borderColor: '#6c757d', color: 'white', width: '100%' }}
-                onClick={handleRevertDisposal}
-              >
-                Revert Disposal
-              </button>
-            )}
-          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="dashboard-split">
+    <div className="dashboard-split" style={{ height: 'calc(100vh - 56px)', minHeight: 0, overflow: 'hidden' }}>
       <div className="dashboard-main" style={selectedAssetId ? { marginRight: `${panelWidth}px` } : undefined}>
-        <div className="dashboard-container">
-          <div className="table-section">
-            <div className="page-header">
-              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home">
-                <ArrowBackIcon fontSize="small" />
-              </button>
-              <h2>Fixed Assets Register ({assets.length})</h2>
-              <div className="page-header-actions">
-                <input
-                  ref={uploadInputRef}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-                <button
-                  className="entities-add-button"
-                  style={{ backgroundColor: '#6c757d', borderColor: '#6c757d' }}
-                  onClick={handleUploadClick}
-                  disabled={!selectedEntity}
-                >
-                  Upload Excel
-                </button>
-                <button
-                  className="entities-add-button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  disabled={!selectedEntity}
-                >
-                  New Asset
-                </button>
-                <button
-                  className="entities-add-button"
-                  style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
-                  onClick={() => setShowReportModal(true)}
-                  disabled={!selectedEntity}
-                >
-                  Report
-                </button>
-              </div>
+        <div ref={stickyHeaderRef} style={{ background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid #e0e0e0' }}>
+            <div style={{ flex: 1 }} />
+            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: '#333' }}>Fixed Assets Register ({assets.length})</h2>
+            <div style={{ flex: 1 }} />
+          </div>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8f9fa', borderBottom: '1px solid #e0e0e0', minHeight: '44px', paddingRight: '8px', gap: '6px' }}>
+            <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFileChange} />
+            <div style={{ width: checkboxColWidth, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input
+                type="checkbox"
+                ref={selectAllRef}
+                className="select-all-checkbox"
+                onChange={handleSelectAll}
+              />
             </div>
-
+            <div ref={selectDropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+              <button onClick={() => setIsSelectDropdownOpen(v => !v)} style={{ display: 'flex', alignItems: 'center', padding: '2px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#666', borderRadius: '3px' }}>
+                <KeyboardArrowDownIcon style={{ fontSize: 16 }} />
+              </button>
+              {isSelectDropdownOpen && (
+                <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '150px', overflow: 'hidden' }}>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('all')}>All</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('active')}>Active</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('disposed')}>Disposed</button>
+                </div>
+              )}
+            </div>
+            {selectedAssets.size > 0 && (
+              <>
+                <button className="action-btn action-copy" title="Copy"><ContentCopyIcon fontSize="small" /></button>
+                <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}><DeleteIcon fontSize="small" /></button>
+                <span className="selection-count">{selectedAssets.size} selected</span>
+              </>
+            )}
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ pointerEvents: 'auto', width: '420px', padding: '7px 14px', fontSize: '14px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', outline: 'none', color: '#495057' }}
+              />
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <select value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Disposed')} style={{ padding: '6px 10px', fontSize: '13px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', cursor: 'pointer', outline: 'none', minWidth: '120px' }}>
+              <option value="All">All</option>
+              <option value="Active">Active</option>
+              <option value="Disposed">Disposed</option>
+            </select>
+            <div ref={actionsMenuRef} style={{ position: 'relative' }}>
+              <button
+                onClick={() => setIsActionsMenuOpen(v => !v)}
+                style={{ width: 32, height: 32, border: '1px solid #d0d0d0', borderRadius: '4px', background: isActionsMenuOpen ? '#e9ecef' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#495057', fontSize: '18px', lineHeight: 1 }}
+                title="More actions"
+              >⋮</button>
+              {isActionsMenuOpen && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '160px', overflow: 'hidden' }}>
+                  <button className="dropdown-menu-item" onClick={() => { setIsAddModalOpen(true); setIsActionsMenuOpen(false); }} disabled={!selectedEntity}>
+                    <AddIcon fontSize="small" /><span>New Asset</span>
+                  </button>
+                  <button className="dropdown-menu-item" onClick={() => { handleUploadClick(); setIsActionsMenuOpen(false); }} disabled={!selectedEntity}>
+                    <UploadFileIcon fontSize="small" /><span>Upload Excel</span>
+                  </button>
+                  <button className="dropdown-menu-item" onClick={() => { setShowReportModal(true); setIsActionsMenuOpen(false); }} disabled={!selectedEntity}>
+                    <AssessmentIcon fontSize="small" /><span>Report</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            </div>
+          </div>
+        </div>
+        <div className="dashboard-container" style={{ padding: 0, maxWidth: 'none', margin: 0 }}>
+          <div className="table-section" style={{ margin: 0 }}>
             <div className="assets-register-body">
-              {/* Selection / toolbar bar */}
-              <div className="selection-bar">
-                <div className="selection-bar-left">
-                  <input
-                    type="checkbox"
-                    ref={selectAllRef}
-                    className="select-all-checkbox"
-                    onChange={handleSelectAll}
-                  />
-                  {selectedAssets.size > 0 && (
-                    <button className="action-btn action-copy" title="Copy">
-                      <ContentCopyIcon fontSize="small" />
-                    </button>
-                  )}
-                  {selectedAssets.size > 0 && (
-                    <button className="action-btn action-delete" title="Delete" onClick={handleDeleteSelected}>
-                      <DeleteIcon fontSize="small" />
-                    </button>
-                  )}
-                  {selectedAssets.size > 0 ? (
-                    <span className="selection-count">{selectedAssets.size} selected</span>
-                  ) : (
-                    <span className="selection-hint">Select items</span>
-                  )}
-                </div>
-                <div className="selection-bar-right">
-                  <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Search..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <select
-                    className="filter-dropdown"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Disposed')}
-                  >
-                    <option value="All">All</option>
-                    <option value="Active">Active</option>
-                    <option value="Disposed">Disposed</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div className="table-wrapper">
+              <div className="table-wrapper" style={{ borderRadius: 0, boxShadow: 'none', overflowY: 'auto', height: `calc(100vh - ${headerHeight}px - ${stickyHeaderHeight}px)` }}>
                 <table className="asset-table">
-                  <thead>
+                  <colgroup>
+                    <col style={{ width: 40, minWidth: 40, maxWidth: 40 }} />
+                  </colgroup>
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
-                      <th style={{ width: 40 }}></th>
+                      <th ref={checkboxColRef} style={{ width: 40, minWidth: 40, maxWidth: 40 }}></th>
                       {COLUMNS.map((col) => (
                         <th key={col}>{col}</th>
                       ))}

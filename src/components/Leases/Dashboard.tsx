@@ -14,8 +14,8 @@ import './Dashboard.css';
 import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
-const DEFAULT_PANEL_WIDTH = 520;
-const MIN_PANEL_WIDTH = 380;
+const DEFAULT_PANEL_WIDTH = 480;
+const MIN_PANEL_WIDTH = 340;
 const MAX_PANEL_WIDTH = 900;
 
 interface DashboardProps {
@@ -81,7 +81,11 @@ const Dashboard: React.FC<DashboardProps> = ({
   } | null>(null);
 
   // Side panel resize state
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('sidePanelWidth');
+    if (saved) { const n = parseInt(saved, 10); if (!isNaN(n)) return Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, n)); }
+    return DEFAULT_PANEL_WIDTH;
+  });
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -95,8 +99,9 @@ const Dashboard: React.FC<DashboardProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)));
+      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
+      setPanelWidth(newWidth);
+      localStorage.setItem('sidePanelWidth', String(newWidth));
     };
     const handleMouseUp = () => {
       if (isResizing.current) {

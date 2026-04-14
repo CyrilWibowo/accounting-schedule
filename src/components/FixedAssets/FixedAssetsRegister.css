@@ -198,6 +198,15 @@
   color: #212529;
 }
 
+.asset-table th:first-child,
+.asset-table td:first-child {
+  width: 40px;
+  min-width: 40px;
+  max-width: 40px;
+  padding: 0;
+  text-align: center;
+}
+
 .asset-table th:nth-child(11),
 .asset-table th:nth-child(12),
 .asset-table th:nth-child(13),

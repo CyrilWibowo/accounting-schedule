@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
 import { Asset, CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
@@ -44,18 +46,18 @@ interface CIPScheduleProps {
 
 const COLUMNS = [
   'CIP Code',
+  'Branch',
   'Asset Name',
   'Category',
-  'Branch',
+  'Total',
   'Completed',
   'Completion Date',
-  'Total',
 ];
 
 const EMPTY_ROW_COUNT = 15;
-const DEFAULT_PANEL_WIDTH = 420;
-const MIN_PANEL_WIDTH = 320;
-const MAX_PANEL_WIDTH = 700;
+const DEFAULT_PANEL_WIDTH = 480;
+const MIN_PANEL_WIDTH = 340;
+const MAX_PANEL_WIDTH = 900;
 
 const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, jumpToCIPId, onJumpHandled }) => {
   const [search, setSearch] = useState('');
@@ -69,14 +71,28 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   const [editedInvoice, setEditedInvoice] = useState<CIPInvoice | null>(null);
   const [invoiceErrors, setInvoiceErrors] = useState<{ [key: string]: boolean }>({});
   const [showInvoiceDeleteConfirm, setShowInvoiceDeleteConfirm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
+  const [checkboxColWidth, setCheckboxColWidth] = useState(40);
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const checkboxColRef = useRef<HTMLTableCellElement>(null);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const selectDropdownRef = useRef<HTMLDivElement>(null);
 
   // Side panel edit state
   const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null);
   const [editedAsset, setEditedAsset] = useState<CIPAsset | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+  const [isEditing, setIsEditing] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('sidePanelWidth');
+    if (saved) { const n = parseInt(saved, 10); if (!isNaN(n)) return Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, n)); }
+    return DEFAULT_PANEL_WIDTH;
+  });
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
@@ -84,6 +100,34 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
     if (header) setHeaderHeight(header.offsetHeight);
+  }, []);
+
+  useEffect(() => {
+    if (checkboxColRef.current) setCheckboxColWidth(checkboxColRef.current.offsetWidth);
+  }, []);
+
+  useEffect(() => {
+    if (stickyHeaderRef.current) setStickyHeaderHeight(stickyHeaderRef.current.offsetHeight);
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (selectDropdownRef.current && !selectDropdownRef.current.contains(e.target as Node)) {
+        setIsSelectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
@@ -96,8 +140,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)));
+      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
+      setPanelWidth(newWidth);
+      localStorage.setItem('sidePanelWidth', String(newWidth));
     };
     const handleMouseUp = () => {
       if (isResizing.current) {
@@ -139,6 +184,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
       if (asset) {
         setEditedAsset({ ...asset });
         setErrors({});
+        setIsEditing(false);
       } else {
         setSelectedAssetId(null);
         setEditedAsset(null);
@@ -146,6 +192,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
     } else {
       setEditedAsset(null);
       setErrors({});
+      setIsEditing(false);
     }
   }, [selectedAssetId, cipAssets]);
 
@@ -165,6 +212,18 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
       setSelectedAssets(new Set(cipAssets.map(a => a.id)));
     }
   }, [cipAssets, selectedAssets.size]);
+
+  const handleSelectByStatus = (status: string) => {
+    if (status === 'all') {
+      const allFiltered = filteredAssets.length > 0 && filteredAssets.every(a => selectedAssets.has(a.id));
+      setSelectedAssets(allFiltered ? new Set() : new Set(filteredAssets.map(a => a.id)));
+    } else if (status === 'completed') {
+      setSelectedAssets(new Set(filteredAssets.filter(a => a.completed === 'Y').map(a => a.id)));
+    } else if (status === 'in-progress') {
+      setSelectedAssets(new Set(filteredAssets.filter(a => a.completed !== 'Y').map(a => a.id)));
+    }
+    setIsSelectDropdownOpen(false);
+  };
 
   const handleToggleAsset = (assetId: string) => {
     const newSet = new Set(selectedAssets);
@@ -378,6 +437,8 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   };
 
   const filteredAssets = cipAssets.filter(asset => {
+    if (statusFilter === 'completed' && asset.completed !== 'Y') return false;
+    if (statusFilter === 'in-progress' && asset.completed === 'Y') return false;
     if (search) {
       const term = search.toLowerCase();
       return asset.id.toLowerCase().includes(term) ||
@@ -475,52 +536,79 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
       <div className="lease-side-panel" ref={panelRef} style={{ width: `${panelWidth}px`, top: `${headerHeight}px` }}>
         <div className="side-panel-resize-handle" onMouseDown={handleResizeMouseDown} />
         <div className="side-panel-content">
-          <div className="lease-detail-header">
-            <button className="entities-add-button" onClick={() => setIsAddInvoiceModalOpen(true)}>Add Invoice</button>
+          <div className="lease-detail-header" style={{ justifyContent: 'space-between' }}>
+            <button
+              className="lease-detail-edit-toggle"
+              title={isEditing ? 'Switch to view mode' : 'Edit'}
+              onClick={() => { setIsEditing(e => !e); setErrors({}); }}
+            >
+              {isEditing ? <VisibilityIcon fontSize="small" /> : <EditIcon fontSize="small" />}
+              <span>{isEditing ? 'View' : 'Edit'}</span>
+            </button>
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
 
           <div className="form-grid">
+            <div className="form-group">
+              <button
+                className="panel-btn"
+                style={{ width: '100%', backgroundColor: '#007bff', borderColor: '#007bff', color: 'white' }}
+                onClick={() => setIsAddInvoiceModalOpen(true)}
+                disabled={!isEditing}
+              >
+                Add Invoice
+              </button>
+            </div>
+
             <div className="form-group">
               <label>CIP Code</label>
               <input type="text" className="readonly-input" value={editedAsset.id} readOnly />
             </div>
 
             <div className="form-group">
-              <label>Asset Name *</label>
+              <label>Asset Name{isEditing ? ' *' : ''}</label>
               {errors.description && <span className="error-text">Required</span>}
               <input
                 type="text"
-                className={errors.description ? 'error' : ''}
+                className={!isEditing ? 'readonly-input' : errors.description ? 'error' : ''}
+                readOnly={!isEditing}
                 value={editedAsset.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label>Category *</label>
+              <label>Category{isEditing ? ' *' : ''}</label>
               {errors.category && <span className="error-text">Required</span>}
-              <select
-                className={errors.category ? 'error' : ''}
-                value={editedAsset.category}
-                onChange={(e) => handleInputChange('category', e.target.value)}
-              >
-                <option value="">Select Category</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              {isEditing ? (
+                <select
+                  className={errors.category ? 'error' : ''}
+                  value={editedAsset.category}
+                  onChange={(e) => handleInputChange('category', e.target.value)}
+                >
+                  <option value="">Select Category</option>
+                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <input type="text" className="readonly-input" value={editedAsset.category} readOnly />
+              )}
             </div>
 
             <div className="form-group">
-              <label>Branch *</label>
+              <label>Branch{isEditing ? ' *' : ''}</label>
               {errors.branch && <span className="error-text">Required</span>}
-              <select
-                className={errors.branch ? 'error' : ''}
-                value={editedAsset.branch}
-                onChange={(e) => handleInputChange('branch', e.target.value)}
-              >
-                <option value="">Select Branch</option>
-                {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
+              {isEditing ? (
+                <select
+                  className={errors.branch ? 'error' : ''}
+                  value={editedAsset.branch}
+                  onChange={(e) => handleInputChange('branch', e.target.value)}
+                >
+                  <option value="">Select Branch</option>
+                  {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              ) : (
+                <input type="text" className="readonly-input" value={editedAsset.branch} readOnly />
+              )}
             </div>
 
             {editedAsset.transferredAssetId && (
@@ -539,8 +627,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                 <label>Useful Life (Years){errors.usefulLife ? ' *' : ''}</label>
                 {errors.usefulLife && <span className="error-text">Required to transfer</span>}
                 <input
-                  type="number"
-                  className={errors.usefulLife ? 'error' : ''}
+                  type={isEditing ? 'number' : 'text'}
+                  className={!isEditing || !!editedAsset.transferredAssetId ? 'readonly-input' : errors.usefulLife ? 'error' : ''}
+                  readOnly={!isEditing}
                   value={editedAsset.usefulLife || ''}
                   disabled={!!editedAsset.transferredAssetId}
                   onChange={(e) => handleInputChange('usefulLife', e.target.value)}
@@ -550,21 +639,23 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                 <label>Completion Date{errors.completionDate ? ' *' : ''}</label>
                 {errors.completionDate && <span className="error-text">Required to transfer</span>}
                 <input
-                  type="date"
-                  className={errors.completionDate ? 'error' : ''}
-                  value={editedAsset.completionDate || ''}
+                  type={isEditing ? 'date' : 'text'}
+                  className={!isEditing || !!editedAsset.transferredAssetId ? 'readonly-input' : errors.completionDate ? 'error' : ''}
+                  readOnly={!isEditing}
+                  value={isEditing ? (editedAsset.completionDate || '') : (editedAsset.completionDate ? new Date(editedAsset.completionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '')}
                   disabled={!!editedAsset.transferredAssetId}
                   onChange={(e) => handleInputChange('completionDate', e.target.value)}
                 />
               </div>
               <div className="form-group">
                 {editedAsset.transferredAssetId ? (
-                  <button className="panel-btn revert-btn" style={{ width: '100%' }} onClick={handleRevert}>Revert Completion</button>
+                  <button className="panel-btn revert-btn" style={{ width: '100%' }} onClick={handleRevert} disabled={!isEditing}>Revert Completion</button>
                 ) : (
                   <button
                     className="panel-btn transfer-btn"
                     style={{ width: '100%' }}
                     onClick={handleTransfer}
+                    disabled={!isEditing}
                   >
                     Transfer Completed Asset
                   </button>
@@ -574,167 +665,232 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
           </div>
         </div>
 
-        <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
-          <div className="lease-detail-actions-right">
-            <button className="panel-btn" onClick={handleCancel}>Cancel</button>
-            <button className="panel-btn" onClick={handleSave}>Save Changes</button>
-          </div>
+        <div className="lease-detail-actions" style={{ flexDirection: 'column', gap: 8 }}>
+          {isEditing && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+              <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
+              <div className="lease-detail-actions-right">
+                <button className="panel-btn" onClick={() => {
+                  const original = cipAssets.find(a => a.id === selectedAssetId);
+                  if (original) setEditedAsset({ ...original });
+                  setErrors({});
+                  setIsEditing(false);
+                }}>Cancel</button>
+                <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="dashboard-split">
-      <div className="dashboard-main" style={selectedAssetId ? { marginRight: `${panelWidth}px` } : undefined}>
-        <div className="dashboard-container">
-          <div className="table-section">
-            <div className="page-header">
-              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home">
-                <ArrowBackIcon fontSize="small" />
-              </button>
-              <h2>CIP Schedule ({cipAssets.length})</h2>
-              <div className="page-header-actions">
-                <button
-                  className="entities-add-button"
-                  onClick={() => setIsAddModalOpen(true)}
-                  disabled={!selectedEntity}
-                >
-                  New CIP
-                </button>
-              </div>
+    <div className="dashboard-split" style={{ height: 'calc(100vh - 56px)', minHeight: 0, overflow: 'hidden' }}>
+      <div
+        className="dashboard-main"
+        style={selectedAssetId
+          ? { marginRight: `${panelWidth}px`, display: 'flex', flexDirection: 'column', height: '100%' }
+          : { display: 'flex', flexDirection: 'column', height: '100%' }}
+      >
+        {/* Sticky header */}
+        <div ref={stickyHeaderRef} style={{ flexShrink: 0 }}>
+          {/* Title row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', background: 'white' }}>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#333' }}>CIP Schedule ({cipAssets.length})</h2>
+          </div>
+          {/* Action bar */}
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8f9fa', borderBottom: '1px solid #e0e0e0', minHeight: '44px', paddingRight: '8px', gap: '6px' }}>
+            {/* Expand col spacer */}
+            <div style={{ width: 28, flexShrink: 0 }} />
+            {/* Checkbox wrapper aligned with table checkbox column */}
+            <div style={{ width: checkboxColWidth, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <input
+                type="checkbox"
+                ref={selectAllRef}
+                className="lease-checkbox"
+                onChange={handleSelectAll}
+              />
             </div>
-
-            <div className="assets-register-body">
-              <div className="selection-bar">
-                <input
-                  type="checkbox"
-                  ref={selectAllRef}
-                  className="select-all-checkbox"
-                  onChange={handleSelectAll}
-                />
-                {selectedAssets.size > 0 && (
-                  <button className="action-btn action-delete" title="Delete" onClick={handleBatchDelete}>
-                    <DeleteIcon fontSize="small" />
-                  </button>
+            {/* Select-by-status dropdown */}
+            <div ref={selectDropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+              <button
+                onClick={() => setIsSelectDropdownOpen(v => !v)}
+                style={{ display: 'flex', alignItems: 'center', padding: '2px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#666', borderRadius: '3px' }}
+              >
+                <KeyboardArrowDownIcon style={{ fontSize: 16 }} />
+              </button>
+              {isSelectDropdownOpen && (
+                <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '150px', overflow: 'hidden' }}>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('all')}>All</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('completed')}>Completed</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('in-progress')}>Ongoing</button>
+                </div>
+              )}
+            </div>
+            {selectedAssets.size > 0 && (
+              <>
+                <button className="action-btn action-delete" title="Delete selected" onClick={handleBatchDelete}>
+                  <DeleteIcon fontSize="small" />
+                </button>
+                <span className="selection-count">{selectedAssets.size} selected</span>
+              </>
+            )}
+            {/* Centered search */}
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ pointerEvents: 'auto', width: '420px', padding: '7px 14px', fontSize: '14px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', outline: 'none', color: '#495057' }}
+              />
+            </div>
+            {/* Right side */}
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ padding: '6px 12px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', fontSize: '13px', cursor: 'pointer', outline: 'none', minWidth: '120px' }}
+              >
+                <option value="all">All</option>
+                <option value="completed">Completed</option>
+                <option value="in-progress">Ongoing</option>
+              </select>
+              <div ref={actionsMenuRef} style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setIsActionsMenuOpen(v => !v)}
+                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', cursor: 'pointer', color: '#495057', fontSize: '18px', lineHeight: 1 }}
+                >
+                  ⋮
+                </button>
+                {isActionsMenuOpen && (
+                  <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '160px', overflow: 'hidden' }}>
+                    <button
+                      className="dropdown-menu-item"
+                      onClick={() => { setIsAddModalOpen(true); setIsActionsMenuOpen(false); }}
+                      disabled={!selectedEntity}
+                    >
+                      <AddIcon fontSize="small" /><span>New CIP</span>
+                    </button>
+                  </div>
                 )}
-                {selectedAssets.size > 0 ? (
-                  <span className="selection-count">{selectedAssets.size} selected</span>
-                ) : (
-                  <span className="selection-hint">Select items</span>
-                )}
-                <input
-                  type="text"
-                  className="search-input"
-                  placeholder="Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-
-              <div className="table-wrapper">
-                <table className="asset-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 28, padding: 0 }}></th>
-                      <th style={{ width: 32, padding: 0 }}></th>
-                      {COLUMNS.map((col) => (
-                        <th key={col}>{col}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredAssets.map((asset) => {
-                      const isExpanded = expandedRows.has(asset.id);
-                      const invoices = asset.invoices || [];
-                      return (
-                        <React.Fragment key={asset.id}>
-                          <tr
-                            className={selectedAssetId === asset.id && !editedInvoice ? 'selected-row' : ''}
-                            onClick={() => handleRowClick(asset.id)}
-                            style={{ cursor: 'pointer' }}
-                          >
-                            <td style={{ padding: 0 }} onClick={(e) => e.stopPropagation()}>
-                              <button
-                                className="expand-btn"
-                                onClick={() => handleToggleExpand(asset.id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', width: '100%' }}
-                              >
-                                {isExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
-                              </button>
-                            </td>
-                            <td style={{ textAlign: 'center', padding: '4px 0' }} onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="checkbox"
-                                className="lease-checkbox"
-                                checked={selectedAssets.has(asset.id)}
-                                onChange={() => handleToggleAsset(asset.id)}
-                              />
-                            </td>
-                            <td>{asset.id}</td>
-                            <td>{asset.description}</td>
-                            <td>{asset.category}</td>
-                            <td>{asset.branch}</td>
-                            <td>{asset.completed === 'Y' ? 'Yes' : 'No'}</td>
-                            <td>{asset.completed === 'Y' && asset.completionDate ? new Date(asset.completionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</td>
-                            <td>{invoices.length > 0 ? `$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}` : ''}</td>
-                          </tr>
-                          {isExpanded && (
-                            <tr className="invoice-expand-row">
-                              <td colSpan={COLUMNS.length + 2} style={{ padding: 0 }}>
-                                <div className="cip-invoices-container">
-                                  {invoices.length === 0 ? (
-                                    <span className="cip-invoices-empty">No invoices</span>
-                                  ) : (
-                                    <table className="cip-invoices-table">
-                                      <thead>
-                                        <tr>
-                                          <th>Invoice No.</th>
-                                          <th>Asset Name</th>
-                                          <th>Description</th>
-                                          <th>Vendor</th>
-                                          <th>Date</th>
-                                          <th>Amount</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {invoices.map(inv => (
-                                          <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
-                                            <td>{inv.invoiceNo}</td>
-                                            <td>{asset.description}</td>
-                                            <td>{inv.description}</td>
-                                            <td>{inv.vendorName}</td>
-                                            <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
-                                            <td>{inv.amount ? `$${Number(inv.amount).toLocaleString()}` : ''}</td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                    {Array.from({ length: emptyRowsNeeded }).map((_, i) => (
-                      <tr key={`empty-${i}`}>
-                        <td style={{ padding: 0 }}></td>
-                        <td style={{ textAlign: 'center', padding: '4px 0' }}>
-                          <input type="checkbox" className="lease-checkbox" disabled />
-                        </td>
-                        {COLUMNS.map((col) => (
-                          <td key={col}>&nbsp;</td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Table */}
+        <div
+          className="table-wrapper"
+          style={{ height: `calc(100vh - ${headerHeight}px - ${stickyHeaderHeight}px)`, overflowY: 'auto', overflowX: 'auto', background: 'white', borderRadius: 0, boxShadow: 'none' }}
+        >
+          <table className="asset-table">
+            <colgroup>
+              <col style={{ width: 28, minWidth: 28, maxWidth: 28 }} />
+              <col style={{ width: 40, minWidth: 40, maxWidth: 40 }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th style={{ width: 28, padding: 0 }}></th>
+                <th ref={checkboxColRef} style={{ width: 40, padding: 0 }}></th>
+                {COLUMNS.map((col) => (
+                  <th key={col}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAssets.map((asset) => {
+                const isExpanded = expandedRows.has(asset.id);
+                const invoices = asset.invoices || [];
+                return (
+                  <React.Fragment key={asset.id}>
+                    <tr
+                      className={selectedAssetId === asset.id && !editedInvoice ? 'selected-row' : ''}
+                      onClick={() => handleRowClick(asset.id)}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <td style={{ padding: 0 }} onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="expand-btn"
+                          onClick={() => handleToggleExpand(asset.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#666', width: '100%' }}
+                        >
+                          {isExpanded ? <KeyboardArrowDownIcon fontSize="small" /> : <KeyboardArrowRightIcon fontSize="small" />}
+                        </button>
+                      </td>
+                      <td style={{ textAlign: 'center', padding: 0 }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="lease-checkbox"
+                          checked={selectedAssets.has(asset.id)}
+                          onChange={() => handleToggleAsset(asset.id)}
+                        />
+                      </td>
+                      <td>{asset.id}</td>
+                      <td>{asset.branch}</td>
+                      <td>{asset.description}</td>
+                      <td>{asset.category}</td>
+                      <td>{invoices.length > 0 ? `$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}` : ''}</td>
+                      <td>
+                        <span className={`status-badge ${asset.completed === 'Y' ? 'status-active' : 'status-expiring'}`}>
+                          {asset.completed === 'Y' ? 'Completed' : 'Ongoing'}
+                        </span>
+                      </td>
+                      <td>{asset.completed === 'Y' && asset.completionDate ? new Date(asset.completionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="invoice-expand-row">
+                        <td colSpan={COLUMNS.length + 2} style={{ padding: 0 }}>
+                          <div className="cip-invoices-container">
+                            {invoices.length === 0 ? (
+                              <span className="cip-invoices-empty">No invoices</span>
+                            ) : (
+                              <table className="cip-invoices-table">
+                                <thead>
+                                  <tr>
+                                    <th>Invoice No.</th>
+                                    <th>Asset Name</th>
+                                    <th>Description</th>
+                                    <th>Vendor</th>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {invoices.map(inv => (
+                                    <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
+                                      <td>{inv.invoiceNo}</td>
+                                      <td>{asset.description}</td>
+                                      <td>{inv.description}</td>
+                                      <td>{inv.vendorName}</td>
+                                      <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
+                                      <td>{inv.amount ? `$${Number(inv.amount).toLocaleString()}` : ''}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+              {Array.from({ length: emptyRowsNeeded }).map((_, i) => (
+                <tr key={`empty-${i}`}>
+                  <td style={{ padding: 0 }}></td>
+                  <td style={{ textAlign: 'center', padding: 0 }}>
+                    <input type="checkbox" className="lease-checkbox" disabled />
+                  </td>
+                  {COLUMNS.map((col) => (
+                    <td key={col}>&nbsp;</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

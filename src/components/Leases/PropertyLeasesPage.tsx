@@ -3,6 +3,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import AddIcon from '@mui/icons-material/Add';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import EditIcon from '@mui/icons-material/Edit';
@@ -14,13 +16,12 @@ import ToXLSXModal, { XLSXGenerationParams } from './ToXLSXModal';
 import AddOpeningBalanceForm from './AddOpeningBalanceForm';
 import Toast, { useToast } from '../shared/Toast';
 import './Dashboard.css';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { formatCurrency, formatDate, getYearDiff, generateLeaseId } from '../../utils/helper';
 import { View } from '../Layout/Sidebar';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
-const DEFAULT_PANEL_WIDTH = 520;
-const MIN_PANEL_WIDTH = 380;
+const DEFAULT_PANEL_WIDTH = 480;
+const MIN_PANEL_WIDTH = 340;
 const MAX_PANEL_WIDTH = 900;
 
 interface PropertyLeasesPageProps {
@@ -50,6 +51,8 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [selectedLeaseId, setSelectedLeaseId] = useState<string | null>(null);
   const [headerHeight, setHeaderHeight] = useState(0);
+  const stickyHeaderRef = useRef<HTMLDivElement>(null);
+  const [stickyHeaderHeight, setStickyHeaderHeight] = useState(99);
   const [editedLease, setEditedLease] = useState<Lease | null>(null);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [editCommittedYears, setEditCommittedYears] = useState(0);
@@ -67,14 +70,36 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   const selectAllRef = useRef<HTMLInputElement>(null);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('sidePanelWidth');
+    if (saved) { const n = parseInt(saved, 10); if (!isNaN(n)) return Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, n)); }
+    return DEFAULT_PANEL_WIDTH;
+  });
   const isResizing = useRef(false);
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
+  const selectDropdownRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
     if (header) setHeaderHeight(header.offsetHeight);
+    if (stickyHeaderRef.current) setStickyHeaderHeight(stickyHeaderRef.current.offsetHeight);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+      if (selectDropdownRef.current && !selectDropdownRef.current.contains(e.target as Node)) {
+        setIsSelectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
@@ -87,8 +112,9 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)));
+      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
+      setPanelWidth(newWidth);
+      localStorage.setItem('sidePanelWidth', String(newWidth));
     };
     const handleMouseUp = () => {
       if (isResizing.current) {
@@ -333,6 +359,17 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
     else setSelectedLeases(new Set(filtered.map(l => l.id)));
   };
 
+  const handleSelectByStatus = (status: 'all' | 'active' | 'expiring' | 'expired') => {
+    const filtered = filterLeases(propertyLeases, filter);
+    let ids: string[];
+    if (status === 'all') ids = filtered.map(l => l.id);
+    else if (status === 'active') ids = filtered.filter(l => !isLeaseExpired(l) && !isWithinThreeMonthsOfExpiry(l)).map(l => l.id);
+    else if (status === 'expiring') ids = filtered.filter(l => isWithinThreeMonthsOfExpiry(l)).map(l => l.id);
+    else ids = filtered.filter(l => isLeaseExpired(l)).map(l => l.id);
+    setSelectedLeases(new Set(ids));
+    setIsSelectDropdownOpen(false);
+  };
+
   const handleBatchCopy = async () => {
     const toCopy = propertyLeases.filter(l => selectedLeases.has(l.id));
     for (const lease of toCopy) {
@@ -400,6 +437,18 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
             <button className="lease-detail-close" onClick={handleCancel}><CloseIcon /></button>
           </div>
           <div className="form-grid">
+            <div className="form-group">
+              <button
+                className="panel-btn"
+                style={{ width: '100%', backgroundColor: '#28a745', borderColor: '#28a745', color: 'white' }}
+                onClick={() => {
+                  const lease = propertyLeases.find(l => l.id === selectedLeaseId);
+                  if (lease) setXlsxModalLease(lease);
+                }}
+              >
+                AASB16
+              </button>
+            </div>
             <div className="form-group"><label className="form-label">Entity</label><input type="text" className="form-input readonly-input" value={editedLease.entity} readOnly disabled /></div>
             <div className="form-group"><label className="form-label">Lessor{isEditing ? ' *' : ''}</label>{errors.lessor && <span className="error-text">This field is required</span>}<input type="text" className={!isEditing ? 'form-input readonly-input' : errors.lessor ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={editedLease.lessor} onChange={(e) => handleInputChange('lessor', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Property Address{isEditing ? ' *' : ''}</label>{errors.propertyAddress && <span className="error-text">This field is required</span>}<input type="text" className={!isEditing ? 'form-input readonly-input' : errors.propertyAddress ? 'form-input-error' : 'form-input'} readOnly={!isEditing} value={(editedLease as PropertyLease).propertyAddress} onChange={(e) => handleInputChange('propertyAddress', e.target.value)} /></div>
@@ -490,18 +539,6 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
             </div>
           </div>
         )}
-        <div className="lease-detail-actions" style={{ borderTop: isEditing ? 'none' : '1px solid #dee2e6' }}>
-          <button
-            className="entities-add-button"
-            style={{ backgroundColor: '#28a745', width: '100%' }}
-            onClick={() => {
-              const lease = propertyLeases.find(l => l.id === selectedLeaseId);
-              if (lease) setXlsxModalLease(lease);
-            }}
-          >
-            AASB16
-          </button>
-        </div>
       </div>
     );
   };
@@ -528,7 +565,7 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
           <td>{lease ? h(`${lease.options} years`) : ''}</td>
           <td className={lease ? 'committed-years-cell' : ''} onMouseEnter={(e) => { if (lease) { const rect = e.currentTarget.getBoundingClientRect(); setTooltipPosition({ x: rect.left, y: rect.bottom + 8 }); setHoveredLease(lease.id); } }} onMouseLeave={() => setHoveredLease(null)}>{lease ? h(`${committedYears} years`) : ''}</td>
           <td>{lease ? h(formatCurrency((parseFloat(lease.annualRent) / 12).toFixed(2))) : ''}</td>
-          <td>{lease && <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: isLeaseExpired(lease) ? '#dc3545' : (isWithinThreeMonthsOfExpiry(lease) ? '#ff9c1bff' : '#28a745'), cursor: 'help' }} title={isLeaseExpired(lease) ? 'Lease expired' : 'Lease active'} />}</td>
+          <td>{lease && <span className={`status-badge ${isLeaseExpired(lease) ? 'status-expired' : isWithinThreeMonthsOfExpiry(lease) ? 'status-expiring' : 'status-active'}`}>{isLeaseExpired(lease) ? 'Expired' : isWithinThreeMonthsOfExpiry(lease) ? 'Expiring' : 'Active'}</span>}</td>
         </tr>
       );
     }
@@ -536,40 +573,87 @@ const PropertyLeasesPage: React.FC<PropertyLeasesPageProps> = ({
   };
 
   return (
-    <div className={`dashboard-split${selectedLeaseId ? ' panel-open' : ''}`}>
+    <div className={`dashboard-split${selectedLeaseId ? ' panel-open' : ''}`} style={{ height: 'calc(100vh - 56px)', minHeight: 0, overflow: 'hidden' }}>
       <div className="dashboard-main" style={selectedLeaseId ? { marginRight: `${panelWidth}px` } : undefined}>
-        <div className="dashboard-container">
-          {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) && renderIncrementMethodsTooltip(propertyLeases.find(l => l.id === hoveredLease)!)}
-
-          <div className="table-section">
-            <div className="page-header">
-              <button className="back-button" onClick={() => onNavigate('home')} title="Back to Home"><ArrowBackIcon fontSize="small" /></button>
-              <h2>Property Leases ({filterLeases(propertyLeases, filter).length})</h2>
-              <div className="page-header-actions">
-                <button className="entities-add-button" onClick={onAddLease} disabled={!isEntitySelected}>New Card</button>
-                <button className="entities-add-button" onClick={onOpenReport} disabled={!isEntitySelected} style={{ backgroundColor: '#28a745' }}>AASB16 Report</button>
-              </div>
-            </div>
-            <div className="selection-bar">
+        <div ref={stickyHeaderRef} style={{ background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 20px', borderBottom: '1px solid #e0e0e0' }}>
+            <div style={{ flex: 1 }} />
+            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: '#333' }}>Property Leases ({filterLeases(propertyLeases, filter).length})</h2>
+            <div style={{ flex: 1 }} />
+          </div>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8f9fa', borderBottom: '1px solid #e0e0e0', minHeight: '44px', paddingRight: '8px', gap: '6px' }}>
+            <div style={{ width: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <input type="checkbox" ref={selectAllRef} className="select-all-checkbox" checked={selectedLeases.size > 0 && selectedLeases.size === filterLeases(propertyLeases, filter).length} onChange={handleSelectAll} title="Select all" />
-              {selectedLeases.size > 0 && (
-                <div className="selection-actions">
-                  <button className="action-btn action-copy" onClick={handleBatchCopy} title="Copy"><ContentCopyIcon fontSize="small" /></button>
-                  <button className="action-btn action-export" onClick={handleBatchExport} title="Export"><FileDownloadIcon fontSize="small" /></button>
-                  <button className="action-btn action-delete" onClick={handleBatchDelete} title="Delete"><DeleteIcon fontSize="small" /></button>
+            </div>
+            <div ref={selectDropdownRef} style={{ position: 'relative', flexShrink: 0 }}>
+              <button onClick={() => setIsSelectDropdownOpen(v => !v)} style={{ display: 'flex', alignItems: 'center', padding: '2px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#666', borderRadius: '3px' }}>
+                <KeyboardArrowDownIcon style={{ fontSize: 16 }} />
+              </button>
+              {isSelectDropdownOpen && (
+                <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '150px', overflow: 'hidden' }}>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('all')}>All</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('active')}>Active</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('expiring')}>Expiring</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('expired')}>Expired</button>
                 </div>
               )}
-              {selectedLeases.size > 0 ? (
-                <span className="selection-count">{selectedLeases.size} selected</span>
-              ) : <span className="selection-hint">Select items</span>}
-              <input type="text" className="search-input" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} />
-              <select className="filter-dropdown" value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Non-Active')}><option value="All">All</option><option value="Active">Active</option><option value="Non-Active">Non-Active</option></select>
             </div>
-            <div className="table-wrapper">
+            {selectedLeases.size > 0 && (
+              <>
+                <button className="action-btn action-copy" onClick={handleBatchCopy} title="Copy"><ContentCopyIcon fontSize="small" /></button>
+                <button className="action-btn action-export" onClick={handleBatchExport} title="Export"><FileDownloadIcon fontSize="small" /></button>
+                <button className="action-btn action-delete" onClick={handleBatchDelete} title="Delete"><DeleteIcon fontSize="small" /></button>
+                <span className="selection-count">{selectedLeases.size} selected</span>
+              </>
+            )}
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', pointerEvents: 'none' }}>
+              <input
+                type="text"
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ pointerEvents: 'auto', width: '420px', padding: '7px 14px', fontSize: '14px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', outline: 'none', color: '#495057' }}
+              />
+            </div>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <select value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Non-Active')} style={{ padding: '6px 10px', fontSize: '13px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', cursor: 'pointer', outline: 'none', minWidth: '120px' }}>
+              <option value="All">All</option>
+              <option value="Active">Active</option>
+              <option value="Non-Active">Non-Active</option>
+            </select>
+            <div ref={actionsMenuRef} style={{ position: 'relative' }}>
+
+              <button
+                onClick={() => setIsActionsMenuOpen(v => !v)}
+                style={{ width: 32, height: 32, border: '1px solid #d0d0d0', borderRadius: '4px', background: isActionsMenuOpen ? '#e9ecef' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#495057', fontSize: '18px', lineHeight: 1 }}
+                title="More actions"
+              >⋮</button>
+              {isActionsMenuOpen && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '160px', overflow: 'hidden' }}>
+                  <button className="dropdown-menu-item" onClick={() => { onAddLease(); setIsActionsMenuOpen(false); }} disabled={!isEntitySelected}>
+                    <AddIcon fontSize="small" /><span>New Card</span>
+                  </button>
+                  <button className="dropdown-menu-item" onClick={() => { onOpenReport(); setIsActionsMenuOpen(false); }} disabled={!isEntitySelected}>
+                    <AssessmentIcon fontSize="small" /><span>AASB16 Report</span>
+                  </button>
+                </div>
+              )}
+            </div>
+            </div>
+          </div>
+        </div>
+        <div className="dashboard-container" style={{ padding: 0, maxWidth: 'none', margin: 0 }}>
+          {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) && renderIncrementMethodsTooltip(propertyLeases.find(l => l.id === hoveredLease)!)}
+
+          <div className="table-section" style={{ margin: 0 }}>
+            <div className="table-wrapper" style={{ borderRadius: 0, boxShadow: 'none', overflowY: 'auto', height: `calc(100vh - ${headerHeight}px - ${stickyHeaderHeight}px)` }}>
               <table className="lease-table">
-                <thead>
+                <colgroup>
+                  <col style={{ width: 40, minWidth: 40, maxWidth: 40 }} />
+                </colgroup>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
-                    <th style={{ width: '40px', minWidth: '40px' }}></th>
+                    <th style={{ width: 40, minWidth: 40, maxWidth: 40 }}></th>
                     <th onClick={() => handleSort('leaseId')} style={{ cursor: 'pointer' }} className={isSorted('leaseId') ? 'sorted' : ''}>ID{renderSortIndicator('leaseId')}</th>
                     <th onClick={() => handleSort('entity')} style={{ cursor: 'pointer' }} className={isSorted('entity') ? 'sorted' : ''}>Entity{renderSortIndicator('entity')}</th>
                     <th onClick={() => handleSort('lessor')} style={{ cursor: 'pointer' }} className={isSorted('lessor') ? 'sorted' : ''}>Lessor{renderSortIndicator('lessor')}</th>

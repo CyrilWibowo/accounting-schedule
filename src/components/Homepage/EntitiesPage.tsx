@@ -18,9 +18,9 @@ interface EntitiesPageProps {
   onNavigate: (view: View) => void;
 }
 
-const DEFAULT_PANEL_WIDTH = 420;
-const MIN_PANEL_WIDTH = 320;
-const MAX_PANEL_WIDTH = 700;
+const DEFAULT_PANEL_WIDTH = 480;
+const MIN_PANEL_WIDTH = 340;
+const MAX_PANEL_WIDTH = 900;
 
 const EntitiesPage: React.FC<EntitiesPageProps> = ({
   entities,
@@ -35,7 +35,11 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
   const [headerHeight, setHeaderHeight] = useState(0);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const [panelWidth, setPanelWidth] = useState(() => {
+    const saved = localStorage.getItem('sidePanelWidth');
+    if (saved) { const n = parseInt(saved, 10); if (!isNaN(n)) return Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, n)); }
+    return DEFAULT_PANEL_WIDTH;
+  });
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const emptyRows = 10;
@@ -56,8 +60,9 @@ const EntitiesPage: React.FC<EntitiesPageProps> = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
-      const newWidth = window.innerWidth - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth)));
+      const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
+      setPanelWidth(newWidth);
+      localStorage.setItem('sidePanelWidth', String(newWidth));
     };
     const handleMouseUp = () => {
       if (isResizing.current) {
