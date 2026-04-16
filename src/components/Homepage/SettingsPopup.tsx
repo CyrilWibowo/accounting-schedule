@@ -91,9 +91,6 @@ const SettingsPopup: React.FC<SettingsPopupProps> = ({ isOpen, onClose, onDataPa
           </div>
         </div>
         <div className="settings-popup-actions">
-          <button type="button" className="settings-popup-cancel" onClick={onClose}>
-            Cancel
-          </button>
           <button
             type="button"
             className="settings-popup-save"

@@ -87,3 +87,41 @@
   background-color: rgba(40, 167, 69, 0.1);
   border-radius: 10px;
 }
+
+.entities-name-col {
+  width: 35%;
+  min-width: 200px;
+}
+
+.entities-code-col {
+  width: 100px;
+  min-width: 80px;
+  max-width: 120px;
+}
+
+.entities-status-col {
+  width: 80px;
+  min-width: 80px;
+  text-align: right;
+}
+
+.form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.form-group textarea.readonly-input {
+  background-color: #e9ecef;
+  color: #495057;
+  cursor: not-allowed;
+}

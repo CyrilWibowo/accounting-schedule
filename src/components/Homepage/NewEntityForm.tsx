@@ -148,9 +148,6 @@ const NewEntityForm: React.FC<NewEntityFormProps> = ({ isOpen, onClose, onEntity
             />
           </div>
           <div className="new-entity-actions">
-            <button type="button" className="new-entity-cancel" onClick={onClose}>
-              Cancel
-            </button>
             <button type="submit" className="new-entity-submit">
               {isEditMode ? 'Save Changes' : 'Submit'}
             </button>
