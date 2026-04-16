@@ -62,7 +62,7 @@ const COLUMNS = [
   'Cost',
   'Useful Life (Yrs)',
   'Dep. Rate (%)',
-  'Status',
+  '',
 ];
 
 const EMPTY_ROW_COUNT = 15;
@@ -712,15 +712,9 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
         <div className="lease-detail-actions" style={{ flexDirection: 'column', gap: 8 }}>
           {isEditing && (
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-              <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
+              <button className="panel-btn" style={{ backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white' }} onClick={handleDeleteFromPanel}>Delete</button>
               <div className="lease-detail-actions-right">
-                <button className="panel-btn" onClick={() => {
-                  const original = assets.find(a => a.id === selectedAssetId);
-                  if (original) setEditedAsset({ ...original });
-                  setErrors({});
-                  setIsEditing(false);
-                }}>Cancel</button>
-                <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+                <button className="panel-btn" style={{ backgroundColor: '#007bff', borderColor: '#007bff', color: 'white' }} onClick={handleSave}>Save Changes</button>
               </div>
             </div>
           )}

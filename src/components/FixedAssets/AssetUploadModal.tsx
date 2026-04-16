@@ -60,7 +60,6 @@ const AssetUploadModal: React.FC<AssetUploadModalProps> = ({ assets, onConfirm, 
         </div>
 
         <div className="asset-upload-actions">
-          <button className="cancel-button" onClick={onCancel}>Cancel</button>
           <button className="save-button" onClick={onConfirm}>
             Upload {count} Asset{count !== 1 ? 's' : ''}
           </button>

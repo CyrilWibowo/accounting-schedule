@@ -247,37 +247,49 @@
   font-size: 13px;
 }
 
-.cip-invoices-table thead {
-  border-bottom: 1px solid #dee2e6;
+.cip-invoices-table thead tr {
+  background-color: #f8f9fa;
+}
+
+.cip-invoices-check-col {
+  width: 28px;
+  padding: 5px 8px !important;
+  text-align: left;
+  color: #adb5bd;
+  font-size: 13px;
+  user-select: none;
 }
 
 .cip-invoices-table th {
-  padding: 6px 12px;
+  padding: 5px 10px;
   text-align: left;
   font-weight: 600;
   color: #495057;
   white-space: nowrap;
-}
-
-.cip-invoices-table tbody tr {
-  border-bottom: 1px solid #eee;
-}
-
-.cip-invoices-table tbody tr:last-child {
-  border-bottom: none;
+  border-bottom: 1px solid #dee2e6;
 }
 
 .cip-invoices-table td {
-  padding: 6px 12px;
+  padding: 5px 10px;
   color: #212529;
+  border-bottom: 1px solid #f1f3f5;
+  text-align: left;
 }
 
-.cip-invoices-table tbody tr.selected-row {
-  background-color: #e3f2fd;
+.cip-invoices-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
-.cip-invoices-table tbody tr.selected-row:hover {
-  background-color: #d0e8fc;
+.cip-invoices-table tbody tr:hover td {
+  background-color: #f8f9fa;
+}
+
+.cip-invoices-table tbody tr.selected-row td {
+  background-color: #e8f1ff;
+}
+
+.cip-invoices-table tbody tr.selected-row:hover td {
+  background-color: #ddeaff;
 }
 
 .asset-table tbody tr.disposed-row td {

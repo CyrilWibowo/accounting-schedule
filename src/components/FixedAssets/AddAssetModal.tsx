@@ -111,7 +111,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="add-lease-modal-content" onMouseDown={(e) => e.stopPropagation()}>
         <div className="asset-form-modal lease-form-modal">
           <h2>New Asset</h2>
 
@@ -259,8 +259,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
           </div>
 
           <div className="modal-actions">
-            <button className="cancel-button" onClick={onClose}>Cancel</button>
-            <button className="save-button" onClick={handleSubmit}>Save</button>
+            <button className="save-button" onClick={handleSubmit}>Add Asset</button>
           </div>
         </div>
       </div>

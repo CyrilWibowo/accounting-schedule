@@ -522,10 +522,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
           </div>
 
           <div className="lease-detail-actions">
-            <button className="panel-btn" onClick={() => setShowInvoiceDeleteConfirm(true)}>Delete</button>
+            <button className="panel-btn" style={{ backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white' }} onClick={() => setShowInvoiceDeleteConfirm(true)}>Delete</button>
             <div className="lease-detail-actions-right">
-              <button className="panel-btn" onClick={handleCancelInvoice}>Cancel</button>
-              <button className="panel-btn" onClick={handleSaveInvoice}>Save Changes</button>
+              <button className="panel-btn" style={{ backgroundColor: '#007bff', borderColor: '#007bff', color: 'white' }} onClick={handleSaveInvoice}>Save Changes</button>
             </div>
           </div>
         </div>
@@ -668,15 +667,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
         <div className="lease-detail-actions" style={{ flexDirection: 'column', gap: 8 }}>
           {isEditing && (
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-              <button className="panel-btn" onClick={handleDeleteFromPanel}>Delete</button>
+              <button className="panel-btn" style={{ backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white' }} onClick={handleDeleteFromPanel}>Delete</button>
               <div className="lease-detail-actions-right">
-                <button className="panel-btn" onClick={() => {
-                  const original = cipAssets.find(a => a.id === selectedAssetId);
-                  if (original) setEditedAsset({ ...original });
-                  setErrors({});
-                  setIsEditing(false);
-                }}>Cancel</button>
-                <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+                <button className="panel-btn" style={{ backgroundColor: '#007bff', borderColor: '#007bff', color: 'white' }} onClick={handleSave}>Save Changes</button>
               </div>
             </div>
           )}
@@ -694,10 +687,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
           : { display: 'flex', flexDirection: 'column', height: '100%' }}
       >
         {/* Sticky header */}
-        <div ref={stickyHeaderRef} style={{ flexShrink: 0 }}>
+        <div ref={stickyHeaderRef} style={{ flexShrink: 0, background: '#fff' }}>
           {/* Title row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px', borderBottom: '1px solid #e0e0e0', background: 'white' }}>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#333' }}>CIP Schedule ({cipAssets.length})</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px 20px', borderBottom: '1px solid #e0e0e0' }}>
+            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: '#333' }}>CIP Schedule ({cipAssets.length})</h2>
           </div>
           {/* Action bar */}
           <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: '#f8f9fa', borderBottom: '1px solid #e0e0e0', minHeight: '44px', paddingRight: '8px', gap: '6px' }}>
@@ -751,7 +744,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                style={{ padding: '6px 12px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', fontSize: '13px', cursor: 'pointer', outline: 'none', minWidth: '120px' }}
+                style={{ padding: '6px 10px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', fontSize: '13px', cursor: 'pointer', outline: 'none', minWidth: '120px' }}
               >
                 <option value="all">All</option>
                 <option value="completed">Completed</option>
@@ -760,7 +753,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
               <div ref={actionsMenuRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setIsActionsMenuOpen(v => !v)}
-                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', cursor: 'pointer', color: '#495057', fontSize: '18px', lineHeight: 1 }}
+                  style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #d0d0d0', borderRadius: '4px', background: isActionsMenuOpen ? '#e9ecef' : 'transparent', cursor: 'pointer', color: '#495057', fontSize: '18px', lineHeight: 1 }}
                 >
                   ⋮
                 </button>
@@ -849,6 +842,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                               <table className="cip-invoices-table">
                                 <thead>
                                   <tr>
+                                    <th className="cip-invoices-check-col"></th>
                                     <th>Invoice No.</th>
                                     <th>Asset Name</th>
                                     <th>Description</th>
@@ -860,6 +854,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                                 <tbody>
                                   {invoices.map(inv => (
                                     <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
+                                      <td className="cip-invoices-check-col">{invoices.indexOf(inv) + 1}</td>
                                       <td>{inv.invoiceNo}</td>
                                       <td>{asset.description}</td>
                                       <td>{inv.description}</td>

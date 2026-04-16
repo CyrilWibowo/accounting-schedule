@@ -59,7 +59,7 @@ const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="add-cip-modal-content" onMouseDown={(e) => e.stopPropagation()}>
         <div className="asset-form-modal lease-form-modal">
           <h2>Add Invoice</h2>
 
@@ -121,7 +121,6 @@ const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave
           </div>
 
           <div className="modal-actions">
-            <button className="cancel-button" onClick={onClose}>Cancel</button>
             <button className="save-button" onClick={handleSubmit}>Save</button>
           </div>
         </div>

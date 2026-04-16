@@ -86,7 +86,7 @@ const AddCIPModal: React.FC<AddCIPModalProps> = ({ onClose, onSaveCIPAsset }) =>
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="add-cip-modal-content" onMouseDown={(e) => e.stopPropagation()}>
         <div className="asset-form-modal lease-form-modal">
           <h2>New CIP</h2>
 
@@ -134,8 +134,7 @@ const AddCIPModal: React.FC<AddCIPModalProps> = ({ onClose, onSaveCIPAsset }) =>
           </div>
 
           <div className="modal-actions">
-            <button className="cancel-button" onClick={onClose}>Cancel</button>
-            <button className="save-button" onClick={handleSubmit}>Save</button>
+            <button className="save-button" onClick={handleSubmit}>Add CIP</button>
           </div>
         </div>
       </div>
