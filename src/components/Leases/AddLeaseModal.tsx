@@ -267,7 +267,7 @@ const AddLeaseModal: React.FC<AddLeaseModalProps> = ({ onClose, onSave, entityCo
 
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
-      <div className="modal-content" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="add-lease-modal-content" onMouseDown={(e) => e.stopPropagation()}>
         <LeaseForm
           lease={lease}
           leaseType={leaseType}

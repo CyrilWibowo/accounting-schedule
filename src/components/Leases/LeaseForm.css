@@ -5,9 +5,9 @@
   font-size: 20px;
 }
 
-.form-grid {
+.lease-form-modal .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px 16px;
   margin-bottom: 16px;
 }
@@ -101,7 +101,7 @@
   margin-top: 0;
 }
 
-.modal-actions {
+.lease-form-modal .modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
@@ -127,7 +127,7 @@
 }
 
 @media (max-width: 768px) {
-  .form-grid {
+  .lease-form-modal .form-grid {
     grid-template-columns: 1fr;
   }
 

@@ -226,7 +226,6 @@ const ReportModal: React.FC<ReportModalProps> = ({
         )}
 
         <div className="report-modal-actions">
-          <button className="report-cancel-button" onClick={onClose}>Cancel</button>
           <button
             className="report-generate-button"
             onClick={handleGenerate}

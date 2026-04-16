@@ -316,7 +316,6 @@ const ToXLSXModal: React.FC<ToXLSXModalProps> = ({ onClose, onGenerate, openingB
         )}
 
         <div className="xlsx-modal-actions">
-          <button className="xlsx-cancel-button" onClick={onClose}>Cancel</button>
           <button className="xlsx-generate-button" onClick={handleGenerate}>Generate Excel</button>
         </div>
       </div>

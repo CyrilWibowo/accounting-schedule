@@ -113,9 +113,6 @@ const OpeningBalanceModal: React.FC<OpeningBalanceModalProps> = ({
         </div>
 
         <div className="opening-balance-footer">
-          <button className="opening-balance-cancel-button" onClick={onClose}>
-            Close
-          </button>
         </div>
       </div>
 

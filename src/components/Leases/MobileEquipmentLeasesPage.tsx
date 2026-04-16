@@ -418,7 +418,6 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
           <div className="lease-detail-actions">
             <button className="panel-btn" onClick={() => setShowPanelDeleteConfirm(true)}>Delete</button>
             <div className="lease-detail-actions-right">
-              <button className="panel-btn" onClick={handleCancelEdit}>Cancel</button>
               <button className="panel-btn" onClick={handleSave}>Save Changes</button>
             </div>
           </div>

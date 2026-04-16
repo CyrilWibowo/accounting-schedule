@@ -332,7 +332,6 @@ const OpeningBalanceManager: React.FC<OpeningBalanceManagerProps> = ({
         </div>
 
         <div className="ob-manager-actions">
-          <button className="ob-manager-cancel-button" onClick={onClose}>Cancel</button>
           <button className="ob-manager-save-button" onClick={handleSave}>Save Changes</button>
         </div>
       </div>

@@ -222,7 +222,6 @@ const AddOpeningBalanceForm: React.FC<AddOpeningBalanceFormProps> = ({
         </div>
 
         <div className="add-ob-actions">
-          <button className="add-ob-cancel-button" onClick={onClose}>Cancel</button>
           <button className="add-ob-submit-button" onClick={handleSubmit}>Add Opening Balance</button>
         </div>
       </div>

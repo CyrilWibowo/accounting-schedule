@@ -383,8 +383,7 @@ const LeaseForm: React.FC<LeaseFormProps> = ({
       )}
 
       <div className="modal-actions">
-        <button className="cancel-button" onClick={onClose}>Cancel</button>
-        <button className="save-button" onClick={onSubmit}>Save Lease</button>
+        <button className="save-button" onClick={onSubmit}>Add Lease</button>
       </div>
     </div>
   );

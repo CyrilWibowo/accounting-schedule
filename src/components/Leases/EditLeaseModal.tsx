@@ -551,7 +551,6 @@ const EditLeaseModal: React.FC<EditLeaseModalProps> = ({ lease, onClose, onSave 
               </button>
             </div>
             <div className="button-group">
-              <button className="cancel-button" onClick={onClose}>Cancel</button>
               <button className="save-button" onClick={handleSubmit}>Save Changes</button>
             </div>
           </div>

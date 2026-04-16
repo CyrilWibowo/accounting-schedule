@@ -855,7 +855,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
         </div>
         <div className="lease-detail-actions">
-          <button className="panel-btn" onClick={() => {
+          <button className="panel-btn" style={{ backgroundColor: '#dc3545', borderColor: '#dc3545', color: 'white' }} onClick={() => {
             if (selectedLeaseId) {
               onDeleteLease(selectedLeaseId);
               setSelectedLeaseId(null);
@@ -864,8 +864,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             Delete
           </button>
           <div className="lease-detail-actions-right">
-            <button className="panel-btn" onClick={handleCancel}>Cancel</button>
-            <button className="panel-btn" onClick={handleSave}>Save Changes</button>
+            <button className="panel-btn" style={{ backgroundColor: '#007bff', borderColor: '#007bff', color: 'white' }} onClick={handleSave}>Save Changes</button>
           </div>
         </div>
       </div>
