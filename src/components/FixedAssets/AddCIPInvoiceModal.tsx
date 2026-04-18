@@ -7,6 +7,7 @@ import './AddAssetModal.css';
 interface AddCIPInvoiceModalProps {
   onClose: () => void;
   onSave: (invoice: CIPInvoice) => void;
+  defaultAssetName?: string;
 }
 
 const generateInvoiceId = (): string => {
@@ -18,7 +19,8 @@ const generateInvoiceId = (): string => {
   return result;
 };
 
-const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave }) => {
+const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave, defaultAssetName = '' }) => {
+  const [assetName, setAssetName] = useState(defaultAssetName);
   const [description, setDescription] = useState('');
   const [vendorName, setVendorName] = useState('');
   const [invoiceNo, setInvoiceNo] = useState('');
@@ -30,6 +32,7 @@ const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave
     const newErrors: { [key: string]: boolean } = {};
     let isValid = true;
 
+    if (!assetName.trim()) { newErrors.assetName = true; isValid = false; }
     if (!description.trim()) { newErrors.description = true; isValid = false; }
     if (!vendorName.trim()) { newErrors.vendorName = true; isValid = false; }
     if (!invoiceNo.trim()) { newErrors.invoiceNo = true; isValid = false; }
@@ -44,6 +47,7 @@ const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave
     if (validateForm()) {
       onSave({
         id: generateInvoiceId(),
+        assetName,
         description,
         vendorName,
         invoiceNo,
@@ -64,6 +68,17 @@ const AddCIPInvoiceModal: React.FC<AddCIPInvoiceModalProps> = ({ onClose, onSave
           <h2>Add Invoice</h2>
 
           <div className="form-grid">
+            <div className="form-group">
+              <label>Asset Name *</label>
+              {errors.assetName && <span className="error-text">Required</span>}
+              <input
+                type="text"
+                className={errors.assetName ? 'error' : ''}
+                value={assetName}
+                onChange={(e) => { setAssetName(e.target.value); clearError('assetName'); }}
+              />
+            </div>
+
             <div className="form-group">
               <label>Description *</label>
               {errors.description && <span className="error-text">Required</span>}

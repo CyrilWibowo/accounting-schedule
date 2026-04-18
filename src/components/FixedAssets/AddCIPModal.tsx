@@ -47,6 +47,7 @@ const generateCIPId = (branch: AssetBranch, category: AssetCategory): string => 
 
 const AddCIPModal: React.FC<AddCIPModalProps> = ({ onClose, onSaveCIPAsset }) => {
   const [description, setDescription] = useState('');
+  const [budget, setBudget] = useState('');
   const [category, setCategory] = useState<AssetCategory | ''>('');
   const [branch, setBranch] = useState<AssetBranch | ''>('');
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
@@ -75,6 +76,7 @@ const AddCIPModal: React.FC<AddCIPModalProps> = ({ onClose, onSaveCIPAsset }) =>
         date: '',
         branch: branch as AssetBranch,
         amount: '',
+        budget: budget || '',
         completed: 'N',
         completionDate: '',
         usefulLife: '',
@@ -99,6 +101,15 @@ const AddCIPModal: React.FC<AddCIPModalProps> = ({ onClose, onSaveCIPAsset }) =>
                 className={errors.description ? 'error' : ''}
                 value={description}
                 onChange={(e) => { setDescription(e.target.value); if (errors.description) setErrors({ ...errors, description: false }); }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Budget</label>
+              <input
+                type="number"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
               />
             </div>
 

@@ -12,8 +12,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
-import { Asset, AssetCategory, AssetBranch } from '../../types/Asset';
-import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
+import { Asset, AssetCategory, AssetBranch, CIPAsset } from '../../types/Asset';
+import { loadEntityAssets, addEntityAsset, updateEntityAsset, deleteEntityAsset, loadEntityCIPAssets } from '../../utils/dataStorage';
 import AddAssetModal from './AddAssetModal';
 import { generateAssetsReport } from './excel/generateAssetsReport';
 import AssetUploadModal from './AssetUploadModal';
@@ -37,16 +37,25 @@ const CATEGORY_CODE: Record<string, string> = {
   'Software': 'S',
 };
 
-const generateAssetId = (branch: AssetBranch, category: AssetCategory): string => {
+const generateAssetId = (branch: AssetBranch, category: AssetCategory, existingIds: string[]): string => {
   const catCode = CATEGORY_CODE[category] || 'X';
-  const rand = Math.floor(1000 + Math.random() * 9000).toString();
-  return `${branch}${catCode}${rand}`;
+  const prefix = `${branch}${catCode}`;
+  let max = 0;
+  for (const id of existingIds) {
+    if (id.startsWith(prefix)) {
+      const num = parseInt(id.slice(prefix.length), 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+  }
+  return `${prefix}${String(max + 1).padStart(3, '0')}`;
 };
 
 interface FixedAssetsRegistrationProps {
   onNavigate: (view: View) => void;
   selectedEntity: Entity | null;
   onNavigateToCIP?: (cipId: string) => void;
+  jumpToAssetId?: string | null;
+  onJumpHandled?: () => void;
 }
 
 const COLUMNS = [
@@ -66,15 +75,33 @@ const COLUMNS = [
 ];
 
 const EMPTY_ROW_COUNT = 15;
+
+const COLUMN_SORT_KEYS: Record<string, string | null> = {
+  'Asset ID': 'id',
+  'Description': 'description',
+  'Category': 'category',
+  'Branch': 'branch',
+  'Vendor': 'vendorName',
+  'Invoice No.': 'invoice',
+  'Serial': 'serialNo',
+  'Tag/Registration': 'tagNo',
+  'Acquisition Date': 'acquisitionDate',
+  'Cost': 'cost',
+  'Useful Life (Yrs)': 'usefulLife',
+  'Dep. Rate (%)': 'depreciationRate',
+  '': null,
+};
+
 const DEFAULT_PANEL_WIDTH = 480;
 const MIN_PANEL_WIDTH = 340;
 const MAX_PANEL_WIDTH = 900;
 
-const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity, onNavigateToCIP }) => {
+const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity, onNavigateToCIP, jumpToAssetId, onJumpHandled }) => {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'All' | 'Active' | 'Disposed'>('All');
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [cipAssets, setCIPAssets] = useState<CIPAsset[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [showBatchDeleteConfirm, setShowBatchDeleteConfirm] = useState(false);
   const [showPanelDeleteConfirm, setShowPanelDeleteConfirm] = useState(false);
@@ -102,6 +129,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
   const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
   const selectDropdownRef = useRef<HTMLDivElement>(null);
   const checkboxColRef = useRef<HTMLTableCellElement>(null);
   const [checkboxColWidth, setCheckboxColWidth] = useState(40);
@@ -113,6 +141,71 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
+
+  const normalizeForSearch = (text: string) => String(text).toLowerCase().replace(/\s+/g, ' ').trim();
+
+  const matchesSearch = (asset: Asset): boolean => {
+    if (!search) return true;
+    const term = normalizeForSearch(search);
+    return [asset.id, asset.description, asset.tagNo, asset.serialNo, asset.category, asset.branch, asset.vendorName, asset.invoice]
+      .some(f => normalizeForSearch(f || '').includes(term));
+  };
+
+  const highlightText = (text: string): React.ReactNode => {
+    if (!search || !text) return text;
+    const norm = normalizeForSearch(text);
+    const normSearch = normalizeForSearch(search);
+    if (!normSearch || !norm.includes(normSearch)) return text;
+    const idx = norm.indexOf(normSearch);
+    return (
+      <>
+        {text.slice(0, idx)}
+        <mark style={{ backgroundColor: '#fff3cd', padding: 0 }}>{text.slice(idx, idx + normSearch.length)}</mark>
+        {text.slice(idx + normSearch.length)}
+      </>
+    );
+  };
+
+  const sortData = (data: Asset[]): Asset[] => {
+    if (!sortConfig.key) return data;
+    const key = sortConfig.key;
+    return [...data].sort((a, b) => {
+      let aVal: any = a[key as keyof Asset] ?? '';
+      let bVal: any = b[key as keyof Asset] ?? '';
+      if (key === 'acquisitionDate') {
+        aVal = new Date(String(aVal)).getTime() || 0;
+        bVal = new Date(String(bVal)).getTime() || 0;
+      } else if (['cost', 'usefulLife', 'depreciationRate'].includes(key)) {
+        aVal = parseFloat(String(aVal).replace(/[^0-9.-]/g, '')) || 0;
+        bVal = parseFloat(String(bVal).replace(/[^0-9.-]/g, '')) || 0;
+      } else {
+        aVal = String(aVal).toLowerCase();
+        bVal = String(bVal).toLowerCase();
+      }
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev.key !== key) return { key, direction: 'asc' };
+      if (prev.direction === 'asc') return { key, direction: 'desc' };
+      return { key: null, direction: 'asc' };
+    });
+  };
+
+  const renderSortIndicator = (key: string) =>
+    sortConfig.key === key ? <span style={{ marginLeft: 4 }}>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span> : null;
+
+  const filteredAssets = sortData(assets.filter(asset => {
+    if (filter === 'Active' && asset.disposed) return false;
+    if (filter === 'Disposed' && !asset.disposed) return false;
+    return matchesSearch(asset);
+  }));
+
+  const emptyRowsNeeded = Math.max(0, EMPTY_ROW_COUNT - filteredAssets.length);
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -166,10 +259,26 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   useEffect(() => {
     if (selectedEntity) {
       loadEntityAssets(selectedEntity.id).then(setAssets);
+      loadEntityCIPAssets(selectedEntity.id).then(setCIPAssets);
     } else {
       setAssets([]);
+      setCIPAssets([]);
     }
   }, [selectedEntity]);
+
+  useEffect(() => {
+    if (jumpToAssetId && assets.length > 0) {
+      const asset = assets.find(a => a.id === jumpToAssetId);
+      if (asset) {
+        setSelectedAssetId(jumpToAssetId);
+        onJumpHandled?.();
+        setTimeout(() => {
+          const row = document.querySelector(`tr[data-asset-id="${jumpToAssetId}"]`);
+          row?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, 50);
+      }
+    }
+  }, [jumpToAssetId, assets]);
 
   useEffect(() => {
     if (selectedAssetId) {
@@ -193,23 +302,22 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     }
   }, [selectedAssetId, assets]);
 
-  // Keep select-all indeterminate state in sync
   useEffect(() => {
     if (selectAllRef.current) {
-      const allSelected = assets.length > 0 && selectedAssets.size === assets.length;
-      const someSelected = selectedAssets.size > 0 && selectedAssets.size < assets.length;
+      const allSelected = filteredAssets.length > 0 && selectedAssets.size === filteredAssets.length;
+      const someSelected = selectedAssets.size > 0 && selectedAssets.size < filteredAssets.length;
       selectAllRef.current.indeterminate = someSelected;
       selectAllRef.current.checked = allSelected;
     }
-  }, [selectedAssets, assets.length]);
+  }, [selectedAssets, filteredAssets.length]);
 
-  const handleSelectAll = useCallback(() => {
-    if (selectedAssets.size === assets.length) {
+  const handleSelectAll = () => {
+    if (selectedAssets.size === filteredAssets.length && filteredAssets.length > 0) {
       setSelectedAssets(new Set());
     } else {
-      setSelectedAssets(new Set(assets.map(a => a.id)));
+      setSelectedAssets(new Set(filteredAssets.map(a => a.id)));
     }
-  }, [assets, selectedAssets.size]);
+  };
 
   const handleSelectByStatus = (status: 'all' | 'active' | 'disposed') => {
     let ids: string[];
@@ -362,7 +470,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
         const branch = (n['branch'] || '') as AssetBranch;
         const category = (n['category'] || '') as AssetCategory;
         const assetId = n['asset id'] || n['asset_id'] || '';
-        const id = assetId || generateAssetId(branch, category);
+        const id = assetId || generateAssetId(branch, category, assets.map(a => a.id));
 
         return {
           id,
@@ -398,24 +506,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     setUploadPreviewAssets(null);
     showToast(`${uploadPreviewAssets.length} asset${uploadPreviewAssets.length !== 1 ? 's' : ''} imported`, 'success');
   };
-
-  const filteredAssets = assets.filter(asset => {
-    if (filter === 'Active' && asset.disposed) return false;
-    if (filter === 'Disposed' && !asset.disposed) return false;
-    if (search) {
-      const term = search.toLowerCase();
-      const matches = asset.description.toLowerCase().includes(term) ||
-        asset.tagNo.toLowerCase().includes(term) ||
-        asset.serialNo.toLowerCase().includes(term) ||
-        asset.category.toLowerCase().includes(term) ||
-        asset.branch.toLowerCase().includes(term) ||
-        asset.vendorName.toLowerCase().includes(term);
-      if (!matches) return false;
-    }
-    return true;
-  });
-
-  const emptyRowsNeeded = Math.max(0, EMPTY_ROW_COUNT - filteredAssets.length);
 
   const renderDetailPanel = () => {
     if (!editedAsset || !selectedAssetId) return null;
@@ -518,14 +608,6 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                 value={editedAsset.vendorName}
                 onChange={(e) => handleInputChange('vendorName', e.target.value)}
               />
-              {editedAsset.sourceCIPId && onNavigateToCIP && (
-                <button
-                  className="cip-source-link"
-                  onClick={() => onNavigateToCIP(editedAsset.sourceCIPId!)}
-                >
-                  View Source CIP ({editedAsset.sourceCIPId})
-                </button>
-              )}
             </div>
 
             <div className="form-group">
@@ -810,15 +892,26 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                   <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
                       <th ref={checkboxColRef} style={{ width: 40, minWidth: 40, maxWidth: 40 }}></th>
-                      {COLUMNS.map((col) => (
-                        <th key={col}>{col}</th>
-                      ))}
+                      {COLUMNS.map((col) => {
+                        const sortKey = COLUMN_SORT_KEYS[col];
+                        return (
+                          <th
+                            key={col}
+                            onClick={sortKey ? () => handleSort(sortKey) : undefined}
+                            style={sortKey ? { cursor: 'pointer', userSelect: 'none' } : undefined}
+                            className={sortKey && sortConfig.key === sortKey ? 'sorted' : ''}
+                          >
+                            {col}{sortKey ? renderSortIndicator(sortKey) : null}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
                     {filteredAssets.map((asset) => (
                       <tr
                         key={asset.id}
+                        data-asset-id={asset.id}
                         className={`${selectedAssetId === asset.id ? 'selected-row' : ''}${asset.disposed ? ' disposed-row' : ''}`}
                         onClick={() => handleRowClick(asset.id)}
                         style={{ cursor: 'pointer' }}
@@ -831,14 +924,23 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                             onChange={() => handleToggleAsset(asset.id)}
                           />
                         </td>
-                        <td>{asset.id}</td>
-                        <td>{asset.description}</td>
-                        <td>{asset.category}</td>
-                        <td>{asset.branch}</td>
-                        <td>{asset.vendorName}</td>
-                        <td>{asset.invoice}</td>
-                        <td>{asset.serialNo}</td>
-                        <td>{asset.tagNo}</td>
+                        <td>{highlightText(asset.id)}</td>
+                        <td>{highlightText(asset.description)}</td>
+                        <td>{highlightText(asset.category)}</td>
+                        <td>{highlightText(asset.branch)}</td>
+                        <td>
+                          {asset.sourceCIPId && onNavigateToCIP ? (
+                            <span
+                              style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}
+                              onClick={(e) => { e.stopPropagation(); onNavigateToCIP(asset.sourceCIPId!); }}
+                            >
+                              {highlightText(asset.vendorName)}
+                            </span>
+                          ) : highlightText(asset.vendorName)}
+                        </td>
+                        <td>{highlightText(asset.invoice)}</td>
+                        <td>{highlightText(asset.serialNo)}</td>
+                        <td>{highlightText(asset.tagNo)}</td>
                         <td>{asset.acquisitionDate}</td>
                         <td>{asset.cost ? `$${Number(asset.cost.replace(/[^0-9.-]/g, '')).toLocaleString()}` : ''}</td>
                         <td>{asset.usefulLife}</td>
@@ -875,6 +977,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
         <AddAssetModal
           onClose={() => setIsAddModalOpen(false)}
           onSaveAsset={handleAddAsset}
+          existingIds={assets.map(a => a.id)}
         />
       )}
 
@@ -973,9 +1076,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               <button
                 className="confirm-delete-button"
                 style={{ backgroundColor: '#28a745', borderColor: '#28a745' }}
-                onClick={() => {
+                onClick={async () => {
                   if (!reportMonth || !reportYear) { setReportError(true); return; }
-                  generateAssetsReport(assets, selectedEntity?.name ?? '', reportMonth, reportYear);
+                  const freshCIPAssets = selectedEntity ? await loadEntityCIPAssets(selectedEntity.id) : [];
+                  generateAssetsReport(assets, selectedEntity?.name ?? '', reportMonth, reportYear, freshCIPAssets);
                   setShowReportModal(false); setReportMonth(0); setReportYear(0); setReportError(false);
                 }}
               >Generate</button>

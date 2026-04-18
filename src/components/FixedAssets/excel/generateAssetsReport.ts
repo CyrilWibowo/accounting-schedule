@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
-import { Asset } from '../../../types/Asset';
+import { Asset, CIPAsset } from '../../../types/Asset';
 import { generateCategorySheet } from './assetSheetGenerator';
+import { generateCIPSheet } from './cipSheetGenerator';
 
 const CATEGORIES: { key: string; sheetName: string }[] = [
   { key: 'Office Equipment',        sheetName: 'Office Equipment' },
@@ -17,7 +18,8 @@ export const generateAssetsReport = (
   assets: Asset[],
   entityName: string,
   month: number,
-  year: number
+  year: number,
+  cipAssets: CIPAsset[] = [],
 ): void => {
   const workbook = XLSX.utils.book_new();
 
@@ -34,8 +36,9 @@ export const generateAssetsReport = (
     XLSX.utils.book_append_sheet(workbook, ws, sheetName);
   });
 
-  // Sheet 9: CIP (blank)
-  XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([[]]), 'CIP');
+  // Sheet 9: CIP
+  const cipWs = generateCIPSheet(cipAssets, entityName, year, month);
+  XLSX.utils.book_append_sheet(workbook, cipWs, 'CIP');
 
   XLSX.writeFile(workbook, `Fixed_Assets_Report_${MONTH_NAMES[month - 1]}_${year}.xlsx`);
 };

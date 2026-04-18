@@ -7,6 +7,7 @@ import './AddAssetModal.css';
 interface AddAssetModalProps {
   onClose: () => void;
   onSaveAsset: (asset: Asset) => void;
+  existingIds: string[];
 }
 
 const CATEGORIES: AssetCategory[] = [
@@ -39,10 +40,17 @@ const CATEGORY_CODE: Record<string, string> = {
   'Software': 'S',
 };
 
-const generateAssetId = (branch: AssetBranch, category: AssetCategory): string => {
+const generateAssetId = (branch: AssetBranch, category: AssetCategory, existingIds: string[]): string => {
   const catCode = CATEGORY_CODE[category] || 'X';
-  const rand = Math.floor(1000 + Math.random() * 9000).toString();
-  return `${branch}${catCode}${rand}`;
+  const prefix = `${branch}${catCode}`;
+  let max = 0;
+  for (const id of existingIds) {
+    if (id.startsWith(prefix)) {
+      const num = parseInt(id.slice(prefix.length), 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+  }
+  return `${prefix}${String(max + 1).padStart(3, '0')}`;
 };
 
 const createEmptyAsset = (): Asset => ({
@@ -62,7 +70,7 @@ const createEmptyAsset = (): Asset => ({
   openingBalances: [],
 });
 
-const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) => {
+const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, existingIds }) => {
   const [asset, setAsset] = useState<Asset>(createEmptyAsset);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
 
@@ -104,7 +112,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset }) =
   const handleSubmit = () => {
     if (validateForm()) {
       const depRate = asset.usefulLife ? ((1 / Number(asset.usefulLife)) * 100).toFixed(2) : '';
-      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category), depreciationRate: depRate };
+      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category, existingIds), depreciationRate: depRate };
       onSaveAsset(assetWithId);
     }
   };

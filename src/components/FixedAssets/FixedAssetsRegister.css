@@ -177,6 +177,11 @@
   z-index: 10;
 }
 
+.asset-table th.sorted {
+  background-color: #d4edfa;
+  color: #0056b3;
+}
+
 .asset-table tbody tr {
   border-bottom: 1px solid #dee2e6;
 }

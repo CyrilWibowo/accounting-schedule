@@ -9,7 +9,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
 import { Asset, CIPAsset, CIPInvoice, AssetCategory, AssetBranch } from '../../types/Asset';
-import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset, addEntityAsset, deleteEntityAsset } from '../../utils/dataStorage';
+import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEntityCIPAsset, addEntityAsset, deleteEntityAsset, loadEntityAssets } from '../../utils/dataStorage';
 import AddCIPModal from './AddCIPModal';
 import AddCIPInvoiceModal from './AddCIPInvoiceModal';
 import Toast, { useToast } from '../shared/Toast';
@@ -31,10 +31,17 @@ const CATEGORY_CODE: Record<string, string> = {
   'Software': 'S',
 };
 
-const generateAssetId = (branch: AssetBranch, category: AssetCategory): string => {
+const generateAssetId = (branch: AssetBranch, category: AssetCategory, existingIds: string[]): string => {
   const catCode = CATEGORY_CODE[category] || 'X';
-  const rand = Math.floor(1000 + Math.random() * 9000).toString();
-  return `${branch}${catCode}${rand}`;
+  const prefix = `${branch}${catCode}`;
+  let max = 0;
+  for (const id of existingIds) {
+    if (id.startsWith(prefix)) {
+      const num = parseInt(id.slice(prefix.length), 10);
+      if (!isNaN(num) && num > max) max = num;
+    }
+  }
+  return `${prefix}${String(max + 1).padStart(3, '0')}`;
 };
 
 interface CIPScheduleProps {
@@ -42,6 +49,7 @@ interface CIPScheduleProps {
   selectedEntity: Entity | null;
   jumpToCIPId?: string | null;
   onJumpHandled?: () => void;
+  onNavigateToAsset?: (assetId: string) => void;
 }
 
 const COLUMNS = [
@@ -49,17 +57,33 @@ const COLUMNS = [
   'Branch',
   'Asset Name',
   'Category',
+  'Budget',
   'Total',
+  'Variance',
   'Completed',
   'Completion Date',
+  'Completed ID',
 ];
 
 const EMPTY_ROW_COUNT = 15;
+
+const COLUMN_SORT_KEYS: Record<string, string | null> = {
+  'CIP Code': 'id',
+  'Branch': 'branch',
+  'Asset Name': 'description',
+  'Category': 'category',
+  'Budget': 'budget',
+  'Total': 'total',
+  'Variance': null,
+  'Completed': 'completed',
+  'Completion Date': 'completionDate',
+  'Completed ID': 'transferredAssetId',
+};
 const DEFAULT_PANEL_WIDTH = 480;
 const MIN_PANEL_WIDTH = 340;
 const MAX_PANEL_WIDTH = 900;
 
-const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, jumpToCIPId, onJumpHandled }) => {
+const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, jumpToCIPId, onJumpHandled, onNavigateToAsset }) => {
   const [search, setSearch] = useState('');
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [cipAssets, setCIPAssets] = useState<CIPAsset[]>([]);
@@ -72,8 +96,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   const [invoiceErrors, setInvoiceErrors] = useState<{ [key: string]: boolean }>({});
   const [showInvoiceDeleteConfirm, setShowInvoiceDeleteConfirm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [entityAssetIds, setEntityAssetIds] = useState<Set<string>>(new Set());
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string | null; direction: 'asc' | 'desc' }>({ key: null, direction: 'asc' });
   const [checkboxColWidth, setCheckboxColWidth] = useState(40);
   const [stickyHeaderHeight, setStickyHeaderHeight] = useState(0);
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -96,6 +122,74 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
+
+  const normalizeForSearch = (text: string) => String(text).toLowerCase().replace(/\s+/g, ' ').trim();
+
+  const matchesCIPSearch = (asset: CIPAsset): boolean => {
+    if (!search) return true;
+    const term = normalizeForSearch(search);
+    return [asset.id, asset.description, asset.category, asset.branch, asset.transferredAssetId]
+      .some(f => normalizeForSearch(f || '').includes(term));
+  };
+
+  const highlightText = (text: string): React.ReactNode => {
+    if (!search || !text) return text;
+    const norm = normalizeForSearch(text);
+    const normSearch = normalizeForSearch(search);
+    if (!normSearch || !norm.includes(normSearch)) return text;
+    const idx = norm.indexOf(normSearch);
+    return (
+      <>
+        {text.slice(0, idx)}
+        <mark style={{ backgroundColor: '#fff3cd', padding: 0 }}>{text.slice(idx, idx + normSearch.length)}</mark>
+        {text.slice(idx + normSearch.length)}
+      </>
+    );
+  };
+
+  const sortCIPData = (data: CIPAsset[]): CIPAsset[] => {
+    if (!sortConfig.key) return data;
+    const key = sortConfig.key;
+    return [...data].sort((a, b) => {
+      let aVal: any;
+      let bVal: any;
+      if (key === 'total') {
+        aVal = (a.invoices || []).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+        bVal = (b.invoices || []).reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+      } else if (key === 'budget') {
+        aVal = Number(a.budget) || 0;
+        bVal = Number(b.budget) || 0;
+      } else if (key === 'completionDate') {
+        aVal = new Date(String(a.completionDate || '')).getTime() || 0;
+        bVal = new Date(String(b.completionDate || '')).getTime() || 0;
+      } else {
+        aVal = String(a[key as keyof CIPAsset] ?? '').toLowerCase();
+        bVal = String(b[key as keyof CIPAsset] ?? '').toLowerCase();
+      }
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  };
+
+  const handleSort = (key: string) => {
+    setSortConfig(prev => {
+      if (prev.key !== key) return { key, direction: 'asc' };
+      if (prev.direction === 'asc') return { key, direction: 'desc' };
+      return { key: null, direction: 'asc' };
+    });
+  };
+
+  const renderSortIndicator = (key: string) =>
+    sortConfig.key === key ? <span style={{ marginLeft: 4 }}>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span> : null;
+
+  const filteredAssets = sortCIPData(cipAssets.filter(asset => {
+    if (statusFilter === 'completed' && asset.completed !== 'Y') return false;
+    if (statusFilter === 'in-progress' && asset.completed === 'Y') return false;
+    return matchesCIPSearch(asset);
+  }));
+
+  const emptyRowsNeeded = Math.max(0, EMPTY_ROW_COUNT - filteredAssets.length);
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -162,8 +256,10 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   useEffect(() => {
     if (selectedEntity) {
       loadEntityCIPAssets(selectedEntity.id).then(setCIPAssets);
+      loadEntityAssets(selectedEntity.id).then(assets => setEntityAssetIds(new Set(assets.map(a => a.id))));
     } else {
       setCIPAssets([]);
+      setEntityAssetIds(new Set());
     }
   }, [selectedEntity]);
 
@@ -198,20 +294,20 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
 
   useEffect(() => {
     if (selectAllRef.current) {
-      const allSelected = cipAssets.length > 0 && selectedAssets.size === cipAssets.length;
-      const someSelected = selectedAssets.size > 0 && selectedAssets.size < cipAssets.length;
+      const allSelected = filteredAssets.length > 0 && selectedAssets.size === filteredAssets.length;
+      const someSelected = selectedAssets.size > 0 && selectedAssets.size < filteredAssets.length;
       selectAllRef.current.indeterminate = someSelected;
       selectAllRef.current.checked = allSelected;
     }
-  }, [selectedAssets, cipAssets.length]);
+  }, [selectedAssets, filteredAssets.length]);
 
-  const handleSelectAll = useCallback(() => {
-    if (selectedAssets.size === cipAssets.length) {
+  const handleSelectAll = () => {
+    if (selectedAssets.size === filteredAssets.length && filteredAssets.length > 0) {
       setSelectedAssets(new Set());
     } else {
-      setSelectedAssets(new Set(cipAssets.map(a => a.id)));
+      setSelectedAssets(new Set(filteredAssets.map(a => a.id)));
     }
-  }, [cipAssets, selectedAssets.size]);
+  };
 
   const handleSelectByStatus = (status: string) => {
     if (status === 'all') {
@@ -321,7 +417,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
     const totalCost = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
     const usefulLifeNum = Number(editedAsset.usefulLife) || 1;
     const depRate = (1 / usefulLifeNum).toFixed(2);
-    const newAssetId = generateAssetId(editedAsset.branch as AssetBranch, editedAsset.category as AssetCategory);
+    const liveAssets = await loadEntityAssets(selectedEntity.id);
+    const liveIds = liveAssets.map(a => a.id);
+    const newAssetId = generateAssetId(editedAsset.branch as AssetBranch, editedAsset.category as AssetCategory, liveIds);
 
     const newAsset: Asset = {
       id: newAssetId,
@@ -341,6 +439,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
     };
 
     await addEntityAsset(selectedEntity.id, newAsset);
+    setEntityAssetIds(prev => { const next = new Set(Array.from(prev)); next.add(newAssetId); return next; });
 
     const transferredCIP = { ...editedAsset, completed: 'Y' as const, transferredAssetId: newAssetId };
     const updated = await updateEntityCIPAsset(selectedEntity.id, transferredCIP);
@@ -380,6 +479,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
     if (!editedInvoice) return false;
     const newErrors: { [key: string]: boolean } = {};
     let isValid = true;
+    if (!editedInvoice.assetName?.trim()) { newErrors.assetName = true; isValid = false; }
     if (!editedInvoice.description.trim()) { newErrors.description = true; isValid = false; }
     if (!editedInvoice.vendorName.trim()) { newErrors.vendorName = true; isValid = false; }
     if (!editedInvoice.invoiceNo.trim()) { newErrors.invoiceNo = true; isValid = false; }
@@ -436,21 +536,6 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
     showToast('CIP asset deleted', 'delete');
   };
 
-  const filteredAssets = cipAssets.filter(asset => {
-    if (statusFilter === 'completed' && asset.completed !== 'Y') return false;
-    if (statusFilter === 'in-progress' && asset.completed === 'Y') return false;
-    if (search) {
-      const term = search.toLowerCase();
-      return asset.id.toLowerCase().includes(term) ||
-        asset.description.toLowerCase().includes(term) ||
-        asset.category.toLowerCase().includes(term) ||
-        asset.branch.toLowerCase().includes(term);
-    }
-    return true;
-  });
-
-  const emptyRowsNeeded = Math.max(0, EMPTY_ROW_COUNT - filteredAssets.length);
-
   const renderDetailPanel = () => {
     if (!editedAsset || !selectedAssetId) return null;
 
@@ -467,6 +552,16 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
               <div className="form-group">
                 <label>Invoice ID</label>
                 <input type="text" className="readonly-input" value={editedInvoice.id} readOnly />
+              </div>
+              <div className="form-group">
+                <label>Asset Name *</label>
+                {invoiceErrors.assetName && <span className="error-text">Required</span>}
+                <input
+                  type="text"
+                  className={invoiceErrors.assetName ? 'error' : ''}
+                  value={editedInvoice.assetName || ''}
+                  onChange={(e) => handleInvoiceInputChange('assetName', e.target.value)}
+                />
               </div>
               <div className="form-group">
                 <label>Description *</label>
@@ -573,6 +668,17 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                 readOnly={!isEditing}
                 value={editedAsset.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Budget</label>
+              <input
+                type={isEditing ? 'number' : 'text'}
+                className={!isEditing ? 'readonly-input' : ''}
+                readOnly={!isEditing}
+                value={editedAsset.budget || ''}
+                onChange={(e) => handleInputChange('budget', e.target.value)}
               />
             </div>
 
@@ -787,9 +893,19 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
               <tr>
                 <th style={{ width: 28, padding: 0 }}></th>
                 <th ref={checkboxColRef} style={{ width: 40, padding: 0 }}></th>
-                {COLUMNS.map((col) => (
-                  <th key={col}>{col}</th>
-                ))}
+                {COLUMNS.map((col) => {
+                  const sortKey = COLUMN_SORT_KEYS[col];
+                  return (
+                    <th
+                      key={col}
+                      onClick={sortKey ? () => handleSort(sortKey) : undefined}
+                      style={sortKey ? { cursor: 'pointer', userSelect: 'none' } : undefined}
+                      className={sortKey && sortConfig.key === sortKey ? 'sorted' : ''}
+                    >
+                      {col}{sortKey ? renderSortIndicator(sortKey) : null}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -820,17 +936,33 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                           onChange={() => handleToggleAsset(asset.id)}
                         />
                       </td>
-                      <td>{asset.id}</td>
-                      <td>{asset.branch}</td>
-                      <td>{asset.description}</td>
-                      <td>{asset.category}</td>
-                      <td>{invoices.length > 0 ? `$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}` : ''}</td>
+                      <td>{highlightText(asset.id)}</td>
+                      <td>{highlightText(asset.branch)}</td>
+                      <td>{highlightText(asset.description)}</td>
+                      <td>{highlightText(asset.category)}</td>
+                      <td>{asset.budget ? `$${Number(asset.budget).toLocaleString()}` : ''}</td>
+                      <td>{`$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}`}</td>
+                      <td>{(() => { const total = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0); const budget = Number(asset.budget) || 0; if (!asset.budget) return ''; const variance = budget - total; return `$${variance.toLocaleString()}`; })()}</td>
                       <td>
                         <span className={`status-badge ${asset.completed === 'Y' ? 'status-active' : 'status-expiring'}`}>
                           {asset.completed === 'Y' ? 'Completed' : 'Ongoing'}
                         </span>
                       </td>
                       <td>{asset.completed === 'Y' && asset.completionDate ? new Date(asset.completionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'N/A'}</td>
+                      <td>
+                        {asset.transferredAssetId ? (
+                          entityAssetIds.has(asset.transferredAssetId) ? (
+                            <span
+                              style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline', fontSize: '13px' }}
+                              onClick={(e) => { e.stopPropagation(); onNavigateToAsset?.(asset.transferredAssetId!); }}
+                            >
+                              {asset.transferredAssetId}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '13px', color: '#888' }}>{asset.transferredAssetId}</span>
+                          )
+                        ) : 'N/A'}
+                      </td>
                     </tr>
                     {isExpanded && (
                       <tr className="invoice-expand-row">
@@ -856,7 +988,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                                     <tr key={inv.id} className={editedInvoice?.id === inv.id ? 'selected-row' : ''} onClick={(e) => { e.stopPropagation(); setSelectedAssetId(asset.id); setEditedInvoice({ ...inv }); setInvoiceErrors({}); }} style={{ cursor: 'pointer' }}>
                                       <td className="cip-invoices-check-col">{invoices.indexOf(inv) + 1}</td>
                                       <td>{inv.invoiceNo}</td>
-                                      <td>{asset.description}</td>
+                                      <td>{inv.assetName || asset.description}</td>
                                       <td>{inv.description}</td>
                                       <td>{inv.vendorName}</td>
                                       <td>{inv.date ? new Date(inv.date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
@@ -902,6 +1034,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
         <AddCIPInvoiceModal
           onClose={() => setIsAddInvoiceModalOpen(false)}
           onSave={handleAddInvoice}
+          defaultAssetName={editedAsset?.description || ''}
         />
       )}
 
