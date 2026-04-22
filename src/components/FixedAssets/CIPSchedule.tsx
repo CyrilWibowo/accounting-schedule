@@ -5,6 +5,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import TuneIcon from '@mui/icons-material/Tune';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import { View } from '../Layout/Sidebar';
 import { Entity } from '../../types/Entity';
@@ -13,6 +14,7 @@ import { loadEntityCIPAssets, addEntityCIPAsset, updateEntityCIPAsset, deleteEnt
 import AddCIPModal from './AddCIPModal';
 import AddCIPInvoiceModal from './AddCIPInvoiceModal';
 import Toast, { useToast } from '../shared/Toast';
+import AdvancedFilterPanel, { AdvancedFilters, FilterFieldDef, buildEmptyFilters, hasActiveFilters } from '../shared/AdvancedFilterPanel';
 import '../Homepage/EntitiesPage.css';
 import '../Leases/Dashboard.css';
 import '../Leases/LeaseForm.css';
@@ -21,6 +23,15 @@ import './FixedAssetsRegister.css';
 
 const CATEGORIES: AssetCategory[] = ['Office Equipment', 'Motor Vehicle', 'Warehouse Equipment', 'Manufacturing Equipment', 'Equipment for Leased', 'Software'];
 const BRANCHES: AssetBranch[] = ['CORP', 'PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'PARK'];
+
+const CIP_FILTER_FIELDS: FilterFieldDef[] = [
+  { type: 'checkbox', key: 'category', label: 'Category', options: [...CATEGORIES] },
+  { type: 'checkbox', key: 'branch', label: 'Branch', options: [...BRANCHES] },
+  { type: 'number-range', key: 'amount', label: 'Amount' },
+  { type: 'number-range', key: 'usefulLife', label: 'Useful Life (years)' },
+  { type: 'date-range', key: 'date', label: 'Invoice Date' },
+  { type: 'date-range', key: 'completionDate', label: 'Completion Date' },
+];
 
 const CATEGORY_CODE: Record<string, string> = {
   'Office Equipment': 'O',
@@ -96,6 +107,9 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   const [invoiceErrors, setInvoiceErrors] = useState<{ [key: string]: boolean }>({});
   const [showInvoiceDeleteConfirm, setShowInvoiceDeleteConfirm] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(() => buildEmptyFilters(CIP_FILTER_FIELDS));
+  const advancedFilterRef = useRef<HTMLDivElement>(null);
   const [entityAssetIds, setEntityAssetIds] = useState<Set<string>>(new Set());
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const [isSelectDropdownOpen, setIsSelectDropdownOpen] = useState(false);
@@ -186,7 +200,22 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
   const filteredAssets = sortCIPData(cipAssets.filter(asset => {
     if (statusFilter === 'completed' && asset.completed !== 'Y') return false;
     if (statusFilter === 'in-progress' && asset.completed === 'Y') return false;
-    return matchesCIPSearch(asset);
+    if (!matchesCIPSearch(asset)) return false;
+    const af = advancedFilters;
+    if (af.checkboxes.category?.length > 0 && !af.checkboxes.category.includes(asset.category)) return false;
+    if (af.checkboxes.branch?.length > 0 && !af.checkboxes.branch.includes(asset.branch)) return false;
+    if (af.checkboxes.completed?.length > 0 && !af.checkboxes.completed.includes(asset.completed)) return false;
+    const amount = parseFloat(asset.amount || '');
+    if (af.numberRanges.amount?.min !== '' && !isNaN(amount) && amount < parseFloat(af.numberRanges.amount.min)) return false;
+    if (af.numberRanges.amount?.max !== '' && !isNaN(amount) && amount > parseFloat(af.numberRanges.amount.max)) return false;
+    const ul = parseFloat(asset.usefulLife || '');
+    if (af.numberRanges.usefulLife?.min !== '' && !isNaN(ul) && ul < parseFloat(af.numberRanges.usefulLife.min)) return false;
+    if (af.numberRanges.usefulLife?.max !== '' && !isNaN(ul) && ul > parseFloat(af.numberRanges.usefulLife.max)) return false;
+    if (af.dateRanges.date?.earliest && (asset.date || '') < af.dateRanges.date.earliest) return false;
+    if (af.dateRanges.date?.latest && (asset.date || '') > af.dateRanges.date.latest) return false;
+    if (af.dateRanges.completionDate?.earliest && (asset.completionDate || '') < af.dateRanges.completionDate.earliest) return false;
+    if (af.dateRanges.completionDate?.latest && (asset.completionDate || '') > af.dateRanges.completionDate.latest) return false;
+    return true;
   }));
 
   const emptyRowsNeeded = Math.max(0, EMPTY_ROW_COUNT - filteredAssets.length);
@@ -856,6 +885,16 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                 <option value="completed">Completed</option>
                 <option value="in-progress">Ongoing</option>
               </select>
+              <div ref={advancedFilterRef} style={{ position: 'relative' }}>
+                <button
+                  className={`adv-filter-btn${hasActiveFilters(advancedFilters) ? ' active' : ''}`}
+                  title="Advanced filters"
+                  onClick={() => setShowAdvancedFilters(v => !v)}
+                >
+                  <TuneIcon style={{ fontSize: 16 }} />
+                  {hasActiveFilters(advancedFilters) && <span className="adv-filter-dot" />}
+                </button>
+              </div>
               <div ref={actionsMenuRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setIsActionsMenuOpen(v => !v)}
@@ -876,6 +915,14 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                 )}
               </div>
             </div>
+            {showAdvancedFilters && (
+              <AdvancedFilterPanel
+                fields={CIP_FILTER_FIELDS}
+                filters={advancedFilters}
+                onChange={setAdvancedFilters}
+                onClose={() => setShowAdvancedFilters(false)}
+              />
+            )}
           </div>
         </div>
 
@@ -942,7 +989,7 @@ const CIPSchedule: React.FC<CIPScheduleProps> = ({ onNavigate, selectedEntity, j
                       <td>{highlightText(asset.category)}</td>
                       <td>{asset.budget ? `$${Number(asset.budget).toLocaleString()}` : ''}</td>
                       <td>{`$${invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0).toLocaleString()}`}</td>
-                      <td>{(() => { const total = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0); const budget = Number(asset.budget) || 0; if (!asset.budget) return ''; const variance = budget - total; return `$${variance.toLocaleString()}`; })()}</td>
+                      <td>{(() => { const total = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0); const budget = Number(asset.budget); if (!asset.budget) return ''; const variance = budget - total; return isNaN(variance) ? '' : `$${variance.toLocaleString()}`; })()}</td>
                       <td>
                         <span className={`status-badge ${asset.completed === 'Y' ? 'status-active' : 'status-expiring'}`}>
                           {asset.completed === 'Y' ? 'Completed' : 'Ongoing'}

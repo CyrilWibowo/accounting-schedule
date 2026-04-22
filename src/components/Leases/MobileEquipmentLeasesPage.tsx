@@ -9,6 +9,8 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import TuneIcon from '@mui/icons-material/Tune';
+import AdvancedFilterPanel, { AdvancedFilters, FilterFieldDef, buildEmptyFilters, hasActiveFilters } from '../shared/AdvancedFilterPanel';
 import { Lease, MobileEquipmentLease, OpeningBalance, Branch } from '../../types/Lease';
 import { generateExcelFromMobileEquipmentLeases } from './excel/mobileEquipmentExcelGenerator';
 import { exportMobileEquipmentLeasesToExcel } from './excel/tableExporter';
@@ -21,6 +23,17 @@ import { View } from '../Layout/Sidebar';
 
 const BRANCH_OPTIONS: Branch[] = ['PERT', 'MACK', 'MTIS', 'MUSW', 'NEWM', 'ADEL', 'BLAC', 'CORP', 'PERT-RTS', 'MACK-RTS', 'ADEL-RTS', 'PARK'];
 const DEFAULT_PANEL_WIDTH = 480;
+
+const MOBILE_FILTER_FIELDS: FilterFieldDef[] = [
+  { type: 'checkbox', key: 'branch', label: 'Branch', options: BRANCH_OPTIONS },
+  { type: 'checkbox', key: 'vehicleType', label: 'Type', options: ['Ute', 'Wagon', 'Forklift', 'Other'] },
+  { type: 'row', fields: [
+    { type: 'date-range', key: 'deliveryDate', label: 'Delivery Date' },
+    { type: 'date-range', key: 'expiryDate', label: 'Expiry Date' },
+  ] },
+  { type: 'number-range', key: 'annualRent', label: 'Monthly Rent (exc. GST)' },
+  { type: 'number-range', key: 'borrowingRate', label: 'Borrowing Rate (%)' },
+];
 const MIN_PANEL_WIDTH = 340;
 const MAX_PANEL_WIDTH = 900;
 
@@ -78,6 +91,9 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
   const selectDropdownRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>(() => buildEmptyFilters(MOBILE_FILTER_FIELDS));
+  const advancedFilterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const header = document.querySelector('.app-header') as HTMLElement;
@@ -426,8 +442,32 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
     );
   };
 
+  const applyAdvancedFilters = (leases: MobileEquipmentLease[]): MobileEquipmentLease[] => {
+    return leases.filter(l => {
+      const branchSel = advancedFilters.checkboxes['branch'] ?? [];
+      if (branchSel.length > 0 && !branchSel.includes(l.branch)) return false;
+      const typeSel = advancedFilters.checkboxes['vehicleType'] ?? [];
+      if (typeSel.length > 0 && !typeSel.includes(l.vehicleType)) return false;
+      const delivRange = advancedFilters.dateRanges['deliveryDate'];
+      if (delivRange?.earliest && l.deliveryDate < delivRange.earliest) return false;
+      if (delivRange?.latest && l.deliveryDate > delivRange.latest) return false;
+      const expRange = advancedFilters.dateRanges['expiryDate'];
+      if (expRange?.earliest && l.expiryDate < expRange.earliest) return false;
+      if (expRange?.latest && l.expiryDate > expRange.latest) return false;
+      const rentRange = advancedFilters.numberRanges['annualRent'];
+      const monthlyRent = parseFloat(l.annualRent) / 12;
+      if (rentRange?.min !== '' && monthlyRent < parseFloat(rentRange.min)) return false;
+      if (rentRange?.max !== '' && monthlyRent > parseFloat(rentRange.max)) return false;
+      const brateRange = advancedFilters.numberRanges['borrowingRate'];
+      const brate = parseFloat(l.borrowingRate);
+      if (brateRange?.min !== '' && brate < parseFloat(brateRange.min)) return false;
+      if (brateRange?.max !== '' && brate > parseFloat(brateRange.max)) return false;
+      return true;
+    });
+  };
+
   const renderTableRows = () => {
-    const filteredLeases = filterLeases(mobileEquipmentLeases, filter);
+    const filteredLeases = applyAdvancedFilters(filterLeases(mobileEquipmentLeases, filter));
     const sorted = sortData(filteredLeases, sortConfig).filter(l => leaseMatchesSearch(l, search));
     const h = (text: string) => search ? highlightText(text, search) : text;
     const rows = [];
@@ -507,6 +547,16 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
               <option value="Active">Active</option>
               <option value="Non-Active">Non-Active</option>
             </select>
+            <div ref={advancedFilterRef} style={{ position: 'relative' }}>
+              <button
+                className={`adv-filter-btn${hasActiveFilters(advancedFilters) ? ' active' : ''}`}
+                onClick={() => setShowAdvancedFilters(v => !v)}
+                title="Advanced filters"
+              >
+                <TuneIcon style={{ fontSize: 18 }} />
+                {hasActiveFilters(advancedFilters) && <span className="adv-filter-dot" />}
+              </button>
+            </div>
             <div ref={actionsMenuRef} style={{ position: 'relative' }}>
               <button
                 onClick={() => setIsActionsMenuOpen(v => !v)}
@@ -525,6 +575,14 @@ const MobileEquipmentLeasesPage: React.FC<MobileEquipmentLeasesPageProps> = ({
               )}
             </div>
             </div>
+            {showAdvancedFilters && (
+              <AdvancedFilterPanel
+                fields={MOBILE_FILTER_FIELDS}
+                filters={advancedFilters}
+                onChange={setAdvancedFilters}
+                onClose={() => setShowAdvancedFilters(false)}
+              />
+            )}
           </div>
         </div>
         <div className="dashboard-container" style={{ padding: 0, maxWidth: 'none', margin: 0 }}>

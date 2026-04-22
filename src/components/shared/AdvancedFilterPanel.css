@@ -1,0 +1,196 @@
+.adv-filter-panel {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: calc(100% + 4px);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  z-index: 300;
+  width: 720px;
+  max-height: 600px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.adv-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.adv-filter-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+
+.adv-filter-clear {
+  font-size: 12px;
+  color: #1a73e8;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.adv-filter-clear:hover {
+  text-decoration: underline;
+}
+
+.adv-filter-body {
+  overflow-y: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.adv-filter-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.adv-filter-body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 6px;
+}
+
+.adv-filter-section {
+  padding: 8px 14px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.adv-filter-section:last-child {
+  border-bottom: none;
+}
+
+.adv-filter-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 7px;
+}
+
+.adv-filter-checkboxes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px 12px;
+}
+
+.adv-filter-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  user-select: none;
+}
+
+.adv-filter-checkbox-row input[type='checkbox'] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: #1a73e8;
+  flex-shrink: 0;
+}
+
+.adv-filter-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adv-filter-range-sep {
+  font-size: 13px;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.adv-filter-range-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  outline: none;
+  color: #333;
+  min-width: 0;
+}
+
+.adv-filter-range-input:focus {
+  border-color: #1a73e8;
+}
+
+.adv-filter-date-row {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.adv-filter-date-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.adv-filter-date-label {
+  font-size: 11px;
+  color: #888;
+}
+
+.adv-filter-date-col .adv-filter-range-input {
+  width: 100%;
+}
+
+.adv-filter-row-section {
+  display: flex;
+  gap: 16px;
+}
+
+.adv-filter-row-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.adv-filter-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+  flex-shrink: 0;
+}
+
+.adv-filter-btn:hover {
+  background: #f0f0f0;
+}
+
+.adv-filter-btn.active {
+  background: #e8f0fe;
+  border-color: #1a73e8;
+  color: #1a73e8;
+}
+
+.adv-filter-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #1a73e8;
+  pointer-events: none;
+}

@@ -117,8 +117,6 @@ export const generateCategorySheet = (
     const dateOfDisposal = disposalVisible ? (asset.disposalDate || '') : '';
     const proceedValue = disposalVisible ? (asset.proceed || '') : '';
 
-    const matchingOB = (asset.openingBalances || []).find(ob => ob.date === prevYearDateStr);
-
     let costOB: number | string;
     let addition: number | string;
     let costDisposal: number | string;
@@ -132,42 +130,57 @@ export const generateCategorySheet = (
     let wdvYear: number | string;
     let gainLoss: number | string;
 
-    if (matchingOB) {
-      const isNew = matchingOB.type === 'New';
+    // Determine if this asset was acquired during the reporting year (= addition)
+    const acqParts = asset.acquisitionDate ? asset.acquisitionDate.split('-') : [];
+    const acqYear = acqParts.length >= 1 ? parseInt(acqParts[0], 10) : null;
+    const acqMonth = acqParts.length >= 2 ? parseInt(acqParts[1], 10) : 1;
+    const isAddition = acqYear === year;
 
-      if (!isNew) {
-        costOB = cost;
-        addition = 0;
-        depOB = parseFloat(matchingOB.value) || 0;
-      } else {
-        costOB = 0;
-        addition = cost;
-        depOB = 0;
-      }
+    const matchingOB = (asset.openingBalances || []).find(ob => ob.date === prevYearDateStr);
 
-      costDisposal = disposalVisible ? -(costOB as number) : 0;
-      costClosing = (costOB as number) + (addition as number) + (costDisposal as number);
-      wdvPrevYear = (costOB as number) - (depOB as number);
-
-      // For existing assets, WDV at start of year = cost - depOB; adjust the calc
-      let acquisitionMonth = 1;
-      if (isNew && asset.acquisitionDate) {
-        const parts = asset.acquisitionDate.split('-');
-        const acqYear = parseInt(parts[0], 10);
-        const acqMonth = parseInt(parts[1], 10);
-        // If acquired in a previous year, treat as fully existing from Jan
-        acquisitionMonth = acqYear >= year ? acqMonth : 1;
-      }
+    if (isAddition) {
+      costOB = 0;
+      addition = cost;
+      depOB = 0;
+      wdvPrevYear = 0;
 
       const disposalMonth = disposalVisible && asset.disposalDate
         ? parseInt(asset.disposalDate.split('-')[1], 10)
         : undefined;
 
-      monthlyDeps = calcMonthlyDep(cost, depRate, isNew, acquisitionMonth, isNew ? undefined : (wdvPrevYear as number), disposalMonth);
+      costDisposal = disposalVisible ? -cost : 0;
+      costClosing = cost + (costDisposal as number);
+
+      monthlyDeps = calcMonthlyDep(cost, depRate, true, acqMonth, undefined, disposalMonth);
+      currentPeriod = monthlyDeps.reduce((sum, d) => sum + d, 0);
+      writtenBack = disposalVisible ? -((currentPeriod as number)) : 0;
+      depClosing = (currentPeriod as number) + (writtenBack as number);
+      wdvYear = (costClosing as number) - (depClosing as number);
+
+      if (disposalVisible) {
+        const proceed = parseFloat(asset.proceed || '0');
+        gainLoss = proceed - (-(costDisposal as number) + (writtenBack as number));
+      } else {
+        gainLoss = '';
+      }
+    } else if (matchingOB) {
+      costOB = cost;
+      addition = 0;
+      depOB = parseFloat(matchingOB.value) || 0;
+
+      costDisposal = disposalVisible ? -(costOB as number) : 0;
+      costClosing = (costOB as number) + (costDisposal as number);
+      wdvPrevYear = (costOB as number) - (depOB as number);
+
+      const disposalMonth = disposalVisible && asset.disposalDate
+        ? parseInt(asset.disposalDate.split('-')[1], 10)
+        : undefined;
+
+      monthlyDeps = calcMonthlyDep(cost, depRate, false, 1, wdvPrevYear as number, disposalMonth);
 
       currentPeriod = monthlyDeps.reduce((sum, d) => sum + d, 0);
       writtenBack = disposalVisible ? -((depOB as number) + (currentPeriod as number)) : 0;
-      depClosing = (depOB as number) + currentPeriod + writtenBack;
+      depClosing = (depOB as number) + (currentPeriod as number) + (writtenBack as number);
       wdvYear = (costClosing as number) - (depClosing as number);
 
       if (disposalVisible) {

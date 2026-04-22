@@ -1,5 +1,5 @@
 // components/Dashboard.tsx
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -79,6 +79,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     isPropertyTable: boolean;
     count: number;
   } | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Side panel resize state
   const [panelWidth, setPanelWidth] = useState(() => {
@@ -88,6 +89,8 @@ const Dashboard: React.FC<DashboardProps> = ({
   });
   const isResizing = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const currentWidthRef = useRef(panelWidth);
 
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -100,14 +103,17 @@ const Dashboard: React.FC<DashboardProps> = ({
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing.current) return;
       const newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, window.innerWidth - e.clientX));
-      setPanelWidth(newWidth);
-      localStorage.setItem('sidePanelWidth', String(newWidth));
+      currentWidthRef.current = newWidth;
+      if (panelRef.current) panelRef.current.style.width = `${newWidth}px`;
+      if (mainContentRef.current) mainContentRef.current.style.marginRight = `${newWidth}px`;
     };
     const handleMouseUp = () => {
       if (isResizing.current) {
         isResizing.current = false;
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        setPanelWidth(currentWidthRef.current);
+        localStorage.setItem('sidePanelWidth', String(currentWidthRef.current));
       }
     };
     document.addEventListener('mousemove', handleMouseMove);
@@ -1115,6 +1121,7 @@ const Dashboard: React.FC<DashboardProps> = ({
       ? propertyLeases.filter(l => selectedSet.has(l.id))
       : mobileEquipmentLeases.filter(l => selectedSet.has(l.id));
 
+    setIsActionLoading(true);
     for (const lease of leasesToCopy) {
       const copiedLease: Lease = {
         ...lease,
@@ -1125,6 +1132,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     }
 
     setState(new Set());
+    setIsActionLoading(false);
   };
 
   const handleBatchDelete = (isPropertyTable: boolean) => {
@@ -1140,14 +1148,17 @@ const Dashboard: React.FC<DashboardProps> = ({
     const selectedSet = batchDeleteContext.isPropertyTable ? selectedPropertyLeases : selectedMobileLeases;
     const setState = batchDeleteContext.isPropertyTable ? setSelectedPropertyLeases : setSelectedMobileLeases;
 
+    setShowBatchDeleteConfirm(false);
+    setBatchDeleteContext(null);
+    setIsActionLoading(true);
+
     const leaseIdsToDelete = Array.from(selectedSet);
     for (const leaseId of leaseIdsToDelete) {
       await onDeleteLease(leaseId);
     }
 
     setState(new Set());
-    setShowBatchDeleteConfirm(false);
-    setBatchDeleteContext(null);
+    setIsActionLoading(false);
   };
 
   const handleCancelBatchDelete = () => {
@@ -1200,7 +1211,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
   return (
     <div className={`dashboard-split${selectedLeaseId ? ' panel-open' : ''}`}>
-    <div className="dashboard-main" style={selectedLeaseId ? { marginRight: `${panelWidth}px` } : undefined}>
+    <div className="dashboard-main" ref={mainContentRef} style={selectedLeaseId ? { marginRight: `${panelWidth}px` } : undefined}>
     <div className="dashboard-container">
       {hoveredLease && propertyLeases.find(l => l.id === hoveredLease) &&
         renderIncrementMethodsTooltip(propertyLeases.find(l => l.id === hoveredLease)!)}
@@ -1441,6 +1452,15 @@ const Dashboard: React.FC<DashboardProps> = ({
     </div>
 
     {selectedLeaseId && renderDetailPanel()}
+
+    {isActionLoading && (
+      <div className="confirm-overlay">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, color: '#fff' }}>
+          <div className="upload-spinner" />
+          <span style={{ fontSize: 14, fontWeight: 500 }}>Loading...</span>
+        </div>
+      </div>
+    )}
     </div>
   );
 };

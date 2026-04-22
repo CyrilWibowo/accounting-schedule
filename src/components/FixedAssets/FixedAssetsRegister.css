@@ -553,7 +553,7 @@
   padding: 24px 28px;
   width: 95vw;
   max-width: 1200px;
-  max-height: 88vh;
+  height: 80vh;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -624,6 +624,22 @@
   border-bottom: 1px solid #dee2e6;
 }
 
+.asset-upload-preview-table td.col-description,
+.asset-upload-preview-table th.col-description {
+  max-width: 160px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.asset-upload-preview-table td.col-short,
+.asset-upload-preview-table th.col-short {
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .asset-upload-preview-table tbody tr:last-child td {
   border-bottom: none;
 }
@@ -644,4 +660,75 @@
   justify-content: flex-end;
   gap: 10px;
   padding-top: 4px;
+}
+
+.upload-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: upload-spin 0.7s linear infinite;
+}
+
+@keyframes upload-spin {
+  to { transform: rotate(360deg); }
+}
+
+.asset-upload-tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.asset-upload-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.asset-upload-tab:hover {
+  color: #333;
+}
+
+.asset-upload-tab.active {
+  color: #1a73e8;
+  border-bottom-color: #1a73e8;
+}
+
+.asset-upload-tab-count {
+  background: #e9ecef;
+  color: #495057;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.4;
+}
+
+.asset-upload-tab.active .asset-upload-tab-count {
+  background: #d2e3fc;
+  color: #1a73e8;
+}
+
+.asset-upload-tab-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.asset-upload-tab-content .asset-upload-table-wrapper {
+  flex: 1;
 }

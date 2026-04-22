@@ -77,7 +77,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, exi
   const [customActiveDate, setCustomActiveDate] = useState('');
 
   const handleAddOpeningBalance = () => {
-    setAsset({ ...asset, openingBalances: [...(asset.openingBalances || []), { type: 'New', date: '', value: '' }] });
+    setAsset({ ...asset, openingBalances: [...(asset.openingBalances || []), { type: 'Existing', date: '', value: '' }] });
   };
 
   const handleOpeningBalanceChange = (index: number, field: keyof OpeningBalance, value: string) => {
@@ -263,27 +263,17 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, exi
             </div>
             {(asset.openingBalances || []).map((cb, i) => (
               <div key={i} className="opening-balance-row">
-                <select
-                  className="opening-balance-type"
-                  value={cb.type}
-                  onChange={(e) => handleOpeningBalanceChange(i, 'type', e.target.value)}
-                >
-                  <option value="New">New</option>
-                  <option value="Existing">Existing</option>
-                </select>
                 <input
                   type="date"
                   value={cb.date}
                   onChange={(e) => handleOpeningBalanceChange(i, 'date', e.target.value)}
                 />
-                {cb.type === 'Existing' && (
-                  <input
-                    type="number"
-                    placeholder="Balance"
-                    value={cb.value}
-                    onChange={(e) => handleOpeningBalanceChange(i, 'value', e.target.value)}
-                  />
-                )}
+                <input
+                  type="number"
+                  placeholder="Balance"
+                  value={cb.value}
+                  onChange={(e) => handleOpeningBalanceChange(i, 'value', e.target.value)}
+                />
                 <button type="button" className="remove-opening-balance-btn" onClick={() => handleRemoveOpeningBalance(i)}>×</button>
               </div>
             ))}

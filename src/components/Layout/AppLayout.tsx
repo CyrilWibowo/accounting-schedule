@@ -41,6 +41,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
   const [isAddLeaseModalOpen, setIsAddLeaseModalOpen] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [pendingCIPJump, setPendingCIPJump] = useState<string | null>(null);
+  const [pendingAssetJump, setPendingAssetJump] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { toast, showToast, clearToast } = useToast();
 
@@ -217,6 +218,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
           onNavigate={onNavigate}
           selectedEntity={selectedEntity}
           onNavigateToCIP={(cipId) => { setPendingCIPJump(cipId); onNavigate('cip-schedule'); }}
+          jumpToAssetId={pendingAssetJump}
+          onJumpHandled={() => setPendingAssetJump(null)}
         />;
       case 'cip-schedule':
         return <CIPSchedule
@@ -224,6 +227,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ currentView, onNavigate }) => {
           selectedEntity={selectedEntity}
           jumpToCIPId={pendingCIPJump}
           onJumpHandled={() => setPendingCIPJump(null)}
+          onNavigateToAsset={(assetId) => { setPendingAssetJump(assetId); onNavigate('fixed-assets-registration'); }}
         />;
       case 'settings':
         return <SettingsPage onDataPathChanged={handleDataPathChanged} />;
