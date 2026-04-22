@@ -73,6 +73,8 @@ const createEmptyAsset = (): Asset => ({
 const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, existingIds }) => {
   const [asset, setAsset] = useState<Asset>(createEmptyAsset);
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({});
+  const [activeDateSameAsAcquisition, setActiveDateSameAsAcquisition] = useState(true);
+  const [customActiveDate, setCustomActiveDate] = useState('');
 
   const handleAddOpeningBalance = () => {
     setAsset({ ...asset, openingBalances: [...(asset.openingBalances || []), { type: 'New', date: '', value: '' }] });
@@ -112,7 +114,8 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, exi
   const handleSubmit = () => {
     if (validateForm()) {
       const depRate = asset.usefulLife ? ((1 / Number(asset.usefulLife)) * 100).toFixed(2) : '';
-      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category, existingIds), depreciationRate: depRate };
+      const activeDate = activeDateSameAsAcquisition ? undefined : customActiveDate || undefined;
+      const assetWithId = { ...asset, id: generateAssetId(asset.branch, asset.category, existingIds), depreciationRate: depRate, activeDate };
       onSaveAsset(assetWithId);
     }
   };
@@ -211,6 +214,26 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, exi
             </div>
 
             <div className="form-group">
+              <label>Active Date</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <input
+                  type="checkbox"
+                  id="add-active-same"
+                  checked={activeDateSameAsAcquisition}
+                  onChange={(e) => setActiveDateSameAsAcquisition(e.target.checked)}
+                />
+                <label htmlFor="add-active-same" style={{ margin: 0, fontWeight: 'normal', fontSize: 13 }}>Same as acquisition date</label>
+              </div>
+              {!activeDateSameAsAcquisition && (
+                <input
+                  type="date"
+                  value={customActiveDate}
+                  onChange={(e) => setCustomActiveDate(e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="form-group">
               <label>Cost *</label>
               {errors.cost && <span className="error-text">Required</span>}
               <input
@@ -222,7 +245,7 @@ const AddAssetModal: React.FC<AddAssetModalProps> = ({ onClose, onSaveAsset, exi
             </div>
 
             <div className="form-group">
-              <label>Useful Life (Years) *</label>
+              <label>Useful Life *</label>
               {errors.usefulLife && <span className="error-text">Required</span>}
               <input
                 type="number"

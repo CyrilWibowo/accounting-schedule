@@ -68,8 +68,9 @@ const COLUMNS = [
   'Serial',
   'Tag/Registration',
   'Acquisition Date',
+  'Active Date',
   'Cost',
-  'Useful Life (Yrs)',
+  'Useful Life',
   'Dep. Rate (%)',
   '',
 ];
@@ -86,8 +87,9 @@ const COLUMN_SORT_KEYS: Record<string, string | null> = {
   'Serial': 'serialNo',
   'Tag/Registration': 'tagNo',
   'Acquisition Date': 'acquisitionDate',
+  'Active Date': 'activeDate',
   'Cost': 'cost',
-  'Useful Life (Yrs)': 'usefulLife',
+  'Useful Life': 'usefulLife',
   'Dep. Rate (%)': 'depreciationRate',
   '': null,
 };
@@ -98,7 +100,7 @@ const MAX_PANEL_WIDTH = 900;
 
 const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNavigate, selectedEntity, onNavigateToCIP, jumpToAssetId, onJumpHandled }) => {
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'All' | 'Active' | 'Disposed'>('All');
+  const [filter, setFilter] = useState<'All' | 'Active' | 'Inactive' | 'Disposed'>('All');
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(new Set());
   const [assets, setAssets] = useState<Asset[]>([]);
   const [cipAssets, setCIPAssets] = useState<CIPAsset[]>([]);
@@ -199,9 +201,24 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
   const renderSortIndicator = (key: string) =>
     sortConfig.key === key ? <span style={{ marginLeft: 4 }}>{sortConfig.direction === 'asc' ? '▲' : '▼'}</span> : null;
 
+  const getAssetStatus = (asset: Asset): 'active' | 'inactive' | 'disposed' => {
+    if (asset.disposed) return 'disposed';
+    const effectiveActiveDate = asset.activeDate || asset.acquisitionDate;
+    if (effectiveActiveDate) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const d = new Date(effectiveActiveDate);
+      d.setHours(0, 0, 0, 0);
+      if (d > today) return 'inactive';
+    }
+    return 'active';
+  };
+
   const filteredAssets = sortData(assets.filter(asset => {
-    if (filter === 'Active' && asset.disposed) return false;
-    if (filter === 'Disposed' && !asset.disposed) return false;
+    const status = getAssetStatus(asset);
+    if (filter === 'Active' && status !== 'active') return false;
+    if (filter === 'Disposed' && status !== 'disposed') return false;
+    if (filter === 'Inactive' && status !== 'inactive') return false;
     return matchesSearch(asset);
   }));
 
@@ -319,11 +336,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
     }
   };
 
-  const handleSelectByStatus = (status: 'all' | 'active' | 'disposed') => {
+  const handleSelectByStatus = (status: 'all' | 'active' | 'inactive' | 'disposed') => {
     let ids: string[];
     if (status === 'all') ids = filteredAssets.map(a => a.id);
-    else if (status === 'active') ids = filteredAssets.filter(a => !a.disposed).map(a => a.id);
-    else ids = filteredAssets.filter(a => a.disposed).map(a => a.id);
+    else ids = filteredAssets.filter(a => getAssetStatus(a) === status).map(a => a.id);
     setSelectedAssets(new Set(ids));
     setIsSelectDropdownOpen(false);
   };
@@ -654,6 +670,40 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               />
             </div>
 
+            <div className="form-group">
+              <label>Active Date</label>
+              {isEditing ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <input
+                      type="checkbox"
+                      id="edit-active-same"
+                      checked={!editedAsset.activeDate}
+                      onChange={(e) => handleInputChange('activeDate', e.target.checked ? '' : (editedAsset.acquisitionDate || ''))}
+                    />
+                    <label htmlFor="edit-active-same" style={{ margin: 0, fontWeight: 'normal', fontSize: 13 }}>Same as acquisition date</label>
+                  </div>
+                  {editedAsset.activeDate && (
+                    <input
+                      type="date"
+                      value={editedAsset.activeDate}
+                      onChange={(e) => handleInputChange('activeDate', e.target.value)}
+                    />
+                  )}
+                </>
+              ) : (
+                <input
+                  type="text"
+                  className="readonly-input"
+                  readOnly
+                  value={(() => {
+                    const d = editedAsset.activeDate || editedAsset.acquisitionDate;
+                    return d ? new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+                  })()}
+                />
+              )}
+            </div>
+
             {editedAsset.disposed && (
               <div className="form-group">
                 <label>Disposal Date</label>
@@ -693,7 +743,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
             </div>
 
             <div className="form-group">
-              <label>Useful Life (Years){isEditing ? ' *' : ''}</label>
+              <label>Useful Life{isEditing ? ' *' : ''}</label>
               {errors.usefulLife && <span className="error-text">Required</span>}
               <input
                 type={isEditing ? 'number' : 'text'}
@@ -832,6 +882,7 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                 <div style={{ position: 'absolute', left: 0, top: 'calc(100% + 4px)', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 200, minWidth: '150px', overflow: 'hidden' }}>
                   <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('all')}>All</button>
                   <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('active')}>Active</button>
+                  <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('inactive')}>Inactive</button>
                   <button className="dropdown-menu-item" onClick={() => handleSelectByStatus('disposed')}>Disposed</button>
                 </div>
               )}
@@ -853,9 +904,10 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
               />
             </div>
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <select value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Disposed')} style={{ padding: '6px 10px', fontSize: '13px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', cursor: 'pointer', outline: 'none', minWidth: '120px' }}>
+            <select value={filter} onChange={(e) => setFilter(e.target.value as 'All' | 'Active' | 'Inactive' | 'Disposed')} style={{ padding: '6px 10px', fontSize: '13px', border: '1px solid #d0d0d0', borderRadius: '4px', background: 'white', color: '#495057', cursor: 'pointer', outline: 'none', minWidth: '120px' }}>
               <option value="All">All</option>
               <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
               <option value="Disposed">Disposed</option>
             </select>
             <div ref={actionsMenuRef} style={{ position: 'relative' }}>
@@ -941,15 +993,18 @@ const FixedAssetsRegistration: React.FC<FixedAssetsRegistrationProps> = ({ onNav
                         <td>{highlightText(asset.invoice)}</td>
                         <td>{highlightText(asset.serialNo)}</td>
                         <td>{highlightText(asset.tagNo)}</td>
-                        <td>{asset.acquisitionDate}</td>
+                        <td>{asset.acquisitionDate ? new Date(asset.acquisitionDate).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''}</td>
+                        <td>{(() => { const d = asset.activeDate || asset.acquisitionDate; return d ? new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''; })()}</td>
                         <td>{asset.cost ? `$${Number(asset.cost.replace(/[^0-9.-]/g, '')).toLocaleString()}` : ''}</td>
                         <td>{asset.usefulLife}</td>
                         <td>{asset.depreciationRate ? `${Number(asset.depreciationRate).toFixed(2)}%` : ''}</td>
                         <td>
-                          {asset.disposed
-                            ? <span className="status-badge status-disposed">Disposed</span>
-                            : <span className="status-badge status-active">Active</span>
-                          }
+                          {(() => {
+                            const s = getAssetStatus(asset);
+                            if (s === 'disposed') return <span className="status-badge status-disposed">Disposed</span>;
+                            if (s === 'inactive') return <span className="status-badge status-inactive">Inactive</span>;
+                            return <span className="status-badge status-active">Active</span>;
+                          })()}
                         </td>
                       </tr>
                     ))}

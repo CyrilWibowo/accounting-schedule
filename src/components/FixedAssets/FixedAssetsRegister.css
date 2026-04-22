@@ -212,6 +212,12 @@
   text-align: center;
 }
 
+.asset-table th:nth-child(7),
+.asset-table td:nth-child(7) {
+  width: 90px;
+  max-width: 90px;
+}
+
 .asset-table th:nth-child(11),
 .asset-table th:nth-child(12),
 .asset-table th:nth-child(13),
@@ -322,6 +328,11 @@
 .status-disposed {
   background-color: #f8d7da;
   color: #721c24;
+}
+
+.status-inactive {
+  background-color: #e2d9f3;
+  color: #432874;
 }
 
 .disposed-banner {
